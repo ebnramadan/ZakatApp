@@ -1,0 +1,85 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../models/user_profile.dart';
+import '../models/zakat_record.dart';
+import '../models/payment.dart';
+
+class FirestoreService {
+  final _db = FirebaseFirestore.instance;
+
+  CollectionReference<Map<String, dynamic>> _users() => _db.collection('users');
+  CollectionReference<Map<String, dynamic>> _records(String uid) =>
+      _users().doc(uid).collection('zakatRecords');
+  CollectionReference<Map<String, dynamic>> _payments(String uid) =>
+      _users().doc(uid).collection('payments');
+
+  // ─── Profile ───────────────────────────────────────────────────────────────
+
+  Future<UserProfile?> getProfile(String uid) async {
+    final doc = await _users().doc(uid).get();
+    if (!doc.exists) return null;
+    return UserProfile.fromMap(uid, doc.data()!);
+  }
+
+  Future<void> saveProfile(UserProfile profile) =>
+      _users().doc(profile.uid).set(profile.toMap(), SetOptions(merge: true));
+
+  // ─── Zakat Records ─────────────────────────────────────────────────────────
+
+  Stream<List<ZakatRecord>> recordsStream(String uid) {
+    return _records(uid)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snap) => snap.docs
+            .map((d) => ZakatRecord.fromMap(d.id, d.data()))
+            .toList());
+  }
+
+  Future<String> saveRecord(ZakatRecord record) async {
+    if (record.id.isEmpty) {
+      final ref = await _records(record.userId).add(record.toMap());
+      return ref.id;
+    } else {
+      await _records(record.userId).doc(record.id).set(record.toMap());
+      return record.id;
+    }
+  }
+
+  Future<void> deleteRecord(String uid, String recordId) =>
+      _records(uid).doc(recordId).delete();
+
+  // ─── Payments ──────────────────────────────────────────────────────────────
+
+  Stream<List<Payment>> paymentsStream(String uid, String recordId) {
+    return _payments(uid)
+        .where('zakatRecordId', isEqualTo: recordId)
+        .orderBy('date', descending: true)
+        .snapshots()
+        .map((snap) => snap.docs
+            .map((d) => Payment.fromMap(d.id, d.data()))
+            .toList());
+  }
+
+  Future<List<String>> previousPayeeNames(String uid) async {
+    final snap = await _payments(uid)
+        .orderBy('createdAt', descending: true)
+        .limit(50)
+        .get();
+    final names = snap.docs
+        .map((d) => d.data()['name'] as String? ?? '')
+        .where((n) => n.isNotEmpty)
+        .toSet()
+        .toList();
+    return names;
+  }
+
+  Future<String> addPayment(Payment payment) async {
+    final ref = await _payments(payment.userId).add(payment.toMap());
+    return ref.id;
+  }
+
+  Future<void> updatePayment(Payment payment) =>
+      _payments(payment.userId).doc(payment.id).set(payment.toMap());
+
+  Future<void> deletePayment(String uid, String paymentId) =>
+      _payments(uid).doc(paymentId).delete();
+}
