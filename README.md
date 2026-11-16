@@ -1,4 +1,4 @@
-# ZakatApp
+# Zakat Tracker
 
 Flutter app for calculating Zakat on local cash, foreign cash and gold, then recording payments made outside the app. Supports guided and single-page entry, saved drafts, immutable submitted records, and Firebase accounts.
 
@@ -14,7 +14,7 @@ Flutter app for calculating Zakat on local cash, foreign cash and gold, then rec
 
 ## Local setup
 
-The web app is configured for the existing Firebase project `zakat-app-36c58`, with Hosting at https://zakat-app-36c58.web.app. The Firebase web configuration is public client configuration, not deployment credentials. Android/iOS options remain placeholders. Hosting deployment requires separately authenticated Firebase access.
+The web app is configured for the existing Firebase project `zakat-app-36c58`, with Hosting at https://zakat-tracker.web.app and the previous https://zakat-app-36c58.web.app address. The Firebase web configuration is public client configuration, not deployment credentials. Android/iOS options remain placeholders. Hosting deployment requires separately authenticated Firebase access.
 
 1. Install **Flutter 3.24.5 / Dart 3.5.4**, Java 17, and Android SDK 35 with Build Tools 34.0.0 and NDK 26.1.10909125. The lockfile records the tested dependency set. iOS requires macOS, Xcode and CocoaPods.
 2. Run `flutter pub get`.
@@ -83,3 +83,11 @@ firebase deploy --project zakat-app-36c58 --only hosting
 Deploy the reviewed Firestore rules/indexes separately when ready: `firebase deploy --project zakat-app-36c58 --only firestore`. Check legacy currency migration before deploying stricter rules to an existing database.
 
 For automatic deployment from GitHub, follow [the deployment setup guide](docs/firebase-deployment.md). The workflow requires a securely configured repository secret; no credentials belong in this repository or chat.
+
+## Verified sign-in and monthly giving
+
+Google is the default sign-in/sign-up option. Email registration sends a Firebase verification link; verified email is required before financial access. Profile supports secure provider linking/password setup without changing the account UID.
+
+شهريات tracks monthly Sadaqah/Zakat commitments separately from actual payments, preserves paid history, shows in-app due reminders and can send opt-in email reminders. Zakat receipts update the matching tracker entry atomically and are managed only in شهريات.
+
+See [monthly giving and email setup](docs/monthly-giving.md) for sender secrets, permissions, limits, account-linking behavior, installation and safe emulator testing.

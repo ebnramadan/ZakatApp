@@ -1,4 +1,5 @@
 import '../constants.dart';
+import 'dart:math' as math;
 
 String monthKey(DateTime date) =>
     '${date.year}-${date.month.toString().padLeft(2, '0')}';
@@ -41,6 +42,11 @@ class MonthlyPlan {
     }
     if (!amount.isFinite || amount <= 0 || amount >= 1e15) {
       throw const FormatException('Enter a positive, finite monthly amount.');
+    }
+    final factor = math.pow(10, currencyDecimals(currency));
+    if ((amount * factor - (amount * factor).round()).abs() > 0.000001) {
+      throw FormatException(
+          'Use at most ${currencyDecimals(currency)} decimal places for $currency.');
     }
     if (!kCurrencies.containsKey(currency)) {
       throw const FormatException('Choose a supported currency.');

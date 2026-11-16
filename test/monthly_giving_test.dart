@@ -114,4 +114,19 @@ void main() {
     expect(profile.monthlyDefaultKind, 'sadaqah');
     expect(plan().kind, 'sadaqah');
   });
+  test('monthly payments respect each currency’s minor units', () {
+    final original = plan().toMap();
+    expect(
+        () => MonthlyPlan.fromMap(
+            'p', {...original, 'currency': 'USD', 'amount': 10.001}).validate(),
+        throwsFormatException);
+    expect(
+        () => MonthlyPlan.fromMap(
+            'p', {...original, 'currency': 'KWD', 'amount': 10.001}).validate(),
+        returnsNormally);
+    expect(
+        () => MonthlyPlan.fromMap(
+            'p', {...original, 'currency': 'JPY', 'amount': 10.1}).validate(),
+        throwsFormatException);
+  });
 }

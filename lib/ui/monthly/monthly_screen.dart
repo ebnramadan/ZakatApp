@@ -149,7 +149,7 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
                               monthly.paid(p.id, key) == null)
                           .fold(0.0, (s, p) => s + p.amount);
                       final fmt = NumberFormat.currency(
-                          symbol: '$currency ', decimalDigits: 2);
+                          name: currency, symbol: '$currency ');
                       return Card(
                           color: Theme.of(context).colorScheme.primaryContainer,
                           child: Padding(
@@ -305,10 +305,11 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
                                     const SizedBox(height: 16),
                                     Text(
                                         NumberFormat.currency(
-                                                symbol:
-                                                    '${receipt?.currency ?? plan.currency} ',
-                                                decimalDigits: 2)
-                                            .format(amount),
+                                          name: receipt?.currency ??
+                                              plan.currency,
+                                          symbol:
+                                              '${receipt?.currency ?? plan.currency} ',
+                                        ).format(amount),
                                         style: Theme.of(context)
                                             .textTheme
                                             .headlineSmall
@@ -348,7 +349,7 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
                                                               title: const Text(
                                                                   'Record this month’s payment?'),
                                                               content: Text(
-                                                                  'Confirm that you gave ${plan.currency} ${plan.amount.toStringAsFixed(2)} to ${plan.recipient}.${plan.kind == 'zakat' ? ' This will reduce the remaining amount on your selected Zakat record.' : ' Your Zakat balance will not change.'}'),
+                                                                  'Confirm that you gave ${plan.currency} ${plan.amount.toStringAsFixed(currencyDecimals(plan.currency))} to ${plan.recipient}.${plan.kind == 'zakat' ? ' This will reduce the remaining amount on your selected Zakat record.' : ' Your Zakat balance will not change.'}'),
                                                               actions: [
                                                                 TextButton(
                                                                     onPressed: () =>
@@ -388,7 +389,7 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
                       ExpansionTile(
                           title: const Text('Paused recipients'),
                           subtitle: const Text(
-                              'Resume without losing previous payments'),
+                              'Resume from this month; previous payments stay saved'),
                           children: monthly.plans
                               .where((p) => !p.active)
                               .map((p) => ListTile(
@@ -479,7 +480,7 @@ class _MonthlyPlanDialogState extends State<MonthlyPlanDialog> {
     return AlertDialog(
         title: Text(widget.existing == null
             ? 'Add monthly giving'
-            : 'Edit future monthly giving'),
+            : 'Edit monthly commitment'),
         content: SizedBox(
             width: 440,
             child: SingleChildScrollView(
@@ -625,7 +626,9 @@ class _MonthlyPlanDialogState extends State<MonthlyPlanDialog> {
                           kind: _kind,
                           zakatRecordId: _kind == 'zakat' ? _record : '',
                           reminderDay: _day,
-                          startMonth: p?.startMonth ?? monthKey(DateTime.now()),
+                          startMonth: p != null && p.active
+                              ? p.startMonth
+                              : monthKey(DateTime.now()),
                           active: true,
                           createdAt: p?.createdAt ?? DateTime.now());
                       final ok = await monthly.save(plan);
@@ -670,8 +673,8 @@ class MonthlySettings extends StatelessWidget {
                             value: 'zakat', child: Text('زكاة · Part of Zakat'))
                       ],
                       onChanged: (v) async {
-                        final ok = await auth.updateProfile(
-                            profile.copyWith(monthlyDefaultKind: v));
+                        final ok = await auth.updateProfileFields(
+                            monthlyDefaultKind: v);
                         if (!context.mounted || ok) return;
                         ScaffoldMessenger.of(context)
                             .showSnackBar(SnackBar(content: Text(auth.error!)));
@@ -688,8 +691,8 @@ class MonthlySettings extends StatelessWidget {
                           'Sent to ${auth.user?.email ?? profile.email}. In-app reminders are always available.'),
                       value: profile.monthlyEmailReminders,
                       onChanged: (v) async {
-                        final ok = await auth.updateProfile(
-                            profile.copyWith(monthlyEmailReminders: v));
+                        final ok = await auth.updateProfileFields(
+                            monthlyEmailReminders: v);
                         if (!context.mounted || ok) return;
                         ScaffoldMessenger.of(context)
                             .showSnackBar(SnackBar(content: Text(auth.error!)));
@@ -699,9 +702,9 @@ class MonthlySettings extends StatelessWidget {
                         child: Padding(
                             padding: EdgeInsets.all(14),
                             child: Text(
-                                'Email delivery setup is pending. You can save your preference now; use the in-app due reminders until delivery is enabled.'))),
+                                'Email delivery has not been confirmed yet. Your preference is saved; in-app due reminders are available now.'))),
                   const Text(
-                      'Email reminders are checked daily at 08:00 UTC. One reminder per unpaid recipient per month; completed payments are skipped. Email includes the recipient and amount. You can turn it off at any time.',
+                      'Email reminders are checked daily around 08:00 UTC. One reminder per unpaid recipient per month; completed payments are skipped. Email includes the recipient and amount. You can turn it off at any time.',
                       style: TextStyle(
                           fontSize: 12, height: 1.6, color: Colors.black54)),
                   const SizedBox(height: 16),

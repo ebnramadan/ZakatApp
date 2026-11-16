@@ -53,11 +53,11 @@ class _LoginScreenState extends State<LoginScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const SizedBox(height: 24),
-                  const CircleAvatar(
-                      radius: 38,
-                      backgroundColor: kPrimaryGreen,
-                      child: Icon(Icons.mosque_outlined,
-                          color: Colors.white, size: 42)),
+                  Center(
+                      child: ClipRRect(
+                          borderRadius: BorderRadius.circular(20),
+                          child: Image.asset('assets/brand/icon.png',
+                              width: 80, height: 80))),
                   const SizedBox(height: 24),
                   Text('Zakat Tracker',
                       textAlign: TextAlign.center,
@@ -114,6 +114,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: 20),
                     TextFormField(
                         controller: _email,
+                        textInputAction: TextInputAction.next,
                         keyboardType: TextInputType.emailAddress,
                         autofillHints: const [AutofillHints.email],
                         decoration: const InputDecoration(
@@ -127,6 +128,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: 14),
                     TextFormField(
                         controller: _password,
+                        textInputAction: _register
+                            ? TextInputAction.next
+                            : TextInputAction.done,
+                        onFieldSubmitted: _register ? null : (_) => _submit(),
                         obscureText: _obscure,
                         autofillHints: [
                           _register
@@ -156,6 +161,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       const SizedBox(height: 14),
                       TextFormField(
                           controller: _confirm,
+                          onFieldSubmitted: (_) => _submit(),
                           obscureText: true,
                           decoration: const InputDecoration(
                               labelText: 'Confirm password'),

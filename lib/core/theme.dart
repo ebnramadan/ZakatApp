@@ -13,10 +13,16 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       visualDensity: VisualDensity.standard,
-      textTheme: ThemeData.light(useMaterial3: true).textTheme.apply(
-          fontSizeFactor: 1.05,
-          bodyColor: const Color(0xFF20352D),
-          displayColor: const Color(0xFF163D2A)),
+      textTheme: const TextTheme(
+              bodyLarge: TextStyle(fontSize: 16, height: 1.6),
+              bodyMedium: TextStyle(fontSize: 15, height: 1.55),
+              bodySmall: TextStyle(fontSize: 13, height: 1.5),
+              titleMedium: TextStyle(fontSize: 17),
+              titleLarge: TextStyle(fontSize: 22),
+              headlineMedium: TextStyle(fontSize: 28))
+          .apply(
+              bodyColor: const Color(0xFF20352D),
+              displayColor: const Color(0xFF163D2A)),
       colorScheme: base,
       scaffoldBackgroundColor: kSurface,
       appBarTheme: const AppBarTheme(

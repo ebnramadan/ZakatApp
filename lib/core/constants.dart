@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 const double kNisabGrams = 85.0;
 const double kZakatRate = 0.025;
@@ -77,3 +78,6 @@ String currencySymbol(String code) {
   };
   return symbols[code] ?? code;
 }
+
+int currencyDecimals(String code) =>
+    NumberFormat.currency(name: code).decimalDigits ?? 2;

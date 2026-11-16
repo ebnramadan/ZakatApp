@@ -76,6 +76,7 @@ class MonthlyProvider extends ChangeNotifier {
       emailReady = false;
       _notify();
     });
+    _notify();
   }
 
   List<MonthlyPayment> forMonth(String month) =>

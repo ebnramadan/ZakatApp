@@ -34,13 +34,19 @@ const fs = require('node:fs');
     if(!chosen)throw new Error('No friendly name could be claimed');
     console.log('Selected free Hosting URL:',`https://${chosen}.web.app`);
     if(process.env.GITHUB_STEP_SUMMARY)fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,`\nFriendly site reserved: https://${chosen}.web.app\n`);
-    const config=await client.request({url:`https://identitytoolkit.googleapis.com/admin/v2/projects/${project}/config`,headers:{'x-goog-user-project':project}});
+    const config=await client.request({url:`https://identitytoolkit.googleapis.com/admin/v2/projects/${project}/config`,headers:{'x-goog-user-project':project},params:{fields:'authorizedDomains,signIn/email/enabled'}});
     const domains=config.data.authorizedDomains||[];
+    console.log('Email/password sign-in enabled:',config.data.signIn?.email?.enabled===true);
+    if(config.data.signIn?.email?.enabled!==true)incomplete=true;
+    const google=await client.request({url:`https://identitytoolkit.googleapis.com/admin/v2/projects/${project}/defaultSupportedIdpConfigs/google.com`,params:{fields:'enabled'},headers:{'x-goog-user-project':project}});
+    console.log('Google sign-in enabled:',google.data.enabled===true);
+    if(google.data.enabled!==true)incomplete=true;
     console.log('Friendly domain authorized for Google login:',domains.includes(`${chosen}.web.app`));
-    if(!domains.includes(`${chosen}.web.app`))console.log(`ACTION NEEDED: Firebase Authentication → Settings → Authorized domains: add ${chosen}.web.app and ${chosen}.firebaseapp.com. Existing app stays on its current URL until configured.`);
+    if(!domains.includes(`${chosen}.web.app`)){incomplete=true;console.log(`ACTION NEEDED: Firebase Authentication → Settings → Authorized domains: add ${chosen}.web.app and ${chosen}.firebaseapp.com. Existing app stays on its current URL until configured.`);}
   }catch(e){console.log('Friendly URL setup incomplete:',e.response?.status||e.code||e.message);incomplete=true;}
   console.log('Email sender secret present:',Boolean(process.env.RESEND_API_KEY));
   console.log('Verified sender address secret present:',Boolean(process.env.REMINDER_FROM));
-  if(!process.env.RESEND_API_KEY||!process.env.REMINDER_FROM)incomplete=true;
+  console.log('Gmail SMTP secrets present:',Boolean(process.env.REMINDER_SMTP_USER && process.env.REMINDER_SMTP_APP_PASSWORD));
+  if(!(process.env.RESEND_API_KEY&&process.env.REMINDER_FROM)&&!(process.env.REMINDER_SMTP_USER&&process.env.REMINDER_SMTP_APP_PASSWORD))incomplete=true;
   if(incomplete)process.exitCode=1;
 })().catch(e=>{console.error('Preflight failed:',e.code||e.message);process.exitCode=1;});

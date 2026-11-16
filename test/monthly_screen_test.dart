@@ -13,6 +13,7 @@ import 'package:zakat_app/core/services/auth_service.dart';
 import 'package:zakat_app/core/services/firestore_service.dart';
 import 'package:zakat_app/core/services/monthly_service.dart';
 import 'package:zakat_app/ui/auth/login_screen.dart';
+import 'package:zakat_app/core/theme.dart';
 import 'package:zakat_app/ui/home/home_screen.dart';
 
 void main() {
@@ -22,7 +23,8 @@ void main() {
         auth: AuthService(auth: MockFirebaseAuth()),
         store: FirestoreService(database: FakeFirebaseFirestore()));
     await tester.pumpWidget(ChangeNotifierProvider.value(
-        value: auth, child: const MaterialApp(home: LoginScreen())));
+        value: auth,
+        child: MaterialApp(theme: AppTheme.light, home: const LoginScreen())));
     await tester.pumpAndSettle();
     expect(find.text('Continue with Google'), findsOneWidget);
     expect(find.byType(TextFormField), findsNothing);
@@ -74,12 +76,15 @@ void main() {
         reminderDay: 1,
         createdAt: DateTime.now());
     await MonthlyService(database: db).savePlan(plan);
-    await tester.pumpWidget(MultiProvider(providers: [
-      ChangeNotifierProvider.value(value: auth),
-      ChangeNotifierProvider.value(value: calc),
-      ChangeNotifierProvider.value(value: tracker),
-      ChangeNotifierProvider.value(value: monthly)
-    ], child: const MaterialApp(home: HomeScreen(initialTab: 2))));
+    await tester.pumpWidget(MultiProvider(
+        providers: [
+          ChangeNotifierProvider.value(value: auth),
+          ChangeNotifierProvider.value(value: calc),
+          ChangeNotifierProvider.value(value: tracker),
+          ChangeNotifierProvider.value(value: monthly)
+        ],
+        child: MaterialApp(
+            theme: AppTheme.light, home: const HomeScreen(initialTab: 2))));
     await tester.pumpAndSettle();
     expect(find.text('Family support'), findsOneWidget);
     await tester.scrollUntilVisible(find.text('Mark as paid'), 300,

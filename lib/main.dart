@@ -18,8 +18,9 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
     const emulatorMode = bool.fromEnvironment('USE_FIREBASE_EMULATORS');
-    if (emulatorMode && !kDebugMode)
+    if (emulatorMode && !kDebugMode) {
       throw StateError('Emulators are only available in a debug build.');
+    }
     final options = emulatorMode
         ? const FirebaseOptions(
             apiKey: 'demo-key',
@@ -44,9 +45,15 @@ void main() async {
             body: Center(
           child: Padding(
               padding: EdgeInsets.all(24),
-              child: Text(
-                  'Zakat could not start. Configure Firebase for this platform and check your connection, then restart the app.',
-                  textAlign: TextAlign.center)),
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                Icon(Icons.cloud_off_outlined, size: 48),
+                SizedBox(height: 16),
+                Text(
+                    'Zakat Tracker couldn’t connect. Check your connection and try again.',
+                    textAlign: TextAlign.center),
+                SizedBox(height: 16),
+                TextButton(onPressed: main, child: Text('Try again'))
+              ])),
         ))));
   }
 }

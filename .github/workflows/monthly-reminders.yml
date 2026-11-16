@@ -27,9 +27,11 @@ jobs:
         env:
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           REMINDER_FROM: ${{ secrets.REMINDER_FROM }}
+          REMINDER_SMTP_USER: ${{ secrets.REMINDER_SMTP_USER }}
+          REMINDER_SMTP_APP_PASSWORD: ${{ secrets.REMINDER_SMTP_APP_PASSWORD }}
         run: |
-          if [ -z "$RESEND_API_KEY" ] || [ -z "$REMINDER_FROM" ]; then
-            echo '::error::Configure RESEND_API_KEY and REMINDER_FROM before enabling email reminders. In-app reminders remain available.'
+          if { [ -z "$RESEND_API_KEY" ] || [ -z "$REMINDER_FROM" ]; } && { [ -z "$REMINDER_SMTP_USER" ] || [ -z "$REMINDER_SMTP_APP_PASSWORD" ]; }; then
+            echo '::error::Configure Resend sender secrets or Gmail SMTP app-password secrets before enabling email reminders. In-app reminders remain available.'
             exit 1
           fi
       - run: npm ci
@@ -41,6 +43,8 @@ jobs:
         env:
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           REMINDER_FROM: ${{ secrets.REMINDER_FROM }}
+          REMINDER_SMTP_USER: ${{ secrets.REMINDER_SMTP_USER }}
+          REMINDER_SMTP_APP_PASSWORD: ${{ secrets.REMINDER_SMTP_APP_PASSWORD }}
           DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
         run: |
           if [ "$DRY_RUN" = "true" ]; then

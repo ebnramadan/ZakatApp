@@ -105,4 +105,40 @@ void main() {
         service.linkGoogle(password: 'correct'), throwsStateError);
     expect(user.events, isEmpty);
   });
+  test(
+      'Google popup linking needs a recent password confirmation in the provider',
+      () async {
+    final user = SecurityUser('password');
+    final auth = AuthProvider(
+        auth:
+            AuthService(auth: MockFirebaseAuth(mockUser: user, signedIn: true)),
+        store: FirestoreService(database: FakeFirebaseFirestore()));
+    await Future<void>.delayed(Duration.zero);
+    expect(await auth.connectGoogle(), isFalse);
+    expect(user.events, isEmpty);
+    expect(await auth.confirmPassword('current-password'), isTrue);
+    expect(await auth.connectGoogle(), isTrue);
+    expect(user.events, ['reauth-password', 'link-google']);
+    expect(auth.user!.uid, 'same-user');
+    auth.dispose();
+  });
+  test('saving two settings together does not overwrite another preference',
+      () async {
+    final db = FakeFirebaseFirestore();
+    final auth = AuthProvider(
+        auth: AuthService(
+            auth: MockFirebaseAuth(
+                mockUser: SecurityUser('password'), signedIn: true)),
+        store: FirestoreService(database: db));
+    await Future<void>.delayed(Duration.zero);
+    final results = await Future.wait([
+      auth.updateProfileFields(monthlyDefaultKind: 'zakat'),
+      auth.updateProfileFields(monthlyEmailReminders: true)
+    ]);
+    expect(results, [true, true]);
+    final saved = (await db.doc('users/same-user').get()).data()!;
+    expect(saved['monthlyDefaultKind'], 'zakat');
+    expect(saved['monthlyEmailReminders'], isTrue);
+    auth.dispose();
+  });
 }

@@ -42,6 +42,8 @@ jobs:
         env:
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           REMINDER_FROM: ${{ secrets.REMINDER_FROM }}
+          REMINDER_SMTP_USER: ${{ secrets.REMINDER_SMTP_USER }}
+          REMINDER_SMTP_APP_PASSWORD: ${{ secrets.REMINDER_SMTP_APP_PASSWORD }}
         run: node scripts/firebase-preflight.cjs
   deploy:
     if: github.ref == 'refs/heads/claude/zakat-app-build-0NR5K'
@@ -75,15 +77,17 @@ jobs:
         with:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_ZAKAT_APP_36C58 }}
           project_id: zakat-app-36c58
+      - name: Verify Google login is allowed on the friendly domain
+        run: node scripts/check-hosting-domain.cjs
       - name: Deploy verified-account and monthly-giving database rules
         run: npx --no-install firebase deploy --project zakat-app-36c58 --only firestore:rules --non-interactive
       - name: Deploy to the existing live Hosting site
         run: npx --no-install firebase deploy --project zakat-app-36c58 --only hosting --non-interactive
       - name: Verify Hosting responds
-        run: curl --fail --silent --show-error --retry 3 https://zakat-app-36c58.web.app/ -o /dev/null
+        run: curl --fail --silent --show-error --retry 3 https://zakat-tracker.web.app/ -o /dev/null
       - name: Record deployed version
         env:
           DEPLOYED_SHA: ${{ github.sha }}
         run: |
-          echo 'Live site: https://zakat-app-36c58.web.app' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Live site: https://zakat-tracker.web.app (previous URL remains available)' >> "$GITHUB_STEP_SUMMARY"
           echo "Source commit: $DEPLOYED_SHA" >> "$GITHUB_STEP_SUMMARY"

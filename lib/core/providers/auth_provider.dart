@@ -171,16 +171,43 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> updateProfile(UserProfile updated) async {
+  int _preferenceRevision = 0;
+  final Map<String, int> _fieldRevision = {};
+  Future<bool> updateProfileFields(
+      {String? displayName,
+      String? currency,
+      String? monthlyDefaultKind,
+      bool? monthlyEmailReminders}) async {
+    final current = _profile;
+    if (current == null) return false;
+    final fields = <String, dynamic>{
+      if (displayName != null) 'displayName': displayName,
+      if (currency != null) 'currency': currency,
+      if (monthlyDefaultKind != null) 'monthlyDefaultKind': monthlyDefaultKind,
+      if (monthlyEmailReminders != null)
+        'monthlyEmailReminders': monthlyEmailReminders,
+    };
+    final revision = ++_preferenceRevision;
+    for (final field in fields.keys) {
+      _fieldRevision[field] = revision;
+    }
+    _profile =
+        UserProfile.fromMap(current.uid, {...current.toMap(), ...fields});
     _error = null;
+    _notify();
     try {
-      await _fs.saveProfile(updated);
-      if (_disposed || _user?.uid != updated.uid) return false;
-      _profile = updated;
-      _notify();
-      return true;
+      await _fs.updateProfileFields(current.uid, fields);
+      return !_disposed && _user?.uid == current.uid;
     } catch (_) {
-      _error = 'Profile could not be saved. Retry.';
+      if (_disposed || _user?.uid != current.uid) return false;
+      final rollback = _profile!.toMap();
+      for (final field in fields.keys) {
+        if (_fieldRevision[field] == revision) {
+          rollback[field] = current.toMap()[field];
+        }
+      }
+      _profile = UserProfile.fromMap(current.uid, rollback);
+      _error = 'This setting could not be saved. Please retry.';
       _notify();
       return false;
     }

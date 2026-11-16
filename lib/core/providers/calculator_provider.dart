@@ -17,6 +17,7 @@ class CalculatorProvider extends ChangeNotifier {
   List<ZakatRecord> _records = [];
   ZakatRecord? _draft;
   bool _loading = false;
+  bool _recordsLoading = false;
   String? _error;
   double _goldPricePerGram = 0;
   bool _pricesLoading = false;
@@ -26,6 +27,7 @@ class CalculatorProvider extends ChangeNotifier {
   List<ZakatRecord> get records => List.unmodifiable(_records);
   ZakatRecord? get draft => _draft;
   bool get loading => _loading;
+  bool get recordsLoading => _recordsLoading;
   String? get error => _error;
   double get goldPricePerGram => _goldPricePerGram;
   double get nisabValue =>
@@ -37,10 +39,14 @@ class CalculatorProvider extends ChangeNotifier {
 
   void loadRecords(String uid) {
     _sub?.cancel();
+    _recordsLoading = true;
+    _notify();
     _sub = _fs.recordsStream(uid).listen((list) {
       _records = list;
+      _recordsLoading = false;
       _notify();
     }, onError: (Object e) {
+      _recordsLoading = false;
       _error = 'Could not load records. Check your connection and retry.';
       _notify();
     });
