@@ -81,3 +81,5 @@ firebase deploy --project zakat-app-36c58 --only hosting
 ```
 
 Deploy the reviewed Firestore rules/indexes separately when ready: `firebase deploy --project zakat-app-36c58 --only firestore`. Check legacy currency migration before deploying stricter rules to an existing database.
+
+For automatic deployment from GitHub, follow [the deployment setup guide](docs/firebase-deployment.md). The workflow requires a securely configured repository secret; no credentials belong in this repository or chat.
