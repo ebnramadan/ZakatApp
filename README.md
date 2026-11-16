@@ -14,7 +14,7 @@ Flutter app for calculating Zakat on local cash, foreign cash and gold, then rec
 
 ## Local setup
 
-The checked-in Firebase options are placeholders. The app displays a setup message until configured; no real backend or credentials are supplied by this repository.
+The web app is configured for the existing Firebase project `zakat-app-36c58`, with Hosting at https://zakat-app-36c58.web.app. The Firebase web configuration is public client configuration, not deployment credentials. Android/iOS options remain placeholders. Hosting deployment requires separately authenticated Firebase access.
 
 1. Install **Flutter 3.24.5 / Dart 3.5.4**, Java 17, and Android SDK 35 with Build Tools 34.0.0 and NDK 26.1.10909125. The lockfile records the tested dependency set. iOS requires macOS, Xcode and CocoaPods.
 2. Run `flutter pub get`.
@@ -66,3 +66,18 @@ npm run test:rules
 Tests cover Nisab boundaries, purity and FX calculations, lunar anniversary, invalid prices, currency preservation, price request races, failed/idempotent submission, draft resumption, payment selection, profile sign-out, both form modes, record locking, account ownership and payment validation. CI repeats analysis, tests, web and Android debug builds, and the Firestore emulator checks. Live Firebase auth and iOS signing still require project/device verification.
 
 Firestore rules enforce ownership, submission immutability, bounded numeric fields and payment linkage. The financial calculation runs on the client for personal records; the rules are not a server-side audit of every nested asset or the user's religious eligibility.
+
+## Deploy to the existing web site
+
+The `.firebaserc` project and `firebase.json` Hosting site both explicitly target `zakat-app-36c58`. Do not create a replacement site.
+
+```sh
+flutter pub get
+flutter analyze
+flutter test
+flutter build web --release
+# Authenticate the Firebase CLI securely before deployment.
+firebase deploy --project zakat-app-36c58 --only hosting
+```
+
+Deploy the reviewed Firestore rules/indexes separately when ready: `firebase deploy --project zakat-app-36c58 --only firestore`. Check legacy currency migration before deploying stricter rules to an existing database.

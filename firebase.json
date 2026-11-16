@@ -26,7 +26,8 @@
           }
         ]
       }
-    ]
+    ],
+    "site": "zakat-app-36c58"
   },
   "emulators": {
     "firestore": {
