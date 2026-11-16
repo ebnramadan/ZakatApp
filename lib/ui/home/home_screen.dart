@@ -8,22 +8,28 @@ import '../../core/providers/calculator_provider.dart';
 import '../../core/providers/tracker_provider.dart';
 import '../auth/profile_screen.dart';
 import '../calculator/entry_mode_screen.dart';
+import '../calculator/one_pager_screen.dart';
 import '../tracker/tracker_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final int initialTab;
+  const HomeScreen({super.key, this.initialTab = 0});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _tab = 0;
+  late int _tab;
+
+  void openTracker() => setState(() => _tab = 1);
 
   @override
   void initState() {
     super.initState();
+    _tab = widget.initialTab;
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       final auth = context.read<AuthProvider>();
       if (auth.user != null) {
         context.read<CalculatorProvider>().loadRecords(auth.user!.uid);
@@ -72,24 +78,37 @@ class _RecordsTab extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Zakat')),
-      body: calc.records.isEmpty
-          ? _EmptyRecords()
-          : ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                Row(
+      body: calc.error != null
+          ? Center(
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+              Text(calc.error!, textAlign: TextAlign.center),
+              TextButton(
+                  onPressed: () {
+                    calc.clearError();
+                    calc.loadRecords(auth.user!.uid);
+                  },
+                  child: const Text('Retry')),
+            ]))
+          : calc.records.isEmpty
+              ? _EmptyRecords()
+              : ListView(
+                  padding: const EdgeInsets.all(16),
                   children: [
-                    Text('${calc.records.length} record(s)',
-                        style: const TextStyle(color: Colors.grey, fontSize: 13)),
-                    const Spacer(),
+                    Row(
+                      children: [
+                        Text('${calc.records.length} record(s)',
+                            style: const TextStyle(
+                                color: Colors.grey, fontSize: 13)),
+                        const Spacer(),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    ...calc.records
+                        .map((r) => _RecordCard(record: r, currency: currency)),
                   ],
                 ),
-                const SizedBox(height: 8),
-                ...calc.records.map(
-                    (r) => _RecordCard(record: r, currency: currency)),
-              ],
-            ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'new-calculation',
         onPressed: () => Navigator.of(context)
             .push(MaterialPageRoute(builder: (_) => const EntryModeScreen())),
         icon: const Icon(Icons.add),
@@ -107,7 +126,11 @@ class _RecordCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fmt = NumberFormat.currency(symbol: currencySymbol(currency), decimalDigits: 0);
+    final fmt = NumberFormat.currency(
+        symbol: record.currency == null
+            ? 'Currency unknown '
+            : currencySymbol(record.currency!),
+        decimalDigits: 2);
     final dateFmt = DateFormat('d MMM yyyy');
 
     return Card(
@@ -117,11 +140,14 @@ class _RecordCard extends StatelessWidget {
             ? () {
                 // Select this record in tracker and navigate to it
                 final auth = context.read<AuthProvider>();
-                context.read<TrackerProvider>().selectRecord(auth.user!.uid, record);
-                DefaultTabController.of(context);
+                context
+                    .read<TrackerProvider>()
+                    .selectRecord(auth.user!.uid, record);
+
                 // Navigate to tracker tab via home
-                final homeState = context.findAncestorStateOfType<_HomeScreenState>();
-                homeState?.setState(() => homeState._tab = 1);
+                final homeState =
+                    context.findAncestorStateOfType<_HomeScreenState>();
+                homeState?.openTracker();
               }
             : null,
         child: Padding(
@@ -158,11 +184,12 @@ class _RecordCard extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         record.nisabMet
-                            ? 'Zakat due: ${fmt.format(record.zakatDue)}'
+                            ? '${record.hawlComplete ? 'Zakat due' : 'Estimate'}: ${fmt.format(record.estimatedZakat)}'
                             : 'Below Nisab — no Zakat due',
                         style: TextStyle(
                           fontSize: 12,
-                          color: record.nisabMet ? kPrimaryGreen : Colors.orange,
+                          color:
+                              record.nisabMet ? kPrimaryGreen : Colors.orange,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -174,8 +201,11 @@ class _RecordCard extends StatelessWidget {
                 const Icon(Icons.chevron_right, color: Colors.grey)
               else
                 TextButton(
-                  onPressed: () => Navigator.of(context)
-                      .push(MaterialPageRoute(builder: (_) => const EntryModeScreen())),
+                  onPressed: () {
+                    context.read<CalculatorProvider>().resumeRecord(record);
+                    Navigator.of(context).push(MaterialPageRoute(
+                        builder: (_) => const OnePagerScreen()));
+                  },
                   child: const Text('Continue'),
                 ),
             ],

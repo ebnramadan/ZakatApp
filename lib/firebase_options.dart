@@ -1,4 +1,5 @@
-// ⚠️  PLACEHOLDER — Replace with your actual Firebase config.
+// Web configuration matches the existing zakat-app-36c58 Firebase Hosting site.
+// Android/iOS entries below remain placeholders; configure them before native use.
 //
 // Run:  flutterfire configure
 // in the project root after setting up your Firebase project.
@@ -32,12 +33,13 @@ class DefaultFirebaseOptions {
   // ─── Replace each value below with those from your Firebase console ───────
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'REPLACE_ME',
-    appId: 'REPLACE_ME',
-    messagingSenderId: 'REPLACE_ME',
-    projectId: 'REPLACE_ME',
-    authDomain: 'REPLACE_ME.firebaseapp.com',
-    storageBucket: 'REPLACE_ME.appspot.com',
+    apiKey: "AIzaSyAAnJPTGCezuvv-bOMRZMfC2Yvl3PXggwM",
+    appId: "1:6510733442:web:b87850da40e5cbdbebac9b",
+    messagingSenderId: "6510733442",
+    projectId: "zakat-app-36c58",
+    authDomain: "zakat-app-36c58.firebaseapp.com",
+    storageBucket: "zakat-app-36c58.firebasestorage.app",
+    measurementId: "G-ZT1T57LV9Q",
   );
 
   static const FirebaseOptions android = FirebaseOptions(

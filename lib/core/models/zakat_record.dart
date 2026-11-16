@@ -1,4 +1,5 @@
 import '../constants.dart';
+import 'package:hijri/hijri_calendar.dart';
 
 class ForeignCashEntry {
   String currency;
@@ -91,6 +92,9 @@ class ZakatRecord {
   final String id;
   final String userId;
   String name;
+  String? currency; // null means an older record whose currency is unknown.
+  DateTime? pricedAt;
+  bool manualNisabPrice;
   DateTime hawlStartDate;
   bool isHijriCalendar;
 
@@ -113,6 +117,9 @@ class ZakatRecord {
     required this.id,
     required this.userId,
     required this.name,
+    this.currency,
+    this.pricedAt,
+    this.manualNisabPrice = false,
     required this.hawlStartDate,
     this.isHijriCalendar = false,
     this.cashLocal = 0,
@@ -133,11 +140,18 @@ class ZakatRecord {
       id: id,
       userId: m['userId'] as String,
       name: m['name'] as String,
-      hawlStartDate: DateTime.fromMillisecondsSinceEpoch(m['hawlStartDate'] as int),
+      currency: m['currency'] as String?,
+      pricedAt: m['pricedAt'] == null
+          ? null
+          : DateTime.fromMillisecondsSinceEpoch(m['pricedAt'] as int),
+      manualNisabPrice: m['manualNisabPrice'] as bool? ?? false,
+      hawlStartDate:
+          DateTime.fromMillisecondsSinceEpoch(m['hawlStartDate'] as int),
       isHijriCalendar: m['isHijriCalendar'] as bool? ?? false,
       cashLocal: (m['cashLocal'] as num?)?.toDouble() ?? 0,
       foreignCash: (m['foreignCash'] as List? ?? [])
-          .map((e) => ForeignCashEntry.fromMap(Map<String, dynamic>.from(e as Map)))
+          .map((e) =>
+              ForeignCashEntry.fromMap(Map<String, dynamic>.from(e as Map)))
           .toList(),
       goldEntries: (m['goldEntries'] as List? ?? [])
           .map((e) => GoldEntry.fromMap(Map<String, dynamic>.from(e as Map)))
@@ -158,6 +172,9 @@ class ZakatRecord {
   Map<String, dynamic> toMap() => {
         'userId': userId,
         'name': name,
+        'currency': currency,
+        'pricedAt': pricedAt?.millisecondsSinceEpoch,
+        'manualNisabPrice': manualNisabPrice,
         'hawlStartDate': hawlStartDate.millisecondsSinceEpoch,
         'isHijriCalendar': isHijriCalendar,
         'cashLocal': cashLocal,
@@ -173,10 +190,26 @@ class ZakatRecord {
         'createdAt': createdAt.millisecondsSinceEpoch,
       };
 
-  DateTime get hawlEndDate => hawlStartDate.add(const Duration(days: 354));
+  // The calendar switch controls date presentation only. Hawl is a lunar year.
+  DateTime get hawlEndDate {
+    final start = HijriCalendar.fromDate(hawlStartDate);
+    final calendar = HijriCalendar();
+    final lastDay = calendar.getDaysInMonth(start.hYear + 1, start.hMonth);
+    return calendar.hijriToGregorian(start.hYear + 1, start.hMonth,
+        start.hDay > lastDay ? lastDay : start.hDay);
+  }
+
+  bool hawlCompleteAt(DateTime now) =>
+      !DateTime(now.year, now.month, now.day).isBefore(hawlEndDate);
+  bool get hawlComplete => hawlCompleteAt(DateTime.now());
+  double get estimatedZakat => nisabMet ? totalWealth * kZakatRate : 0;
 
   int get daysLeftInHawl {
-    final diff = hawlEndDate.difference(DateTime.now()).inDays;
+    final now = DateTime.now();
+    final end = hawlEndDate;
+    final diff = DateTime.utc(end.year, end.month, end.day)
+        .difference(DateTime.utc(now.year, now.month, now.day))
+        .inDays;
     return diff < 0 ? 0 : diff;
   }
 }

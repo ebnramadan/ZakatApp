@@ -3,84 +3,116 @@ import 'package:http/http.dart' as http;
 import '../constants.dart';
 
 class PriceService {
-  static const _fxBase = 'https://open.er-api.com/v6/latest/';
-  static const _goldUrl = 'https://api.metals.live/v1/spot';
-
-  // Cache
-  double? _goldUsdPerOz;
-  final Map<String, double> _fxRates = {}; // currency -> rate vs USD
-  DateTime? _lastFetch;
-
-  static final PriceService _instance = PriceService._();
+  static final PriceService _instance = PriceService._(http.Client());
   factory PriceService() => _instance;
-  PriceService._();
+  PriceService._(this._client);
+  PriceService.forTesting(http.Client client) : _client = client;
+  final http.Client _client;
+  double? _goldUsdPerOz;
+  DateTime? _goldFetched;
+  DateTime? _fxFetched;
+  Map<String, double> _fxRates = {};
+  Future<void>? _goldRequest;
+  Future<void>? _fxRequest;
+  bool _stale(DateTime? time) =>
+      time == null ||
+      DateTime.now().difference(time) >= const Duration(minutes: 30);
 
-  bool get _isStale =>
-      _lastFetch == null ||
-      DateTime.now().difference(_lastFetch!).inMinutes > 30;
-
-  /// Returns gold price in USD per troy oz
-  Future<double> _fetchGoldUsdPerOz() async {
-    final res = await http
-        .get(Uri.parse(_goldUrl))
-        .timeout(const Duration(seconds: 10));
-    if (res.statusCode != 200) throw Exception('Gold API error ${res.statusCode}');
-    final List<dynamic> data = jsonDecode(res.body) as List;
-    // Response: [{"gold": 2045.21, ...}]
-    final gold = (data.first as Map<String, dynamic>)['gold'];
-    return (gold as num).toDouble();
+  double _positive(dynamic value) {
+    if (value is! num || !value.isFinite || value <= 0) {
+      throw const FormatException('Invalid price or exchange rate');
+    }
+    return value.toDouble();
   }
 
-  /// Returns rates: 1 USD = X currency
-  Future<Map<String, double>> _fetchFxRates() async {
-    final res = await http
-        .get(Uri.parse('${_fxBase}USD'))
-        .timeout(const Duration(seconds: 10));
-    if (res.statusCode != 200) throw Exception('FX API error ${res.statusCode}');
-    final data = jsonDecode(res.body) as Map<String, dynamic>;
-    final rates = data['rates'] as Map<String, dynamic>;
-    return rates.map((k, v) => MapEntry(k, (v as num).toDouble()));
+  Future<dynamic> _get(String url) async {
+    final response =
+        await _client.get(Uri.parse(url)).timeout(const Duration(seconds: 10));
+    if (response.statusCode != 200) {
+      throw Exception('Price service unavailable');
+    }
+    return jsonDecode(response.body);
   }
 
-  Future<void> _refresh() async {
-    if (!_isStale) return;
-    final results = await Future.wait([_fetchGoldUsdPerOz(), _fetchFxRates()]);
-    _goldUsdPerOz = results[0] as double;
-    _fxRates.clear();
-    _fxRates.addAll(results[1] as Map<String, double>);
-    _lastFetch = DateTime.now();
+  Future<void> _gold() async {
+    if (!_stale(_goldFetched)) return;
+    if (_goldRequest != null) return _goldRequest;
+    final request = () async {
+      final data = await _get('https://api.gold-api.com/price/XAU');
+      if (data is! Map ||
+          data['symbol'] != 'XAU' ||
+          data['currency'] != 'USD') {
+        throw const FormatException('Unexpected gold response');
+      }
+      final updatedAt = DateTime.tryParse(data['updatedAt'] as String? ?? '');
+      if (updatedAt == null ||
+          DateTime.now().toUtc().difference(updatedAt).abs() >
+              const Duration(days: 4)) {
+        throw const FormatException('Gold quote is stale');
+      }
+      _goldUsdPerOz = _positive(data['price']);
+      _goldFetched = DateTime.now();
+    }();
+    _goldRequest = request;
+    try {
+      await request;
+    } finally {
+      _goldRequest = null;
+    }
   }
 
-  /// Gold price per gram in [localCurrency] (24K basis)
-  Future<double> goldPricePerGram(String localCurrency) async {
-    await _refresh();
-    final goldOz = _goldUsdPerOz!;
-    final rate = _localRate(localCurrency);
-    return goldOz * rate / kTroyOzToGrams;
+  Future<void> _fx() async {
+    if (!_stale(_fxFetched)) return;
+    if (_fxRequest != null) return _fxRequest;
+    final request = () async {
+      final data = await _get('https://open.er-api.com/v6/latest/USD');
+      if (data is! Map ||
+          data['result'] != 'success' ||
+          data['rates'] is! Map) {
+        throw const FormatException('Unexpected FX response');
+      }
+      final rates = (data['rates'] as Map)
+          .map((key, value) => MapEntry(key as String, _positive(value)));
+      if (rates['USD'] != 1.0) {
+        throw const FormatException('Unexpected FX base');
+      }
+      _fxRates = rates;
+      _fxFetched = DateTime.now();
+    }();
+    _fxRequest = request;
+    try {
+      await request;
+    } finally {
+      _fxRequest = null;
+    }
   }
 
-  /// Nisab threshold in [localCurrency] (85 g × 24K gold price)
-  Future<double> nisabValue(String localCurrency) async {
-    final pricePerGram = await goldPricePerGram(localCurrency);
-    return kNisabGrams * pricePerGram;
+  double _rate(String currency) {
+    final value = _fxRates[currency];
+    if (value == null) throw FormatException('No exchange rate for $currency');
+    return value;
   }
 
-  /// How many [localCurrency] units equal 1 [foreignCurrency] unit
-  Future<double> exchangeRate(String foreignCurrency, String localCurrency) async {
-    await _refresh();
-    if (foreignCurrency == localCurrency) return 1.0;
-    final foreignToUsd = 1.0 / (_fxRates[foreignCurrency] ?? 1.0);
-    final usdToLocal = _fxRates[localCurrency] ?? 1.0;
-    return foreignToUsd * usdToLocal;
+  Future<double> goldPricePerGram(String currency) async {
+    await _gold();
+    final rate = currency == 'USD' ? 1.0 : await exchangeRate('USD', currency);
+    return _positive(_goldUsdPerOz! * rate / kTroyOzToGrams);
   }
 
-  /// All fx rates relative to [localCurrency]
-  Future<Map<String, double>> allRatesFor(String localCurrency) async {
-    await _refresh();
-    final usdToLocal = _fxRates[localCurrency] ?? 1.0;
-    return _fxRates.map((k, v) => MapEntry(k, usdToLocal / v));
+  Future<double> nisabValue(String currency) async =>
+      kNisabGrams * await goldPricePerGram(currency);
+  Future<double> exchangeRate(String foreign, String local) async {
+    if (!kCurrencies.containsKey(foreign) || !kCurrencies.containsKey(local)) {
+      throw const FormatException('Unsupported currency');
+    }
+    if (foreign == local) return 1.0;
+    await _fx();
+    return _positive(_rate(local) / _rate(foreign));
   }
 
-  double _localRate(String localCurrency) =>
-      localCurrency == 'USD' ? 1.0 : (_fxRates[localCurrency] ?? 1.0);
+  Future<Map<String, double>> allRatesFor(String local) async {
+    await _fx();
+    final rate = _rate(local);
+    return _fxRates.map((key, value) => MapEntry(key, rate / value));
+  }
 }

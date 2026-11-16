@@ -4,7 +4,9 @@ import '../models/zakat_record.dart';
 import '../models/payment.dart';
 
 class FirestoreService {
-  final _db = FirebaseFirestore.instance;
+  final FirebaseFirestore _db;
+  FirestoreService({FirebaseFirestore? database})
+      : _db = database ?? FirebaseFirestore.instance;
 
   CollectionReference<Map<String, dynamic>> _users() => _db.collection('users');
   CollectionReference<Map<String, dynamic>> _records(String uid) =>
@@ -26,12 +28,9 @@ class FirestoreService {
   // ─── Zakat Records ─────────────────────────────────────────────────────────
 
   Stream<List<ZakatRecord>> recordsStream(String uid) {
-    return _records(uid)
-        .orderBy('createdAt', descending: true)
-        .snapshots()
-        .map((snap) => snap.docs
-            .map((d) => ZakatRecord.fromMap(d.id, d.data()))
-            .toList());
+    return _records(uid).orderBy('createdAt', descending: true).snapshots().map(
+        (snap) =>
+            snap.docs.map((d) => ZakatRecord.fromMap(d.id, d.data())).toList());
   }
 
   Future<String> saveRecord(ZakatRecord record) async {
@@ -44,6 +43,19 @@ class FirestoreService {
     }
   }
 
+  /// A stable ID and transaction make retries safe even after a lost response.
+  Future<ZakatRecord> submitRecord(ZakatRecord record) async {
+    final ref = _records(record.userId).doc(record.id);
+    return _db.runTransaction((transaction) async {
+      final previous = await transaction.get(ref);
+      if (previous.exists && previous.data()?['isSubmitted'] == true) {
+        return ZakatRecord.fromMap(previous.id, previous.data()!);
+      }
+      transaction.set(ref, record.toMap());
+      return record;
+    });
+  }
+
   Future<void> deleteRecord(String uid, String recordId) =>
       _records(uid).doc(recordId).delete();
 
@@ -54,9 +66,8 @@ class FirestoreService {
         .where('zakatRecordId', isEqualTo: recordId)
         .orderBy('date', descending: true)
         .snapshots()
-        .map((snap) => snap.docs
-            .map((d) => Payment.fromMap(d.id, d.data()))
-            .toList());
+        .map((snap) =>
+            snap.docs.map((d) => Payment.fromMap(d.id, d.data())).toList());
   }
 
   Future<List<String>> previousPayeeNames(String uid) async {
@@ -73,7 +84,13 @@ class FirestoreService {
   }
 
   Future<String> addPayment(Payment payment) async {
-    final ref = await _payments(payment.userId).add(payment.toMap());
+    final ref = _payments(payment.userId).doc(payment.id);
+    await _db.runTransaction((transaction) async {
+      final previous = await transaction.get(ref);
+      final data = payment.toMap();
+      if (previous.exists) data['createdAt'] = previous.data()!['createdAt'];
+      transaction.set(ref, data);
+    });
     return ref.id;
   }
 

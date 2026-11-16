@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -27,14 +26,16 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _doEmailAuth(AuthProvider auth) async {
-    if (_emailCtrl.text.trim().isEmpty || _passwordCtrl.text.isEmpty) return;
+    if (_busy || _emailCtrl.text.trim().isEmpty || _passwordCtrl.text.isEmpty) {
+      return;
+    }
     setState(() => _busy = true);
     if (_isRegister) {
       await auth.registerWithEmail(_emailCtrl.text.trim(), _passwordCtrl.text);
     } else {
       await auth.signInWithEmail(_emailCtrl.text.trim(), _passwordCtrl.text);
     }
-    setState(() => _busy = false);
+    if (mounted) setState(() => _busy = false);
   }
 
   @override
@@ -50,7 +51,8 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 60),
               _Logo(),
               const SizedBox(height: 40),
-              if (auth.error != null) _ErrorBanner(auth.error!, onClose: auth.clearError),
+              if (auth.error != null)
+                _ErrorBanner(auth.error!, onClose: auth.clearError),
               const SizedBox(height: 8),
               _EmailForm(
                 emailCtrl: _emailCtrl,
@@ -63,14 +65,17 @@ class _LoginScreenState extends State<LoginScreen> {
                 onSubmit: () => _doEmailAuth(auth),
                 onForgot: () async {
                   if (_emailCtrl.text.trim().isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Enter your email first')));
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                        content: Text('Enter your email first')));
                     return;
                   }
-                  await auth.sendPasswordReset(_emailCtrl.text.trim());
+                  final sent =
+                      await auth.sendPasswordReset(_emailCtrl.text.trim());
                   if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Password reset email sent')));
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                        content: Text(sent
+                            ? 'If an account exists, a password reset email has been sent.'
+                            : auth.error!)));
                   }
                 },
               ),
@@ -80,14 +85,14 @@ class _LoginScreenState extends State<LoginScreen> {
               _SocialButton(
                 icon: Icons.g_mobiledata,
                 label: 'Continue with Google',
-                onTap: auth.isLoading ? null : auth.signInWithGoogle,
+                onTap: auth.busy ? null : auth.signInWithGoogle,
               ),
-              if (!kIsWeb && Platform.isIOS) ...[
+              if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) ...[
                 const SizedBox(height: 12),
                 _SocialButton(
                   icon: Icons.apple,
                   label: 'Continue with Apple',
-                  onTap: auth.isLoading ? null : auth.signInWithApple,
+                  onTap: auth.busy ? null : auth.signInWithApple,
                 ),
               ],
               const SizedBox(height: 40),
@@ -116,7 +121,9 @@ class _Logo extends StatelessWidget {
         const SizedBox(height: 16),
         const Text('Zakat',
             style: TextStyle(
-                fontSize: 32, fontWeight: FontWeight.bold, color: kPrimaryGreen)),
+                fontSize: 32,
+                fontWeight: FontWeight.bold,
+                color: kPrimaryGreen)),
         const Text('Your personal Zakat companion',
             style: TextStyle(fontSize: 14, color: Colors.grey)),
       ],
@@ -142,7 +149,9 @@ class _ErrorBanner extends StatelessWidget {
         children: [
           const Icon(Icons.error_outline, color: Colors.red, size: 18),
           const SizedBox(width: 8),
-          Expanded(child: Text(message, style: const TextStyle(color: Colors.red, fontSize: 13))),
+          Expanded(
+              child: Text(message,
+                  style: const TextStyle(color: Colors.red, fontSize: 13))),
           IconButton(
             icon: const Icon(Icons.close, size: 16),
             onPressed: onClose,
@@ -219,7 +228,8 @@ class _EmailForm extends StatelessWidget {
               ? const SizedBox(
                   height: 20,
                   width: 20,
-                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                  child: CircularProgressIndicator(
+                      color: Colors.white, strokeWidth: 2))
               : Text(isRegister ? 'Create Account' : 'Sign In'),
         ),
         const SizedBox(height: 10),
@@ -242,7 +252,8 @@ class _Divider extends StatelessWidget {
         const Expanded(child: Divider()),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Text('or', style: TextStyle(color: Colors.grey.shade500, fontSize: 13)),
+          child: Text('or',
+              style: TextStyle(color: Colors.grey.shade500, fontSize: 13)),
         ),
         const Expanded(child: Divider()),
       ],
