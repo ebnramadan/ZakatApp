@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants.dart';
@@ -6,274 +5,223 @@ import '../../core/providers/auth_provider.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
-
   @override
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _emailCtrl = TextEditingController();
-  final _passwordCtrl = TextEditingController();
-  bool _isRegister = false;
+  final _form = GlobalKey<FormState>();
+  final _email = TextEditingController();
+  final _password = TextEditingController();
+  final _confirm = TextEditingController();
+  bool _emailMode = false;
+  bool _register = true;
   bool _obscure = true;
-  bool _busy = false;
-
   @override
   void dispose() {
-    _emailCtrl.dispose();
-    _passwordCtrl.dispose();
+    _email.dispose();
+    _password.dispose();
+    _confirm.dispose();
     super.dispose();
   }
 
-  Future<void> _doEmailAuth(AuthProvider auth) async {
-    if (_busy || _emailCtrl.text.trim().isEmpty || _passwordCtrl.text.isEmpty) {
-      return;
-    }
-    setState(() => _busy = true);
-    if (_isRegister) {
-      await auth.registerWithEmail(_emailCtrl.text.trim(), _passwordCtrl.text);
+  Future<void> _submit() async {
+    final auth = context.read<AuthProvider>();
+    if (auth.busy || !_form.currentState!.validate()) return;
+    FocusScope.of(context).unfocus();
+    if (_register) {
+      await auth.registerWithEmail(_email.text.trim(), _password.text);
     } else {
-      await auth.signInWithEmail(_emailCtrl.text.trim(), _passwordCtrl.text);
+      await auth.signInWithEmail(_email.text.trim(), _password.text);
     }
-    if (mounted) setState(() => _busy = false);
   }
 
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
     return Scaffold(
-      backgroundColor: kSurface,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 28),
-          child: Column(
-            children: [
-              const SizedBox(height: 60),
-              _Logo(),
-              const SizedBox(height: 40),
-              if (auth.error != null)
-                _ErrorBanner(auth.error!, onClose: auth.clearError),
-              const SizedBox(height: 8),
-              _EmailForm(
-                emailCtrl: _emailCtrl,
-                passwordCtrl: _passwordCtrl,
-                obscure: _obscure,
-                isRegister: _isRegister,
-                busy: _busy,
-                onToggleObscure: () => setState(() => _obscure = !_obscure),
-                onToggleMode: () => setState(() => _isRegister = !_isRegister),
-                onSubmit: () => _doEmailAuth(auth),
-                onForgot: () async {
-                  if (_emailCtrl.text.trim().isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                        content: Text('Enter your email first')));
-                    return;
-                  }
-                  final sent =
-                      await auth.sendPasswordReset(_emailCtrl.text.trim());
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                        content: Text(sent
-                            ? 'If an account exists, a password reset email has been sent.'
-                            : auth.error!)));
-                  }
-                },
-              ),
-              const SizedBox(height: 20),
-              _Divider(),
-              const SizedBox(height: 20),
-              _SocialButton(
-                icon: Icons.g_mobiledata,
-                label: 'Continue with Google',
-                onTap: auth.busy ? null : auth.signInWithGoogle,
-              ),
-              if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) ...[
-                const SizedBox(height: 12),
-                _SocialButton(
-                  icon: Icons.apple,
-                  label: 'Continue with Apple',
-                  onTap: auth.busy ? null : auth.signInWithApple,
-                ),
-              ],
-              const SizedBox(height: 40),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _Logo extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Container(
-          width: 80,
-          height: 80,
-          decoration: BoxDecoration(
-            color: kPrimaryGreen,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: const Icon(Icons.mosque, color: Colors.white, size: 44),
-        ),
-        const SizedBox(height: 16),
-        const Text('Zakat',
-            style: TextStyle(
-                fontSize: 32,
-                fontWeight: FontWeight.bold,
-                color: kPrimaryGreen)),
-        const Text('Your personal Zakat companion',
-            style: TextStyle(fontSize: 14, color: Colors.grey)),
-      ],
-    );
-  }
-}
-
-class _ErrorBanner extends StatelessWidget {
-  final String message;
-  final VoidCallback onClose;
-  const _ErrorBanner(this.message, {required this.onClose});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.red.shade50,
-        border: Border.all(color: Colors.red.shade200),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.error_outline, color: Colors.red, size: 18),
-          const SizedBox(width: 8),
-          Expanded(
-              child: Text(message,
-                  style: const TextStyle(color: Colors.red, fontSize: 13))),
-          IconButton(
-            icon: const Icon(Icons.close, size: 16),
-            onPressed: onClose,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _EmailForm extends StatelessWidget {
-  final TextEditingController emailCtrl;
-  final TextEditingController passwordCtrl;
-  final bool obscure;
-  final bool isRegister;
-  final bool busy;
-  final VoidCallback onToggleObscure;
-  final VoidCallback onToggleMode;
-  final VoidCallback onSubmit;
-  final VoidCallback onForgot;
-
-  const _EmailForm({
-    required this.emailCtrl,
-    required this.passwordCtrl,
-    required this.obscure,
-    required this.isRegister,
-    required this.busy,
-    required this.onToggleObscure,
-    required this.onToggleMode,
-    required this.onSubmit,
-    required this.onForgot,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        TextField(
-          controller: emailCtrl,
-          keyboardType: TextInputType.emailAddress,
-          decoration: const InputDecoration(
-            labelText: 'Email',
-            prefixIcon: Icon(Icons.email_outlined),
-          ),
-        ),
-        const SizedBox(height: 12),
-        TextField(
-          controller: passwordCtrl,
-          obscureText: obscure,
-          decoration: InputDecoration(
-            labelText: 'Password',
-            prefixIcon: const Icon(Icons.lock_outlined),
-            suffixIcon: IconButton(
-              icon: Icon(obscure ? Icons.visibility_off : Icons.visibility),
-              onPressed: onToggleObscure,
-            ),
-          ),
-          onSubmitted: (_) => onSubmit(),
-        ),
-        if (!isRegister)
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton(
-              onPressed: onForgot,
-              child: const Text('Forgot password?'),
-            ),
-          ),
-        const SizedBox(height: 8),
-        ElevatedButton(
-          onPressed: busy ? null : onSubmit,
-          child: busy
-              ? const SizedBox(
-                  height: 20,
-                  width: 20,
-                  child: CircularProgressIndicator(
-                      color: Colors.white, strokeWidth: 2))
-              : Text(isRegister ? 'Create Account' : 'Sign In'),
-        ),
-        const SizedBox(height: 10),
-        TextButton(
-          onPressed: onToggleMode,
-          child: Text(isRegister
-              ? 'Already have an account? Sign in'
-              : 'New here? Create an account'),
-        ),
-      ],
-    );
-  }
-}
-
-class _Divider extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        const Expanded(child: Divider()),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Text('or',
-              style: TextStyle(color: Colors.grey.shade500, fontSize: 13)),
-        ),
-        const Expanded(child: Divider()),
-      ],
-    );
-  }
-}
-
-class _SocialButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback? onTap;
-
-  const _SocialButton({required this.icon, required this.label, this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return OutlinedButton.icon(
-      onPressed: onTap,
-      icon: Icon(icon, size: 22),
-      label: Text(label),
-    );
+        body: SafeArea(
+            child: Center(
+                child: SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 440),
+          child: AutofillGroup(
+              child: Form(
+            key: _form,
+            child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const SizedBox(height: 24),
+                  const CircleAvatar(
+                      radius: 38,
+                      backgroundColor: kPrimaryGreen,
+                      child: Icon(Icons.mosque_outlined,
+                          color: Colors.white, size: 42)),
+                  const SizedBox(height: 24),
+                  Text('Zakat Tracker',
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context)
+                          .textTheme
+                          .headlineMedium
+                          ?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: kPrimaryGreen)),
+                  const SizedBox(height: 10),
+                  const Text(
+                      'Your Zakat, monthly giving, and payment history—together in one private account.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 16, height: 1.6)),
+                  const SizedBox(height: 32),
+                  ElevatedButton.icon(
+                      key: const Key('google-sign-in'),
+                      onPressed: auth.busy ? null : auth.signInWithGoogle,
+                      icon: const Icon(Icons.g_mobiledata, size: 30),
+                      label: const Text('Continue with Google')),
+                  const SizedBox(height: 8),
+                  const Text(
+                      'Sign in or create an account. No extra password needed.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.black54, height: 1.5)),
+                  if (auth.error != null)
+                    Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        child: Text(auth.error!,
+                            style: TextStyle(
+                                color: Theme.of(context).colorScheme.error),
+                            textAlign: TextAlign.center)),
+                  const SizedBox(height: 20),
+                  if (!_emailMode)
+                    OutlinedButton(
+                        onPressed: auth.busy
+                            ? null
+                            : () => setState(() => _emailMode = true),
+                        child: const Text('Use email instead')),
+                  if (_emailMode) ...[
+                    const Divider(height: 32),
+                    Text(
+                        _register
+                            ? 'Create an account with email'
+                            : 'Sign in with email',
+                        style: Theme.of(context).textTheme.titleLarge),
+                    const SizedBox(height: 8),
+                    Text(
+                        _register
+                            ? 'We’ll send a verification link before you can access financial records.'
+                            : 'Use the password for your existing account.',
+                        style: const TextStyle(
+                            color: Colors.black54, height: 1.5)),
+                    const SizedBox(height: 20),
+                    TextFormField(
+                        controller: _email,
+                        keyboardType: TextInputType.emailAddress,
+                        autofillHints: const [AutofillHints.email],
+                        decoration: const InputDecoration(
+                            labelText: 'Email address',
+                            prefixIcon: Icon(Icons.alternate_email)),
+                        validator: (v) => v != null &&
+                                RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$')
+                                    .hasMatch(v.trim())
+                            ? null
+                            : 'Enter a valid email address'),
+                    const SizedBox(height: 14),
+                    TextFormField(
+                        controller: _password,
+                        obscureText: _obscure,
+                        autofillHints: [
+                          _register
+                              ? AutofillHints.newPassword
+                              : AutofillHints.password
+                        ],
+                        decoration: InputDecoration(
+                            labelText: 'Password',
+                            helperText: _register
+                                ? 'At least 10 characters. A passphrase works well.'
+                                : null,
+                            suffixIcon: IconButton(
+                                tooltip: _obscure
+                                    ? 'Show password'
+                                    : 'Hide password',
+                                onPressed: () =>
+                                    setState(() => _obscure = !_obscure),
+                                icon: Icon(_obscure
+                                    ? Icons.visibility_outlined
+                                    : Icons.visibility_off_outlined))),
+                        validator: (v) => v == null || v.isEmpty
+                            ? 'Enter your password'
+                            : _register && v.length < 10
+                                ? 'Use at least 10 characters'
+                                : null),
+                    if (_register) ...[
+                      const SizedBox(height: 14),
+                      TextFormField(
+                          controller: _confirm,
+                          obscureText: true,
+                          decoration: const InputDecoration(
+                              labelText: 'Confirm password'),
+                          validator: (v) => v == _password.text
+                              ? null
+                              : 'Passwords do not match'),
+                    ],
+                    if (!_register)
+                      Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton(
+                              onPressed: auth.busy
+                                  ? null
+                                  : () async {
+                                      if (_email.text.trim().isEmpty) {
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(const SnackBar(
+                                                content: Text(
+                                                    'Enter your email address first.')));
+                                        return;
+                                      }
+                                      final sent = await auth.sendPasswordReset(
+                                          _email.text.trim());
+                                      if (!context.mounted) return;
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(SnackBar(
+                                              content: Text(sent
+                                                  ? 'If that account exists, a reset link is on its way. Check your inbox and spam folder.'
+                                                  : auth.error!)));
+                                    },
+                              child: const Text('Forgot password?'))),
+                    const SizedBox(height: 20),
+                    ElevatedButton(
+                        onPressed: auth.busy ? null : _submit,
+                        child: Text(auth.busy
+                            ? 'Please wait…'
+                            : _register
+                                ? 'Create account & verify email'
+                                : 'Sign in')),
+                    TextButton(
+                        onPressed: auth.busy
+                            ? null
+                            : () {
+                                auth.clearError();
+                                setState(() => _register = !_register);
+                              },
+                        child: Text(_register
+                            ? 'Already have an email account? Sign in'
+                            : 'New to Zakat? Create an email account')),
+                  ],
+                  const SizedBox(height: 28),
+                  const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.lock_outline,
+                            size: 15, color: Colors.black54),
+                        SizedBox(width: 6),
+                        Flexible(
+                            child: Text(
+                                'Your financial records stay in your account.',
+                                style: TextStyle(
+                                    color: Colors.black54, fontSize: 12)))
+                      ]),
+                  const SizedBox(height: 24),
+                ]),
+          ))),
+    ))));
   }
 }

@@ -12,6 +12,11 @@ class AppTheme {
     );
     return ThemeData(
       useMaterial3: true,
+      visualDensity: VisualDensity.standard,
+      textTheme: ThemeData.light(useMaterial3: true).textTheme.apply(
+          fontSizeFactor: 1.05,
+          bodyColor: const Color(0xFF20352D),
+          displayColor: const Color(0xFF163D2A)),
       colorScheme: base,
       scaffoldBackgroundColor: kSurface,
       appBarTheme: const AppBarTheme(
@@ -71,9 +76,9 @@ class AppTheme {
       ),
       cardTheme: CardTheme(
         color: Colors.white,
-        elevation: 1,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 6),
+        elevation: 0,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 8),
       ),
       chipTheme: ChipThemeData(
         backgroundColor: Colors.white,

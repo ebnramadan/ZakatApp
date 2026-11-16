@@ -10,11 +10,14 @@ class AuthService {
   final FirebaseAuth _auth;
   AuthService({FirebaseAuth? auth}) : _auth = auth ?? FirebaseAuth.instance;
 
-  Stream<User?> get authStateChanges => _auth.authStateChanges();
+  Stream<User?> get authStateChanges => _auth.userChanges();
   User? get currentUser => _auth.currentUser;
 
   Future<UserCredential> signInWithGoogle() async {
-    if (kIsWeb) return _auth.signInWithPopup(GoogleAuthProvider());
+    if (kIsWeb) {
+      return _auth.signInWithPopup(GoogleAuthProvider()
+        ..setCustomParameters({'prompt': 'select_account'}));
+    }
     final googleUser = await GoogleSignIn().signIn();
     if (googleUser == null) throw Exception('Google sign-in cancelled');
     final googleAuth = await googleUser.authentication;
@@ -45,8 +48,62 @@ class AuthService {
   Future<UserCredential> signInWithEmail(String email, String password) =>
       _auth.signInWithEmailAndPassword(email: email, password: password);
 
-  Future<UserCredential> registerWithEmail(String email, String password) =>
-      _auth.createUserWithEmailAndPassword(email: email, password: password);
+  Future<UserCredential> registerWithEmail(
+      String email, String password) async {
+    final credential = await _auth.createUserWithEmailAndPassword(
+        email: email, password: password);
+    await credential.user!.sendEmailVerification();
+    return credential;
+  }
+
+  Future<void> sendVerification() async {
+    final user = _auth.currentUser;
+    if (user == null) throw StateError('Sign in first.');
+    if (!user.emailVerified) await user.sendEmailVerification();
+  }
+
+  Future<void> refreshUser() async {
+    await _auth.currentUser?.reload();
+    await _auth.currentUser?.getIdToken(true);
+  }
+
+  Future<void> reauthenticate({String? password}) async {
+    final user = _auth.currentUser;
+    if (user == null || !user.emailVerified) {
+      throw StateError('Verify your email before changing sign-in methods.');
+    }
+    if (user.providerData.any((p) => p.providerId == 'password')) {
+      if (password == null || password.isEmpty) {
+        throw StateError('Enter your current password to confirm ownership.');
+      }
+      await user.reauthenticateWithCredential(
+          EmailAuthProvider.credential(email: user.email!, password: password));
+    } else if (user.providerData.any((p) => p.providerId == 'google.com')) {
+      await user.reauthenticateWithPopup(GoogleAuthProvider()
+        ..setCustomParameters({'prompt': 'select_account'}));
+    } else {
+      throw StateError(
+          'Sign in again with your original provider before changing account security.');
+    }
+  }
+
+  Future<void> linkGoogle({required String password}) async {
+    await reauthenticate(password: password);
+    await _auth.currentUser!.linkWithPopup(GoogleAuthProvider()
+      ..setCustomParameters({'prompt': 'select_account'}));
+    await refreshUser();
+  }
+
+  Future<void> addPassword(String password) async {
+    if (password.length < 10) {
+      throw StateError('Use at least 10 characters for your password.');
+    }
+    await reauthenticate();
+    final user = _auth.currentUser!;
+    await user.linkWithCredential(
+        EmailAuthProvider.credential(email: user.email!, password: password));
+    await refreshUser();
+  }
 
   Future<void> sendPasswordReset(String email) =>
       _auth.sendPasswordResetEmail(email: email);

@@ -59,6 +59,11 @@ class _AddPaymentSheetState extends State<AddPaymentSheet> {
   }
 
   Future<void> _save() async {
+    if (widget.existing?.isMonthly == true) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Manage this payment in شهريات.')));
+      return;
+    }
     final amount = double.tryParse(_amountCtrl.text);
     if (amount == null || !amount.isFinite || amount <= 0) {
       ScaffoldMessenger.of(context)

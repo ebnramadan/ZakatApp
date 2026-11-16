@@ -210,12 +210,13 @@ class _Header extends StatelessWidget {
         children: [
           Row(
             children: [
-              Text(r.name,
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold)),
-              const Spacer(),
+              Expanded(
+                  child: Text(r.name,
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold))),
+              const SizedBox(width: 8),
               Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -379,7 +380,8 @@ class _PaymentList extends StatelessWidget {
         final p = payments[i];
         return Dismissible(
           key: Key(p.id),
-          direction: DismissDirection.endToStart,
+          direction:
+              p.isMonthly ? DismissDirection.none : DismissDirection.endToStart,
           background: Container(
             alignment: Alignment.centerRight,
             padding: const EdgeInsets.only(right: 20),
@@ -400,7 +402,7 @@ class _PaymentList extends StatelessWidget {
               title: Text(p.name.isEmpty ? 'Payment' : p.name,
                   style: const TextStyle(fontWeight: FontWeight.w600)),
               subtitle: Text(
-                '${dateFmt.format(p.date)}${p.recipient.isNotEmpty ? ' · ${p.recipient}' : ''}',
+                '${dateFmt.format(p.date)}${p.recipient.isNotEmpty ? ' · ${p.recipient}' : ''}${p.isMonthly ? '\nشهريات · Manage this payment in Monthly giving' : ''}',
                 style: const TextStyle(fontSize: 12),
               ),
               trailing: Row(
@@ -412,21 +414,29 @@ class _PaymentList extends StatelessWidget {
                           color: kPrimaryGreen,
                           fontSize: 14)),
                   const SizedBox(width: 4),
-                  PopupMenuButton<String>(
-                    icon: const Icon(Icons.more_vert,
-                        size: 18, color: Colors.grey),
-                    onSelected: (v) {
-                      if (v == 'edit') onEdit(p);
-                      if (v == 'delete') onDelete(p);
-                    },
-                    itemBuilder: (_) => const [
-                      PopupMenuItem(value: 'edit', child: Text('Edit')),
-                      PopupMenuItem(
-                          value: 'delete',
-                          child: Text('Delete',
-                              style: TextStyle(color: Colors.red))),
-                    ],
-                  ),
+                  if (p.isMonthly)
+                    const Tooltip(
+                        message: 'Manage in شهريات',
+                        child: Padding(
+                            padding: EdgeInsets.all(8),
+                            child:
+                                Icon(Icons.calendar_month_outlined, size: 18)))
+                  else
+                    PopupMenuButton<String>(
+                      icon: const Icon(Icons.more_vert,
+                          size: 18, color: Colors.grey),
+                      onSelected: (v) {
+                        if (v == 'edit') onEdit(p);
+                        if (v == 'delete') onDelete(p);
+                      },
+                      itemBuilder: (_) => const [
+                        PopupMenuItem(value: 'edit', child: Text('Edit')),
+                        PopupMenuItem(
+                            value: 'delete',
+                            child: Text('Delete',
+                                style: TextStyle(color: Colors.red))),
+                      ],
+                    ),
                 ],
               ),
             ),

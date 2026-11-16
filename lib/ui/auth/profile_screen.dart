@@ -7,6 +7,7 @@ import '../../core/providers/auth_provider.dart';
 import '../../core/providers/calculator_provider.dart';
 import '../../core/models/zakat_record.dart';
 import 'package:intl/intl.dart';
+import 'account_security_card.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -90,6 +91,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(height: 12),
           _InfoTile(
               label: 'Email', value: profile.email, icon: Icons.email_outlined),
+          const SizedBox(height: 20),
+          const AccountSecurityCard(),
           const SizedBox(height: 20),
           _CurrencySelector(
             selected: _selectedCurrency ?? profile.currency,

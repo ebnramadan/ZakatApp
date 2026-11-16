@@ -1,0 +1,50 @@
+name: Monthly giving email reminders
+on:
+  schedule:
+    - cron: '0 8 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Check reminder eligibility without sending emails'
+        type: boolean
+        default: true
+permissions:
+  contents: read
+concurrency:
+  group: monthly-giving-emails
+  cancel-in-progress: false
+jobs:
+  remind:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Check email configuration
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          REMINDER_FROM: ${{ secrets.REMINDER_FROM }}
+        run: |
+          if [ -z "$RESEND_API_KEY" ] || [ -z "$REMINDER_FROM" ]; then
+            echo '::error::Configure RESEND_API_KEY and REMINDER_FROM before enabling email reminders. In-app reminders remain available.'
+            exit 1
+          fi
+      - run: npm ci
+      - uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_ZAKAT_APP_36C58 }}
+          project_id: zakat-app-36c58
+      - name: Send verified-account reminders
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          REMINDER_FROM: ${{ secrets.REMINDER_FROM }}
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+        run: |
+          if [ "$DRY_RUN" = "true" ]; then
+            node scripts/monthly-reminders.cjs --dry-run
+          else
+            node scripts/monthly-reminders.cjs
+          fi

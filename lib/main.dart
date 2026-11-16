@@ -6,7 +6,9 @@ import 'core/theme.dart';
 import 'core/providers/auth_provider.dart';
 import 'core/providers/calculator_provider.dart';
 import 'core/providers/tracker_provider.dart';
+import 'core/providers/monthly_provider.dart';
 import 'ui/auth/login_screen.dart';
+import 'ui/auth/verify_email_screen.dart';
 import 'ui/home/home_screen.dart';
 
 void main() async {
@@ -40,18 +42,27 @@ class ZakatApp extends StatelessWidget {
         child: Consumer<AuthProvider>(
             builder: (context, auth, _) => KeyedSubtree(
                   // Disposes all account data and navigation when the Firebase UID changes.
-                  key: ValueKey(auth.user?.uid),
+                  key: ValueKey('${auth.user?.uid}:${auth.isVerified}'),
                   child: MultiProvider(
                       providers: [
                         ChangeNotifierProvider(
                             create: (_) => CalculatorProvider()),
                         ChangeNotifierProvider(
                             create: (_) => TrackerProvider()),
+                        ChangeNotifierProvider(
+                            create: (_) => MonthlyProvider()),
                       ],
                       child: MaterialApp(
-                          title: 'Zakat',
+                          title: 'Zakat Tracker',
                           debugShowCheckedModeBanner: false,
                           theme: AppTheme.light,
+                          builder: (context, child) => ColoredBox(
+                              color: const Color(0xFFEDEFE9),
+                              child: Center(
+                                  child: ConstrainedBox(
+                                      constraints:
+                                          const BoxConstraints(maxWidth: 1080),
+                                      child: child ?? const SizedBox()))),
                           home: const _AuthGate())),
                 )),
       );
@@ -68,6 +79,7 @@ class _AuthGate extends StatelessWidget {
       }
       return const LoginScreen();
     }
+    if (!auth.isVerified) return const VerifyEmailScreen();
     if (auth.profile == null) {
       return Scaffold(
           body: Center(

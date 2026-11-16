@@ -1,7 +1,9 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    function owner(uid) { return request.auth != null && request.auth.uid == uid; }
+    function owner(uid) {
+      return request.auth != null && request.auth.uid == uid && request.auth.token.email_verified == true;
+    }
     function nonnegative(value) { return value is number && value >= 0 && value < 1000000000000000000; }
     function validRecord(uid) {
       let d = request.resource.data;
@@ -16,19 +18,71 @@ service cloud.firestore {
         && d.nisabMet is bool && d.isSubmitted is bool
         && (!d.isSubmitted || (d.goldPricePerGram24k > 0 && d.nisabThreshold > 0 && d.submittedAt is int));
     }
+    function linkedRecord(uid, recordId, currency) {
+      let r = get(/databases/$(database)/documents/users/$(uid)/zakatRecords/$(recordId));
+      return r.data.isSubmitted == true && r.data.currency == currency;
+    }
     function validPayment(uid) {
       let d = request.resource.data;
-      let record = get(/databases/$(database)/documents/users/$(uid)/zakatRecords/$(d.zakatRecordId));
+      let r = get(/databases/$(database)/documents/users/$(uid)/zakatRecords/$(d.zakatRecordId));
       return d.userId == uid && d.zakatRecordId is string
         && d.amount is number && d.amount > 0 && d.amount < 1000000000000000000
         && d.name is string && d.recipient is string && d.date is int
         && d.date <= request.time.toMillis() && d.createdAt is int
-        && record.data.isSubmitted == true && record.data.currency is string;
+        && r.data.isSubmitted == true && r.data.currency is string;
+    }
+    function monthlyLedgerMatches(uid, id, data) {
+      let receipt = getAfter(/databases/$(database)/documents/users/$(uid)/monthlyPayments/$(data.monthlyPaymentId));
+      return id == 'monthly_' + data.monthlyPaymentId && receipt.data.kind == 'zakat'
+        && receipt.data.userId == uid && receipt.data.zakatRecordId == data.zakatRecordId
+        && receipt.data.amount == data.amount && receipt.data.recipient == data.recipient
+        && receipt.data.paidAt == data.date && receipt.data.createdAt == data.createdAt;
+    }
+    function validPlan(uid) {
+      let d = request.resource.data;
+      return d.userId == uid && d.recipient is string && d.recipient.size() > 0 && d.recipient.size() <= 120
+        && d.amount is number && d.amount > 0 && d.amount < 1000000000000000
+        && d.currency is string && d.currency.matches('^[A-Z]{3}$')
+        && d.kind in ['sadaqah', 'zakat'] && d.active is bool && d.createdAt is int
+        && d.reminderDay is int && d.reminderDay >= 1 && d.reminderDay <= 31
+        && d.startMonth is string && d.startMonth.matches('^[0-9]{4}-(0[1-9]|1[0-2])$')
+        && d.zakatRecordId is string
+        && (d.kind == 'sadaqah' ? d.zakatRecordId == '' : linkedRecord(uid, d.zakatRecordId, d.currency));
+    }
+    function receiptAndLedgerMatch(uid, id) {
+      let d = request.resource.data;
+      let ledger = getAfter(/databases/$(database)/documents/users/$(uid)/payments/$("monthly_" + id));
+      return ledger.data.source == 'monthly' && ledger.data.monthlyPaymentId == id
+        && ledger.data.userId == uid && ledger.data.zakatRecordId == d.zakatRecordId
+        && ledger.data.amount == d.amount && ledger.data.recipient == d.recipient
+        && ledger.data.date == d.paidAt && ledger.data.createdAt == d.createdAt;
+    }
+    function validReceipt(uid, id) {
+      let d = request.resource.data;
+      let plan = get(/databases/$(database)/documents/users/$(uid)/monthlyPlans/$(d.planId));
+      return d.userId == uid && d.planId is string && plan.data.userId == uid
+        && d.month is string && d.month.matches('^[0-9]{4}-(0[1-9]|1[0-2])$')
+        && id == d.planId + '_' + d.month
+        && d.amount is number && d.amount > 0 && d.amount < 1000000000000000
+        && d.recipient is string && d.recipient.size() > 0 && d.recipient.size() <= 120
+        && d.currency is string && d.currency.matches('^[A-Z]{3}$')
+        && d.paidAt is int && d.paidAt <= request.time.toMillis() && d.createdAt is int
+        && d.kind in ['sadaqah', 'zakat'] && d.zakatRecordId is string
+        && (d.kind == 'zakat'
+          ? linkedRecord(uid, d.zakatRecordId, d.currency) && receiptAndLedgerMatch(uid, id)
+          : d.zakatRecordId == '' && !existsAfter(/databases/$(database)/documents/users/$(uid)/payments/$("monthly_" + id)));
+    }
+    match /appConfig/reminders {
+      allow read: if true;
+      allow write: if false;
     }
     match /users/{uid} {
       allow read: if owner(uid);
       allow create, update: if owner(uid) && request.resource.data.displayName is string
-        && request.resource.data.currency is string && request.resource.data.currency.matches('^[A-Z]{3}$');
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.currency is string && request.resource.data.currency.matches('^[A-Z]{3}$')
+        && request.resource.data.get('monthlyDefaultKind', 'sadaqah') in ['sadaqah', 'zakat']
+        && request.resource.data.get('monthlyEmailReminders', false) is bool;
       allow delete: if owner(uid);
       match /zakatRecords/{id} {
         allow read: if owner(uid);
@@ -38,14 +92,38 @@ service cloud.firestore {
           && request.resource.data.createdAt == resource.data.createdAt;
         allow delete: if owner(uid) && !resource.data.isSubmitted;
       }
+      match /monthlyPlans/{id} {
+        allow read: if owner(uid);
+        allow create: if owner(uid) && validPlan(uid);
+        allow update: if owner(uid) && validPlan(uid) && request.resource.data.createdAt == resource.data.createdAt;
+        // Archive plans so payment history always has its original recipient reference.
+        allow delete: if false;
+      }
+      match /monthlyPayments/{id} {
+        allow read: if owner(uid);
+        allow create: if owner(uid) && validReceipt(uid, id);
+        allow update: if owner(uid) && validReceipt(uid, id)
+          && request.resource.data.planId == resource.data.planId && request.resource.data.month == resource.data.month
+          && request.resource.data.createdAt == resource.data.createdAt;
+        allow delete: if owner(uid) && (resource.data.kind != 'zakat'
+          || !existsAfter(/databases/$(database)/documents/users/$(uid)/payments/$("monthly_" + id)));
+      }
+      match /reminderDeliveries/{id} {
+        allow read: if owner(uid);
+        allow write: if false;
+      }
       match /payments/{id} {
         allow read: if owner(uid);
-        allow create: if owner(uid) && validPayment(uid);
-        allow update: if owner(uid) && validPayment(uid)
-          && request.resource.data.zakatRecordId == resource.data.zakatRecordId
-          && request.resource.data.userId == resource.data.userId
-          && request.resource.data.createdAt == resource.data.createdAt;
-        allow delete: if owner(uid);
+        allow create: if owner(uid) && validPayment(uid)
+          && (request.resource.data.get('source', 'manual') == 'monthly'
+            ? monthlyLedgerMatches(uid, id, request.resource.data)
+            : request.resource.data.get('source', 'manual') == 'manual' && !id.matches('^monthly_.*') && !('monthlyPaymentId' in request.resource.data));
+        allow update: if owner(uid) && validPayment(uid) && request.resource.data.createdAt == resource.data.createdAt
+          && (resource.data.get('source', 'manual') == 'monthly'
+            ? request.resource.data.source == 'monthly' && monthlyLedgerMatches(uid, id, request.resource.data)
+            : request.resource.data.get('source', 'manual') == 'manual' && request.resource.data.zakatRecordId == resource.data.zakatRecordId && !('monthlyPaymentId' in request.resource.data));
+        allow delete: if owner(uid) && (resource.data.get('source', 'manual') != 'monthly'
+          || !existsAfter(/databases/$(database)/documents/users/$(uid)/monthlyPayments/$(resource.data.monthlyPaymentId)));
       }
     }
   }
