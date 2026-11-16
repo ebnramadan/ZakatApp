@@ -51,16 +51,16 @@ class _AddPaymentSheetState extends State<AddPaymentSheet> {
   Future<void> _pickDate() async {
     final picked = await showDatePicker(
       context: context,
-      initialDate: _date,
+      initialDate: _date.isAfter(DateTime.now()) ? DateTime.now() : _date,
       firstDate: DateTime(2000),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
+      lastDate: DateTime.now(),
     );
     if (picked != null) setState(() => _date = picked);
   }
 
   Future<void> _save() async {
     final amount = double.tryParse(_amountCtrl.text);
-    if (amount == null || amount <= 0) {
+    if (amount == null || !amount.isFinite || amount <= 0) {
       ScaffoldMessenger.of(context)
           .showSnackBar(const SnackBar(content: Text('Enter a valid amount')));
       return;
@@ -91,15 +91,20 @@ class _AddPaymentSheetState extends State<AddPaymentSheet> {
       );
     }
 
+    if (!mounted) return;
     setState(() => _saving = false);
-    if (context.mounted) Navigator.of(context).pop();
+    if (tracker.error == null) {
+      Navigator.of(context).pop();
+    } else {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(tracker.error!)));
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final tracker = context.watch<TrackerProvider>();
-    final auth = context.read<AuthProvider>();
-    final currency = auth.profile!.currency;
+    final currency = tracker.selectedRecord?.currency ?? 'UNKNOWN';
     final dateFmt = DateFormat('d MMMM yyyy');
 
     return Padding(
@@ -116,7 +121,8 @@ class _AddPaymentSheetState extends State<AddPaymentSheet> {
           Row(
             children: [
               Text(_isEdit ? 'Edit Payment' : 'Add Payment',
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.bold)),
               const Spacer(),
               IconButton(
                   icon: const Icon(Icons.close),
@@ -130,35 +136,31 @@ class _AddPaymentSheetState extends State<AddPaymentSheet> {
             controller: _amountCtrl,
             autofocus: !_isEdit,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))],
+            inputFormatters: [
+              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))
+            ],
             decoration: InputDecoration(
               labelText: 'Amount',
               prefixText: '${currencySymbol(currency)} ',
-              prefixStyle: const TextStyle(color: kPrimaryGreen, fontWeight: FontWeight.bold),
+              prefixStyle: const TextStyle(
+                  color: kPrimaryGreen, fontWeight: FontWeight.bold),
             ),
           ),
           const SizedBox(height: 12),
 
-          // Name with autocomplete
-          Autocomplete<String>(
-            initialValue: TextEditingValue(text: _nameCtrl.text),
-            optionsBuilder: (v) {
-              if (v.text.isEmpty) return const [];
-              return tracker.payeeNames.where(
-                  (n) => n.toLowerCase().contains(v.text.toLowerCase()));
-            },
-            onSelected: (s) => _nameCtrl.text = s,
-            fieldViewBuilder: (ctx, ctrl, focusNode, onSubmit) {
-              ctrl.text = _nameCtrl.text;
-              ctrl.addListener(() => _nameCtrl.text = ctrl.text);
-              return TextField(
-                controller: ctrl,
-                focusNode: focusNode,
-                decoration: const InputDecoration(labelText: 'Name (optional)'),
-                onSubmitted: (_) => onSubmit(),
-              );
-            },
-          ),
+          TextField(
+              controller: _nameCtrl,
+              decoration:
+                  const InputDecoration(labelText: 'Payment name (optional)')),
+          if (tracker.payeeNames.isNotEmpty)
+            Wrap(
+                spacing: 6,
+                children: tracker.payeeNames
+                    .take(5)
+                    .map((name) => ActionChip(
+                        label: Text(name),
+                        onPressed: () => _nameCtrl.text = name))
+                    .toList()),
           const SizedBox(height: 12),
 
           // Date
@@ -177,7 +179,8 @@ class _AddPaymentSheetState extends State<AddPaymentSheet> {
           // Recipient
           TextField(
             controller: _recipientCtrl,
-            decoration: const InputDecoration(labelText: 'Recipient (optional)'),
+            decoration:
+                const InputDecoration(labelText: 'Recipient (optional)'),
           ),
           const SizedBox(height: 20),
 
@@ -187,7 +190,8 @@ class _AddPaymentSheetState extends State<AddPaymentSheet> {
                 ? const SizedBox(
                     height: 20,
                     width: 20,
-                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                    child: CircularProgressIndicator(
+                        color: Colors.white, strokeWidth: 2))
                 : Text(_isEdit ? 'Save Changes' : 'Add Payment'),
           ),
         ],

@@ -8,6 +8,7 @@ import '../../core/providers/auth_provider.dart';
 import '../../core/providers/calculator_provider.dart';
 import '../../core/providers/tracker_provider.dart';
 import 'add_payment_sheet.dart';
+import '../calculator/entry_mode_screen.dart';
 
 class TrackerScreen extends StatefulWidget {
   const TrackerScreen({super.key});
@@ -23,7 +24,15 @@ class _TrackerScreenState extends State<TrackerScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _autoSelect());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _autoSelect();
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
   }
 
   void _autoSelect() {
@@ -51,8 +60,13 @@ class _TrackerScreenState extends State<TrackerScreen> {
     final auth = context.read<AuthProvider>();
     final calc = context.watch<CalculatorProvider>();
     final tracker = context.watch<TrackerProvider>();
-    final currency = auth.profile!.currency;
+    final currency = tracker.selectedRecord?.currency ?? 'UNKNOWN';
     final submitted = calc.records.where((r) => r.isSubmitted).toList();
+    if (tracker.selectedRecord == null && submitted.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _autoSelect();
+      });
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -62,14 +76,28 @@ class _TrackerScreenState extends State<TrackerScreen> {
             IconButton(
               icon: const Icon(Icons.swap_vert),
               tooltip: 'Switch record',
-              onPressed: () => _showRecordPicker(context, submitted, auth.user!.uid),
+              onPressed: () =>
+                  _showRecordPicker(context, submitted, auth.user!.uid),
             ),
         ],
       ),
       body: tracker.selectedRecord == null
-          ? _EmptyState(onSetup: () => Navigator.of(context).pop())
+          ? _EmptyState(onSetup: () {
+              Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const EntryModeScreen()));
+            })
           : Column(
               children: [
+                if (tracker.error != null)
+                  TextButton(
+                      onPressed: tracker.reload,
+                      child: Text('${tracker.error!} Tap to retry.',
+                          style: const TextStyle(color: Colors.red))),
+                if (tracker.selectedRecord!.currency == null)
+                  const Padding(
+                      padding: EdgeInsets.all(12),
+                      child: Text(
+                          'This older record has no saved currency. Amounts are shown without a currency; adding payments is disabled.')),
                 _Header(tracker: tracker, currency: currency),
                 const Divider(height: 1),
                 _SearchBar(
@@ -84,16 +112,19 @@ class _TrackerScreenState extends State<TrackerScreen> {
                       context: context,
                       isScrollControlled: true,
                       shape: const RoundedRectangleBorder(
-                          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+                          borderRadius:
+                              BorderRadius.vertical(top: Radius.circular(20))),
                       builder: (_) => AddPaymentSheet(existing: p),
                     ),
-                    onDelete: (p) => _confirmDelete(context, p, auth.user!.uid, tracker),
+                    onDelete: (p) =>
+                        _confirmDelete(context, p, auth.user!.uid, tracker),
                   ),
                 ),
               ],
             ),
-      floatingActionButton: tracker.selectedRecord != null
+      floatingActionButton: tracker.selectedRecord?.currency != null
           ? FloatingActionButton(
+              heroTag: 'add-payment',
               onPressed: _openAddSheet,
               child: const Icon(Icons.add),
             )
@@ -102,7 +133,8 @@ class _TrackerScreenState extends State<TrackerScreen> {
     );
   }
 
-  void _showRecordPicker(BuildContext ctx, List<ZakatRecord> records, String uid) {
+  void _showRecordPicker(
+      BuildContext ctx, List<ZakatRecord> records, String uid) {
     final tracker = ctx.read<TrackerProvider>();
     showModalBottomSheet(
       context: ctx,
@@ -114,7 +146,8 @@ class _TrackerScreenState extends State<TrackerScreen> {
           const SizedBox(height: 12),
           ...records.map((r) => ListTile(
                 title: Text(r.name),
-                subtitle: Text(DateFormat('d MMM yyyy').format(r.hawlStartDate)),
+                subtitle:
+                    Text(DateFormat('d MMM yyyy').format(r.hawlStartDate)),
                 trailing: tracker.selectedRecord?.id == r.id
                     ? const Icon(Icons.check, color: kPrimaryGreen)
                     : null,
@@ -137,7 +170,8 @@ class _TrackerScreenState extends State<TrackerScreen> {
         content: Text('Delete "${p.name}"? This cannot be undone.'),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel')),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
@@ -161,7 +195,8 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fmt = NumberFormat.currency(symbol: currencySymbol(currency), decimalDigits: 2);
+    final fmt = NumberFormat.currency(
+        symbol: currencySymbol(currency), decimalDigits: 2);
     final r = tracker.selectedRecord!;
     final pct = tracker.totalDue > 0
         ? (tracker.totalPaid / tracker.totalDue).clamp(0.0, 1.0)
@@ -177,16 +212,21 @@ class _Header extends StatelessWidget {
             children: [
               Text(r.name,
                   style: const TextStyle(
-                      color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold)),
               const Spacer(),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: Colors.white24,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  '${r.daysLeftInHawl} days left',
+                  r.hawlComplete
+                      ? 'Hawl complete'
+                      : '${r.daysLeftInHawl} days left',
                   style: const TextStyle(color: Colors.white, fontSize: 12),
                 ),
               ),
@@ -197,7 +237,9 @@ class _Header extends StatelessWidget {
             children: [
               _StatColumn(label: 'Paid', value: fmt.format(tracker.totalPaid)),
               const SizedBox(width: 24),
-              _StatColumn(label: 'Due', value: fmt.format(tracker.totalDue)),
+              _StatColumn(
+                  label: r.hawlComplete ? 'Due' : 'Estimate',
+                  value: fmt.format(tracker.totalDue)),
               const SizedBox(width: 24),
               _StatColumn(
                   label: 'Remaining',
@@ -231,14 +273,16 @@ class _StatColumn extends StatelessWidget {
   final String value;
   final bool highlight;
 
-  const _StatColumn({required this.label, required this.value, this.highlight = false});
+  const _StatColumn(
+      {required this.label, required this.value, this.highlight = false});
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(color: Colors.white60, fontSize: 11)),
+        Text(label,
+            style: const TextStyle(color: Colors.white60, fontSize: 11)),
         const SizedBox(height: 2),
         Text(
           value,
@@ -281,7 +325,8 @@ class _SearchBar extends StatelessWidget {
                 )
               : null,
           isDense: true,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         ),
       ),
     );
@@ -311,7 +356,8 @@ class _PaymentList extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.volunteer_activism_outlined, size: 48, color: Colors.grey),
+            Icon(Icons.volunteer_activism_outlined,
+                size: 48, color: Colors.grey),
             SizedBox(height: 12),
             Text('No payments yet', style: TextStyle(color: Colors.grey)),
             SizedBox(height: 4),
@@ -322,7 +368,8 @@ class _PaymentList extends StatelessWidget {
       );
     }
 
-    final fmt = NumberFormat.currency(symbol: currencySymbol(currency), decimalDigits: 2);
+    final fmt = NumberFormat.currency(
+        symbol: currencySymbol(currency), decimalDigits: 2);
     final dateFmt = DateFormat('d MMM yyyy');
 
     return ListView.builder(
@@ -347,7 +394,8 @@ class _PaymentList extends StatelessWidget {
             child: ListTile(
               leading: CircleAvatar(
                 backgroundColor: kGold.withOpacity(0.15),
-                child: const Icon(Icons.volunteer_activism, color: kGold, size: 20),
+                child: const Icon(Icons.volunteer_activism,
+                    color: kGold, size: 20),
               ),
               title: Text(p.name.isEmpty ? 'Payment' : p.name,
                   style: const TextStyle(fontWeight: FontWeight.w600)),
@@ -365,14 +413,18 @@ class _PaymentList extends StatelessWidget {
                           fontSize: 14)),
                   const SizedBox(width: 4),
                   PopupMenuButton<String>(
-                    icon: const Icon(Icons.more_vert, size: 18, color: Colors.grey),
+                    icon: const Icon(Icons.more_vert,
+                        size: 18, color: Colors.grey),
                     onSelected: (v) {
                       if (v == 'edit') onEdit(p);
                       if (v == 'delete') onDelete(p);
                     },
                     itemBuilder: (_) => const [
                       PopupMenuItem(value: 'edit', child: Text('Edit')),
-                      PopupMenuItem(value: 'delete', child: Text('Delete', style: TextStyle(color: Colors.red))),
+                      PopupMenuItem(
+                          value: 'delete',
+                          child: Text('Delete',
+                              style: TextStyle(color: Colors.red))),
                     ],
                   ),
                 ],
@@ -403,7 +455,10 @@ class _EmptyState extends StatelessWidget {
             const Icon(Icons.calculate_outlined, size: 64, color: Colors.grey),
             const SizedBox(height: 16),
             const Text('No Zakat record yet',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey)),
+                style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey)),
             const SizedBox(height: 8),
             const Text(
               'Complete a Zakat calculation first to start tracking payments.',

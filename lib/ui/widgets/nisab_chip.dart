@@ -16,7 +16,8 @@ class NisabChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fmt = NumberFormat.currency(symbol: currencySymbol(currency), decimalDigits: 2);
+    final fmt = NumberFormat.currency(
+        symbol: currencySymbol(currency), decimalDigits: 2);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
@@ -32,7 +33,9 @@ class NisabChip extends StatelessWidget {
           Text(
             'Nisab: ',
             style: TextStyle(
-                fontSize: 12, color: Colors.brown.shade700, fontWeight: FontWeight.w500),
+                fontSize: 12,
+                color: Colors.brown.shade700,
+                fontWeight: FontWeight.w500),
           ),
           if (isLoading)
             const SizedBox(
@@ -44,7 +47,9 @@ class NisabChip extends StatelessWidget {
             Text(
               fmt.format(nisabValue),
               style: const TextStyle(
-                  fontSize: 12, color: kPrimaryGreen, fontWeight: FontWeight.bold),
+                  fontSize: 12,
+                  color: kPrimaryGreen,
+                  fontWeight: FontWeight.bold),
             ),
         ],
       ),

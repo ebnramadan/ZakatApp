@@ -21,19 +21,23 @@ class EntryModeScreen extends StatelessWidget {
             const SizedBox(height: 24),
             const Text(
               'How would you like to enter your assets?',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: kPrimaryGreen),
+              style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: kPrimaryGreen),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
             const Text(
-              'You can change this any time.',
+              'Both modes use the same calculation.',
               style: TextStyle(color: Colors.grey),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 40),
             _ModeCard(
               title: 'Guided Wizard',
-              subtitle: 'Step-by-step walkthrough\nRecommended for first-timers',
+              subtitle:
+                  'Step-by-step walkthrough\nRecommended for first-timers',
               icon: Icons.auto_awesome,
               onTap: () => _start(context, wizard: true),
             ),
@@ -94,17 +98,19 @@ class _ModeCard extends StatelessWidget {
                 child: Icon(icon, color: kPrimaryGreen, size: 28),
               ),
               const SizedBox(width: 20),
-              Column(
+              Expanded(
+                  child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(title,
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      style: const TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 4),
                   Text(subtitle,
-                      style: const TextStyle(fontSize: 13, color: Colors.grey, height: 1.4)),
+                      style: const TextStyle(
+                          fontSize: 13, color: Colors.grey, height: 1.4)),
                 ],
-              ),
-              const Spacer(),
+              )),
               const Icon(Icons.chevron_right, color: Colors.grey),
             ],
           ),

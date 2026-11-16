@@ -6,17 +6,13 @@
 .pub-cache/
 .pub/
 build/
-*.lock
 
 # Dart
 .dart_tool/
 
 # Android
-**/android/**/gradle-wrapper.jar
 **/android/.gradle
 **/android/captures/
-**/android/gradlew
-**/android/gradlew.bat
 **/android/local.properties
 **/android/**/GeneratedPluginRegistrant.java
 **/android/key.properties
@@ -55,3 +51,10 @@ GoogleService-Info.plist
 *.env
 .DS_Store
 Thumbs.db
+
+.idea/
+*.iml
+node_modules/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log

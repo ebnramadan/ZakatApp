@@ -1,27 +1,51 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Users: only the authenticated user can read/write their own data
-    match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-
-      // Zakat records: scoped to owner
-      match /zakatRecords/{recordId} {
-        allow read: if request.auth != null && request.auth.uid == userId;
-        allow create: if request.auth != null && request.auth.uid == userId;
-        // Only allow updates when the record is NOT yet submitted (locked)
-        allow update: if request.auth != null
-          && request.auth.uid == userId
-          && (!resource.data.isSubmitted || request.resource.data.isSubmitted == true);
-        allow delete: if request.auth != null
-          && request.auth.uid == userId
-          && !resource.data.isSubmitted;
+    function owner(uid) { return request.auth != null && request.auth.uid == uid; }
+    function nonnegative(value) { return value is number && value >= 0 && value < 1000000000000000000; }
+    function validRecord(uid) {
+      let d = request.resource.data;
+      return d.userId == uid && d.name is string && d.name.size() > 0 && d.name.size() <= 200
+        && d.currency is string && d.currency.matches('^[A-Z]{3}$')
+        && d.hawlStartDate is int && d.hawlStartDate <= request.time.toMillis()
+        && d.isHijriCalendar is bool && d.createdAt is int
+        && d.foreignCash is list && d.goldEntries is list
+        && d.foreignCash.size() <= 100 && d.goldEntries.size() <= 100
+        && nonnegative(d.cashLocal) && nonnegative(d.goldPricePerGram24k)
+        && nonnegative(d.totalWealth) && nonnegative(d.nisabThreshold) && nonnegative(d.zakatDue)
+        && d.nisabMet is bool && d.isSubmitted is bool
+        && (!d.isSubmitted || (d.goldPricePerGram24k > 0 && d.nisabThreshold > 0 && d.submittedAt is int));
+    }
+    function validPayment(uid) {
+      let d = request.resource.data;
+      let record = get(/databases/$(database)/documents/users/$(uid)/zakatRecords/$(d.zakatRecordId));
+      return d.userId == uid && d.zakatRecordId is string
+        && d.amount is number && d.amount > 0 && d.amount < 1000000000000000000
+        && d.name is string && d.recipient is string && d.date is int
+        && d.date <= request.time.toMillis() && d.createdAt is int
+        && record.data.isSubmitted == true && record.data.currency is string;
+    }
+    match /users/{uid} {
+      allow read: if owner(uid);
+      allow create, update: if owner(uid) && request.resource.data.displayName is string
+        && request.resource.data.currency is string && request.resource.data.currency.matches('^[A-Z]{3}$');
+      allow delete: if owner(uid);
+      match /zakatRecords/{id} {
+        allow read: if owner(uid);
+        allow create: if owner(uid) && validRecord(uid);
+        allow update: if owner(uid) && !resource.data.isSubmitted && validRecord(uid)
+          && request.resource.data.userId == resource.data.userId
+          && request.resource.data.createdAt == resource.data.createdAt;
+        allow delete: if owner(uid) && !resource.data.isSubmitted;
       }
-
-      // Payments: scoped to owner
-      match /payments/{paymentId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+      match /payments/{id} {
+        allow read: if owner(uid);
+        allow create: if owner(uid) && validPayment(uid);
+        allow update: if owner(uid) && validPayment(uid)
+          && request.resource.data.zakatRecordId == resource.data.zakatRecordId
+          && request.resource.data.userId == resource.data.userId
+          && request.resource.data.createdAt == resource.data.createdAt;
+        allow delete: if owner(uid);
       }
     }
   }

@@ -4,8 +4,8 @@ import 'package:intl/intl.dart';
 import '../../core/constants.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/providers/calculator_provider.dart';
-import '../../core/models/zakat_record.dart';
-import '../tracker/tracker_screen.dart';
+import '../../core/providers/tracker_provider.dart';
+import '../home/home_screen.dart';
 
 class ResultsScreen extends StatelessWidget {
   const ResultsScreen({super.key});
@@ -14,14 +14,15 @@ class ResultsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final calc = context.watch<CalculatorProvider>();
     final auth = context.read<AuthProvider>();
-    final currency = auth.profile!.currency;
+    final currency = calc.draft?.currency ?? 'USD';
     final d = calc.draft;
 
     if (d == null) {
       return const Scaffold(body: Center(child: Text('No record found')));
     }
 
-    final fmt = NumberFormat.currency(symbol: currencySymbol(currency), decimalDigits: 2);
+    final fmt = NumberFormat.currency(
+        symbol: currencySymbol(currency), decimalDigits: 2);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Zakat Summary')),
@@ -29,23 +30,25 @@ class ResultsScreen extends StatelessWidget {
         padding: const EdgeInsets.all(20),
         children: [
           // Nisab status banner
-          _NisabBanner(met: d.nisabMet),
+          _NisabBanner(met: d.nisabMet, matured: d.hawlComplete),
           const SizedBox(height: 20),
 
           // Asset breakdown
           _Card(
             title: 'Asset Breakdown',
             children: [
-              _Row('Cash (${currency})', fmt.format(d.cashLocal)),
+              _Row('Cash ($currency)', fmt.format(d.cashLocal)),
               ...d.foreignCash.map((e) => _Row(
                     'Cash (${e.currency})',
                     fmt.format(e.localValue),
-                    sub: '${e.amount.toStringAsFixed(2)} ${e.currency} × ${e.exchangeRate.toStringAsFixed(4)}',
+                    sub:
+                        '${e.amount.toStringAsFixed(2)} ${e.currency} × ${e.exchangeRate.toStringAsFixed(4)}',
                   )),
               ...d.goldEntries.map((e) => _Row(
                     'Gold ${e.carat}K (${e.grams}g)',
                     fmt.format(e.localValue),
-                    sub: '${(e.pricePerGram24k * e.purity).toStringAsFixed(2)}/g',
+                    sub:
+                        '${(e.pricePerGram24k * e.purity).toStringAsFixed(2)}/g',
                   )),
               const Divider(),
               _Row('Total Wealth', fmt.format(d.totalWealth), bold: true),
@@ -63,8 +66,8 @@ class ResultsScreen extends StatelessWidget {
                   valueColor: d.nisabMet ? Colors.green : Colors.orange),
               const Divider(),
               _Row(
-                'Zakat Due (2.5%)',
-                fmt.format(d.zakatDue),
+                d.hawlComplete ? 'Zakat Due (2.5%)' : 'Estimated Zakat (2.5%)',
+                fmt.format(d.estimatedZakat),
                 bold: true,
                 valueColor: kPrimaryGreen,
               ),
@@ -72,12 +75,18 @@ class ResultsScreen extends StatelessWidget {
           ),
 
           const SizedBox(height: 24),
+          if (!d.hawlComplete)
+            const Text(
+                'Your lunar Hawl has not completed. This estimate is not currently due. Payments recorded now are advance payments.'),
+          const Text(
+              'This calculation assumes your wealth remained eligible throughout the Hawl. Cash and gold only; no debt deductions.'),
 
           if (calc.error != null)
             Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: Text(calc.error!,
-                  style: const TextStyle(color: Colors.red), textAlign: TextAlign.center),
+                  style: const TextStyle(color: Colors.red),
+                  textAlign: TextAlign.center),
             ),
 
           if (!d.isSubmitted) ...[
@@ -85,12 +94,15 @@ class ResultsScreen extends StatelessWidget {
               onPressed: calc.loading
                   ? null
                   : () async {
-                      await calc.submitDraft(auth.user!.uid);
-                      if (context.mounted && calc.error == null) {
-                        // Navigate to tracker for the just-submitted record
+                      final saved = await calc.submitDraft(auth.user!.uid);
+                      if (context.mounted && saved != null) {
+                        context
+                            .read<TrackerProvider>()
+                            .selectRecord(auth.user!.uid, saved);
                         Navigator.of(context).pushAndRemoveUntil(
-                          MaterialPageRoute(builder: (_) => const TrackerScreen()),
-                          (r) => r.isFirst,
+                          MaterialPageRoute(
+                              builder: (_) => const HomeScreen(initialTab: 1)),
+                          (_) => false,
                         );
                       }
                     },
@@ -99,7 +111,8 @@ class ResultsScreen extends StatelessWidget {
                   ? const SizedBox(
                       height: 20,
                       width: 20,
-                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                      child: CircularProgressIndicator(
+                          color: Colors.white, strokeWidth: 2))
                   : const Text('Confirm & Submit'),
             ),
             const SizedBox(height: 10),
@@ -116,13 +129,14 @@ class ResultsScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(color: Colors.green.shade200),
               ),
-              child: Row(
+              child: const Row(
                 children: [
-                  const Icon(Icons.lock, color: Colors.green),
-                  const SizedBox(width: 10),
-                  const Expanded(
+                  Icon(Icons.lock, color: Colors.green),
+                  SizedBox(width: 10),
+                  Expanded(
                     child: Text('Submitted and locked.',
-                        style: TextStyle(color: Colors.green, fontWeight: FontWeight.w600)),
+                        style: TextStyle(
+                            color: Colors.green, fontWeight: FontWeight.w600)),
                   ),
                 ],
               ),
@@ -136,7 +150,8 @@ class ResultsScreen extends StatelessWidget {
 
 class _NisabBanner extends StatelessWidget {
   final bool met;
-  const _NisabBanner({required this.met});
+  final bool matured;
+  const _NisabBanner({required this.met, required this.matured});
 
   @override
   Widget build(BuildContext context) {
@@ -158,11 +173,15 @@ class _NisabBanner extends StatelessWidget {
                 Text(
                   met ? 'Nisab Threshold Met' : 'Below Nisab Threshold',
                   style: const TextStyle(
-                      color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold),
                 ),
                 Text(
                   met
-                      ? 'Zakat is due on your wealth.'
+                      ? (matured
+                          ? 'Zakat is due on your wealth.'
+                          : 'Nisab met; Hawl is not yet complete.')
                       : 'Your wealth is below Nisab. Zakat is not obligatory this year.',
                   style: const TextStyle(color: Colors.white70, fontSize: 13),
                 ),
@@ -191,7 +210,9 @@ class _Card extends StatelessWidget {
           children: [
             Text(title,
                 style: const TextStyle(
-                    fontSize: 14, fontWeight: FontWeight.bold, color: kPrimaryGreen)),
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: kPrimaryGreen)),
             const SizedBox(height: 12),
             ...children,
           ],
@@ -208,7 +229,8 @@ class _Row extends StatelessWidget {
   final bool bold;
   final Color? valueColor;
 
-  const _Row(this.label, this.value, {this.sub, this.bold = false, this.valueColor});
+  const _Row(this.label, this.value,
+      {this.sub, this.bold = false, this.valueColor});
 
   @override
   Widget build(BuildContext context) {
@@ -227,7 +249,8 @@ class _Row extends StatelessWidget {
                         fontWeight: bold ? FontWeight.bold : FontWeight.normal,
                         color: Colors.black87)),
                 if (sub != null)
-                  Text(sub!, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                  Text(sub!,
+                      style: const TextStyle(fontSize: 11, color: Colors.grey)),
               ],
             ),
           ),

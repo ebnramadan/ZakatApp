@@ -6,8 +6,12 @@ import '../models/zakat_record.dart';
 import '../services/firestore_service.dart';
 
 class TrackerProvider extends ChangeNotifier {
-  final _fs = FirestoreService();
-  final _uuid = const Uuid();
+  final FirestoreService _fs;
+  TrackerProvider({FirestoreService? store})
+      : _fs = store ?? FirestoreService();
+  bool _disposed = false;
+  String? _pendingPaymentId;
+  int _selection = 0;
 
   ZakatRecord? _selectedRecord;
   List<Payment> _payments = [];
@@ -23,24 +27,48 @@ class TrackerProvider extends ChangeNotifier {
   String? get error => _error;
 
   double get totalPaid => _payments.fold(0.0, (s, p) => s + p.amount);
-  double get totalDue => _selectedRecord?.zakatDue ?? 0;
+  double get totalDue => _selectedRecord?.estimatedZakat ?? 0;
   double get remaining => (totalDue - totalPaid).clamp(0.0, double.infinity);
 
   void selectRecord(String uid, ZakatRecord record) {
     if (_selectedRecord?.id == record.id) return;
+    _selection++;
+    _pendingPaymentId = null;
+    _payments = [];
+    _payeeNames = [];
+    _error = null;
     _selectedRecord = record;
     _sub?.cancel();
+    final selection = _selection;
     _sub = _fs.paymentsStream(uid, record.id).listen((list) {
+      if (_disposed || selection != _selection) return;
       _payments = list;
-      notifyListeners();
+      _notify();
+    }, onError: (Object e) {
+      _error = 'Could not load payments. Check your connection.';
+      _notify();
     });
     _loadPayeeNames(uid);
-    notifyListeners();
+    _notify();
+  }
+
+  void reload() {
+    final record = _selectedRecord;
+    if (record == null) return;
+    _selectedRecord = null;
+    selectRecord(record.userId, record);
   }
 
   Future<void> _loadPayeeNames(String uid) async {
-    _payeeNames = await _fs.previousPayeeNames(uid);
-    notifyListeners();
+    final selection = _selection;
+    try {
+      final names = await _fs.previousPayeeNames(uid);
+      if (_disposed || selection != _selection) return;
+      _payeeNames = names;
+      _notify();
+    } catch (_) {
+      /* Suggestions are optional; payment success is independent. */
+    }
   }
 
   Future<void> addPayment({
@@ -50,12 +78,20 @@ class TrackerProvider extends ChangeNotifier {
     required DateTime date,
     required String recipient,
   }) async {
+    if (_loading) return;
     _loading = true;
     _error = null;
-    notifyListeners();
+    _notify();
     try {
+      if (!amount.isFinite ||
+          amount <= 0 ||
+          _selectedRecord?.currency == null ||
+          _selectedRecord!.userId != uid) {
+        throw const FormatException('Invalid payment');
+      }
+      _pendingPaymentId ??= const Uuid().v4();
       final payment = Payment(
-        id: '',
+        id: _pendingPaymentId!,
         zakatRecordId: _selectedRecord!.id,
         userId: uid,
         amount: amount,
@@ -65,21 +101,25 @@ class TrackerProvider extends ChangeNotifier {
         createdAt: DateTime.now(),
       );
       await _fs.addPayment(payment);
+      _pendingPaymentId = null;
       await _loadPayeeNames(uid);
     } catch (e) {
       _error = 'Failed to save payment.';
     }
     _loading = false;
-    notifyListeners();
+    _notify();
   }
 
   Future<void> updatePayment(Payment updated) async {
     _error = null;
     try {
+      if (!updated.amount.isFinite || updated.amount <= 0) {
+        throw const FormatException('Invalid amount');
+      }
       await _fs.updatePayment(updated);
     } catch (e) {
       _error = 'Failed to update payment.';
-      notifyListeners();
+      _notify();
     }
   }
 
@@ -89,7 +129,7 @@ class TrackerProvider extends ChangeNotifier {
       await _fs.deletePayment(uid, paymentId);
     } catch (e) {
       _error = 'Failed to delete payment.';
-      notifyListeners();
+      _notify();
     }
   }
 
@@ -105,11 +145,17 @@ class TrackerProvider extends ChangeNotifier {
 
   void clearError() {
     _error = null;
-    notifyListeners();
+    _notify();
+  }
+
+  void _notify() {
+    if (!_disposed) notifyListeners();
   }
 
   @override
   void dispose() {
+    _disposed = true;
+    _selection++;
     _sub?.cancel();
     super.dispose();
   }
