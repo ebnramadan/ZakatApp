@@ -94,6 +94,16 @@ class AuthService {
     await refreshUser();
   }
 
+  Future<void> linkGoogleAfterConfirmation() async {
+    final user = _auth.currentUser;
+    if (user == null || !user.emailVerified) {
+      throw StateError('Verify your account before connecting Google.');
+    }
+    await user.linkWithPopup(GoogleAuthProvider()
+      ..setCustomParameters({'prompt': 'select_account'}));
+    await refreshUser();
+  }
+
   Future<void> addPassword(String password) async {
     if (password.length < 10) {
       throw StateError('Use at least 10 characters for your password.');

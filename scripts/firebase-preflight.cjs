@@ -9,7 +9,7 @@ const fs = require('node:fs');
   const client = await new GoogleAuth({scopes:['https://www.googleapis.com/auth/cloud-platform']}).getClient();
   let incomplete = false;
   try {
-    const permissions=['firebaserules.rulesets.create','firebaserules.releases.create','firebaserules.releases.update','datastore.entities.get','datastore.entities.list','datastore.entities.create','datastore.entities.update','firebaseauth.users.get','firebaseauth.users.list'];
+    const permissions=['firebaserules.rulesets.create','firebaserules.releases.create','firebaserules.releases.update','datastore.entities.get','datastore.entities.list','datastore.entities.create','datastore.entities.update','firebaseauth.users.get'];
     const result=await client.request({url:`https://cloudresourcemanager.googleapis.com/v1/projects/${project}:testIamPermissions`,method:'POST',data:{permissions}});
     const present=new Set(result.data.permissions||[]);
     const missing=permissions.filter(p=>!present.has(p));
@@ -21,15 +21,15 @@ const fs = require('node:fs');
   try {await getAuth().listUsers(1);console.log('Firebase Auth read access: confirmed (no account data logged).');}
   catch(e){console.log('Firebase Auth read access unavailable:',e.code);incomplete=true;}
   try {
-    const sites=await client.request({url:`https://firebasehosting.googleapis.com/v1beta1/projects/${project}/sites`,params:{pageSize:100}});
+    const sites=await client.request({url:`https://firebasehosting.googleapis.com/v1beta1/projects/6510733442/sites`,params:{pageSize:100}});
     const owned=new Set((sites.data.sites||[]).map(s=>s.name.split('/').pop()));
     let chosen;
     for(const candidate of ['zakat-tracker','zakat-tracker-app','zakat-tracker-36c58']) {
       if(owned.has(candidate)){chosen=candidate;break;}
       try {
-        await client.request({url:`https://firebasehosting.googleapis.com/v1beta1/projects/${project}/sites`,method:'POST',params:{siteId:candidate},data:{appId:'1:6510733442:web:b87850da40e5cbdbebac9b'}});
+        await client.request({url:`https://firebasehosting.googleapis.com/v1beta1/projects/6510733442/sites`,method:'POST',params:{siteId:candidate},data:{}});
         chosen=candidate;break;
-      }catch(e){if([400,409].includes(e.response?.status)){console.log('Friendly name unavailable:',candidate);continue;}throw e;}
+      }catch(e){if([400,409].includes(e.response?.status)){console.log('Friendly name request rejected:',candidate,e.response?.status, e.response?.data?.error?.message || 'name unavailable');continue;}throw e;}
     }
     if(!chosen)throw new Error('No friendly name could be claimed');
     console.log('Selected free Hosting URL:',`https://${chosen}.web.app`);

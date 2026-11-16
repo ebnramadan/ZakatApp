@@ -18,6 +18,13 @@ class AuthProvider extends ChangeNotifier {
   bool _busy = false;
   String? _error;
   DateTime? _verificationSentAt;
+  DateTime? _passwordConfirmedAt;
+  String? _passwordConfirmedUid;
+  bool get hasRecentPasswordProof =>
+      _passwordConfirmedUid == _user?.uid &&
+      _passwordConfirmedAt != null &&
+      DateTime.now().difference(_passwordConfirmedAt!) <
+          const Duration(minutes: 2);
   bool get isVerified => _user?.emailVerified ?? false;
   bool get hasGoogle =>
       _user?.providerData.any((p) => p.providerId == 'google.com') ?? false;
@@ -121,6 +128,25 @@ class AuthProvider extends ChangeNotifier {
 
   Future<bool> linkGoogle(String password) =>
       _wrap(() => _auth.linkGoogle(password: password));
+  Future<bool> confirmPassword(String password) => _wrap(() async {
+        await _auth.reauthenticate(password: password);
+        _passwordConfirmedUid = _user!.uid;
+        _passwordConfirmedAt = DateTime.now();
+      });
+
+  Future<bool> connectGoogle() {
+    if (!hasRecentPasswordProof) {
+      _error =
+          'Please confirm your current password again before connecting Google.';
+      _notify();
+      return Future.value(false);
+    }
+    return _wrap(() async {
+      await _auth.linkGoogleAfterConfirmation();
+      _passwordConfirmedAt = null;
+    });
+  }
+
   Future<bool> addPassword(String password) =>
       _wrap(() => _auth.addPassword(password));
 

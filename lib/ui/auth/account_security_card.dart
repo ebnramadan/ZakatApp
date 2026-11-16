@@ -6,77 +6,14 @@ class AccountSecurityCard extends StatelessWidget {
   const AccountSecurityCard({super.key});
   Future<void> _change(BuildContext context,
       {required bool addPassword}) async {
-    final auth = context.read<AuthProvider>();
-    final password = TextEditingController();
-    final confirm = TextEditingController();
-    final form = GlobalKey<FormState>();
-    final approved = await showDialog<bool>(
+    final ok = await showDialog<bool>(
         context: context,
-        builder: (ctx) => AlertDialog(
-              title: Text(addPassword
-                  ? 'Add an email password'
-                  : 'Connect your Google account'),
-              content: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 420),
-                  child: Form(
-                      key: form,
-                      child: Column(mainAxisSize: MainAxisSize.min, children: [
-                        Text(addPassword
-                            ? 'You’ll confirm your Google account in a secure popup. The password will sign in to ${auth.user?.email}. Your records stay in this same account.'
-                            : 'Confirm your current password, then choose the Google account to connect. Both sign-in methods will open these same records.'),
-                        const SizedBox(height: 20),
-                        TextFormField(
-                            controller: password,
-                            obscureText: true,
-                            decoration: InputDecoration(
-                                labelText: addPassword
-                                    ? 'New password'
-                                    : 'Current password'),
-                            validator: (v) => v == null || v.isEmpty
-                                ? 'Enter your password'
-                                : addPassword && v.length < 10
-                                    ? 'Use at least 10 characters'
-                                    : null),
-                        if (addPassword) ...[
-                          const SizedBox(height: 12),
-                          TextFormField(
-                              controller: confirm,
-                              obscureText: true,
-                              decoration: const InputDecoration(
-                                  labelText: 'Confirm new password'),
-                              validator: (v) => v == password.text
-                                  ? null
-                                  : 'Passwords do not match')
-                        ],
-                      ]))),
-              actions: [
-                TextButton(
-                    onPressed: () => Navigator.pop(ctx, false),
-                    child: const Text('Cancel')),
-                TextButton(
-                    onPressed: () {
-                      if (form.currentState!.validate()) {
-                        Navigator.pop(ctx, true);
-                      }
-                    },
-                    child: const Text('Continue securely'))
-              ],
-            ));
-    final value = password.text;
-    // Dialog route disposal is asynchronous; dispose after its animation.
-    Future<void>.delayed(const Duration(seconds: 1), () {
-      password.dispose();
-      confirm.dispose();
-    });
-    if (approved != true || !context.mounted) return;
-    final ok = addPassword
-        ? await auth.addPassword(value)
-        : await auth.linkGoogle(value);
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(ok
-            ? 'Sign-in method connected. Your account and records are unchanged.'
-            : auth.error ?? 'Could not connect this sign-in method.')));
+        barrierDismissible: false,
+        builder: (_) => _SecurityDialog(addPassword: addPassword));
+    if (!context.mounted || ok != true) return;
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text(
+            'Sign-in method connected. Your account and records are unchanged.')));
   }
 
   @override
@@ -153,5 +90,122 @@ class AccountSecurityCard extends StatelessWidget {
                       style: TextStyle(
                           fontSize: 12, color: Colors.black54, height: 1.5)),
                 ])));
+  }
+}
+
+class _SecurityDialog extends StatefulWidget {
+  final bool addPassword;
+  const _SecurityDialog({required this.addPassword});
+  @override
+  State<_SecurityDialog> createState() => _SecurityDialogState();
+}
+
+class _SecurityDialogState extends State<_SecurityDialog> {
+  final _password = TextEditingController();
+  final _confirm = TextEditingController();
+  final _form = GlobalKey<FormState>();
+  bool _confirmed = false;
+  @override
+  void dispose() {
+    _password.dispose();
+    _confirm.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    final auth = context.read<AuthProvider>();
+    if (auth.busy) return;
+    if (!_confirmed && !_form.currentState!.validate()) return;
+    if (widget.addPassword) {
+      // This starts the Google popup directly from the user's button gesture.
+      final ok = await auth.addPassword(_password.text);
+      if (mounted && ok) Navigator.pop(context, true);
+    } else if (!_confirmed) {
+      final ok = await auth.confirmPassword(_password.text);
+      if (mounted && ok) setState(() => _confirmed = true);
+    } else {
+      // The second gesture avoids Safari blocking a popup after password validation.
+      final ok = await auth.connectGoogle();
+      if (!mounted) return;
+      if (ok) {
+        Navigator.pop(context, true);
+      } else if (!auth.hasRecentPasswordProof) {
+        setState(() => _confirmed = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
+    return AlertDialog(
+        title: Text(widget.addPassword
+            ? 'Add an email password'
+            : _confirmed
+                ? 'Choose your Google account'
+                : 'Confirm your identity'),
+        content: SizedBox(
+            width: 420,
+            child: SingleChildScrollView(
+                child: Form(
+                    key: _form,
+                    child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text(widget.addPassword
+                              ? 'Create a password for ${auth.user?.email}. You’ll then confirm your existing Google identity in a secure popup.'
+                              : _confirmed
+                                  ? 'Password confirmed. Now choose the Google identity you own. Both sign-in methods will open your existing records.'
+                                  : 'Enter your current password before connecting a Google identity. Your financial data stays in this same account.'),
+                          if (!_confirmed) ...[
+                            const SizedBox(height: 18),
+                            TextFormField(
+                                controller: _password,
+                                obscureText: true,
+                                decoration: InputDecoration(
+                                    labelText: widget.addPassword
+                                        ? 'New password'
+                                        : 'Current password'),
+                                validator: (v) => v == null || v.isEmpty
+                                    ? 'Enter your password'
+                                    : widget.addPassword && v.length < 10
+                                        ? 'Use at least 10 characters'
+                                        : null),
+                            if (widget.addPassword) ...[
+                              const SizedBox(height: 12),
+                              TextFormField(
+                                  controller: _confirm,
+                                  obscureText: true,
+                                  decoration: const InputDecoration(
+                                      labelText: 'Confirm new password'),
+                                  validator: (v) => v == _password.text
+                                      ? null
+                                      : 'Passwords do not match')
+                            ],
+                          ],
+                          if (auth.error != null)
+                            Padding(
+                                padding: const EdgeInsets.only(top: 14),
+                                child: Text(auth.error!,
+                                    style: TextStyle(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .error))),
+                        ])))),
+        actions: [
+          TextButton(
+              onPressed: auth.busy ? null : () => Navigator.pop(context, false),
+              child: const Text('Cancel')),
+          TextButton(
+              onPressed: auth.busy ? null : _submit,
+              child: Text(auth.busy
+                  ? 'Confirming…'
+                  : _confirmed
+                      ? 'Continue with Google'
+                      : widget.addPassword
+                          ? 'Confirm with Google'
+                          : 'Confirm password'))
+        ]);
   }
 }

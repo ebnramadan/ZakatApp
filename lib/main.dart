@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart' show FirebaseAuth;
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:provider/provider.dart';
 import 'firebase_options.dart';
 import 'core/theme.dart';
@@ -14,11 +17,25 @@ import 'ui/home/home_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
-    final options = DefaultFirebaseOptions.currentPlatform;
+    const emulatorMode = bool.fromEnvironment('USE_FIREBASE_EMULATORS');
+    if (emulatorMode && !kDebugMode)
+      throw StateError('Emulators are only available in a debug build.');
+    final options = emulatorMode
+        ? const FirebaseOptions(
+            apiKey: 'demo-key',
+            appId: '1:123:web:demo',
+            messagingSenderId: '123',
+            projectId: 'demo-zakat-app',
+            authDomain: 'localhost')
+        : DefaultFirebaseOptions.currentPlatform;
     if (options.apiKey == 'REPLACE_ME') {
       throw StateError('Firebase is not configured');
     }
     await Firebase.initializeApp(options: options);
+    if (emulatorMode) {
+      await FirebaseAuth.instance.useAuthEmulator('127.0.0.1', 9099);
+      FirebaseFirestore.instance.useFirestoreEmulator('127.0.0.1', 8080);
+    }
     runApp(const ZakatApp());
   } catch (_) {
     runApp(MaterialApp(
