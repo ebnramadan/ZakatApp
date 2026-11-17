@@ -8,6 +8,19 @@ class FirestoreService {
   FirestoreService({FirebaseFirestore? database})
       : _db = database ?? FirebaseFirestore.instance;
 
+  Future<void>? _networkRestart;
+
+  /// Reconnect the SDK transport without clearing cached data or pending writes.
+  Future<void> reconnectNetwork() => _networkRestart ??=
+      _restartNetwork().whenComplete(() => _networkRestart = null);
+  Future<void> _restartNetwork() async {
+    try {
+      await _db.disableNetwork().timeout(const Duration(seconds: 3));
+    } finally {
+      await _db.enableNetwork().timeout(const Duration(seconds: 3));
+    }
+  }
+
   CollectionReference<Map<String, dynamic>> _users() => _db.collection('users');
   CollectionReference<Map<String, dynamic>> _records(String uid) =>
       _users().doc(uid).collection('zakatRecords');

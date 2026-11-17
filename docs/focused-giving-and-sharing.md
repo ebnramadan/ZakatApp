@@ -48,3 +48,9 @@ Deletion now uses a scrollable warning with explicit Cancel/Move actions, withou
 Calculation setup keeps currency and Hawl start visible. More details contains Nisab pricing, Hijri display, and calculation assumptions; missing gold pricing opens that section before continuing. Arabic copy uses Egyptian wording while preserving religious terminology and duʿā. The sheikh-giving icon uses cream and warm brown; startup uses matching giving artwork in HTML and Flutter, with warm cream surfaces and reduced-motion support. Zakat/Sadaqah celebrations reveal a heart rising from open hands and keep the Arabic duʿā with its translation. iOS may retain an installed home-screen icon until the shortcut is added again.
 
 Submitting below Nisab saves a submitted record with zero calculated Zakat. Submitting a new record selects it as the default; existing records and payments stay independent.
+
+## iOS login-data recovery
+
+Dashboard loading has an initial snapshot deadline. A silent first attempt reconnects the Firestore transport once without clearing cache or pending writes. A second stalled attempt becomes a retry state instead of an unbounded spinner; late snapshots may still recover. Retry is available during loading, and stream errors take precedence over another pending stream. Subscription generations prevent old callbacks from replacing a newer load. Resuming the app retries pending/failed account loads; monthly data also has a bounded initial wait.
+
+Bottom navigation has a 64px content area. Real CSS/Flutter safe-area insets are retained. Installed modern iPhones get a 34px portrait / 21px landscape fallback only when Safari reports no inset; normal browser tabs, older phones, tablets, and Android do not get that fallback.

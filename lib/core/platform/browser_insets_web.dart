@@ -2,6 +2,7 @@
 // ignore_for_file: avoid_web_libraries_in_flutter
 import 'dart:html' as html;
 import 'package:flutter/widgets.dart';
+import 'browser_inset_policy.dart';
 
 html.DivElement? _probe;
 
@@ -14,6 +15,15 @@ EdgeInsets browserSafeInsets() {
   if (probe.parent == null) html.document.body?.append(probe);
   final css = probe.getComputedStyle();
   double px(String value) => double.tryParse(value.replaceAll('px', '')) ?? 0;
-  return EdgeInsets.fromLTRB(px(css.paddingLeft), px(css.paddingTop),
-      px(css.paddingRight), px(css.paddingBottom));
+  final screen = html.window.screen;
+  final iosPhone =
+      RegExp(r'iPhone|iPod').hasMatch(html.window.navigator.userAgent);
+  final bottom = resolveBrowserBottomInset(
+      reportedBottom: px(css.paddingBottom),
+      isIosPhone: iosPhone,
+      standalone: html.window.matchMedia('(display-mode: standalone)').matches,
+      screenWidth: (screen?.width ?? 0).toDouble(),
+      screenHeight: (screen?.height ?? 0).toDouble());
+  return EdgeInsets.fromLTRB(
+      px(css.paddingLeft), px(css.paddingTop), px(css.paddingRight), bottom);
 }
