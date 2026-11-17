@@ -176,6 +176,7 @@ class AuthProvider extends ChangeNotifier {
   Future<bool> updateProfileFields(
       {String? displayName,
       String? currency,
+      String? language,
       String? monthlyDefaultKind,
       bool? monthlyEmailReminders}) async {
     final current = _profile;
@@ -183,6 +184,7 @@ class AuthProvider extends ChangeNotifier {
     final fields = <String, dynamic>{
       if (displayName != null) 'displayName': displayName,
       if (currency != null) 'currency': currency,
+      if (language != null) 'language': language,
       if (monthlyDefaultKind != null) 'monthlyDefaultKind': monthlyDefaultKind,
       if (monthlyEmailReminders != null)
         'monthlyEmailReminders': monthlyEmailReminders,

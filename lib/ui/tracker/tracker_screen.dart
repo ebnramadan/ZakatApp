@@ -438,7 +438,7 @@ class _PaymentList extends StatelessWidget {
                   style: const TextStyle(fontWeight: FontWeight.w600)),
               subtitle: Text(
                 p.isMonthly
-                    ? '$monthlyLabel\nPaid ${dateFmt.format(p.date)} · Managed in شهريات'
+                    ? '$monthlyLabel\nPaid ${dateFmt.format(p.date)} · Managed in ${context.watch<AuthProvider>().profile?.monthlyGivingLabel ?? 'Monthly Giving'}'
                     : '${dateFmt.format(p.date)}${p.recipient.isNotEmpty ? ' · ${p.recipient}' : ''}',
                 style: const TextStyle(fontSize: 12),
               ),
@@ -453,7 +453,8 @@ class _PaymentList extends StatelessWidget {
                   const SizedBox(width: 4),
                   if (p.isMonthly)
                     IconButton(
-                        tooltip: 'Manage in شهريات',
+                        tooltip:
+                            'Manage in ${context.watch<AuthProvider>().profile?.monthlyGivingLabel ?? 'Monthly Giving'}',
                         onPressed: onOpenMonthly,
                         icon:
                             const Icon(Icons.calendar_month_outlined, size: 20))

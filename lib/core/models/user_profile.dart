@@ -4,6 +4,9 @@ class UserProfile {
   String email;
   String? photoUrl;
   String currency;
+  String language;
+  String get monthlyGivingLabel =>
+      language == 'ar' ? 'شهريات' : 'Monthly Giving';
   List<String> shareRecipients;
   String monthlyDefaultKind;
   bool monthlyEmailReminders;
@@ -15,6 +18,7 @@ class UserProfile {
     required this.email,
     this.photoUrl,
     this.currency = 'USD',
+    this.language = 'en',
     this.monthlyDefaultKind = 'sadaqah',
     this.monthlyEmailReminders = false,
     this.shareRecipients = const [],
@@ -28,6 +32,7 @@ class UserProfile {
       email: map['email'] as String? ?? '',
       photoUrl: map['photoUrl'] as String?,
       currency: map['currency'] as String? ?? 'USD',
+      language: map['language'] == 'ar' ? 'ar' : 'en',
       monthlyDefaultKind:
           map['monthlyDefaultKind'] == 'zakat' ? 'zakat' : 'sadaqah',
       monthlyEmailReminders: map['monthlyEmailReminders'] == true,
@@ -41,6 +46,7 @@ class UserProfile {
         'email': email,
         'photoUrl': photoUrl,
         'currency': currency,
+        'language': language,
         'monthlyDefaultKind': monthlyDefaultKind,
         'monthlyEmailReminders': monthlyEmailReminders,
         'shareRecipients': shareRecipients,
@@ -54,6 +60,7 @@ class UserProfile {
     bool? monthlyEmailReminders,
     String? photoUrl,
     String? currency,
+    String? language,
     List<String>? shareRecipients,
     String? shareFrequency,
   }) {
@@ -63,6 +70,7 @@ class UserProfile {
       email: email ?? this.email,
       photoUrl: photoUrl ?? this.photoUrl,
       currency: currency ?? this.currency,
+      language: language ?? this.language,
       monthlyDefaultKind: monthlyDefaultKind ?? this.monthlyDefaultKind,
       monthlyEmailReminders:
           monthlyEmailReminders ?? this.monthlyEmailReminders,

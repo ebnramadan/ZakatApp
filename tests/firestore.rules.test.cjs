@@ -101,3 +101,12 @@ test('monthly links require matching currency and protected ownership', async ()
   await assertSucceeds(setDoc(doc(db,'users/alice/monthlyPlans/p'),plan()));
   await assertFails(deleteDoc(doc(db,'users/alice/monthlyPlans/p')));
 });
+
+test('profile language accepts Arabic and English and rejects unsupported values', async () => {
+  const profile = doc(alice(), 'users/alice');
+  const fields = {displayName:'Alice',email:'alice@example.com',currency:'EGP'};
+  await assertSucceeds(setDoc(profile, fields));
+  await assertSucceeds(updateDoc(profile, {language:'ar'}));
+  await assertSucceeds(updateDoc(profile, {language:'en'}));
+  await assertFails(updateDoc(profile, {language:'invalid'}));
+});
