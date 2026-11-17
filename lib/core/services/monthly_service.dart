@@ -27,7 +27,8 @@ class MonthlyService {
           .collection('zakatRecords')
           .doc(plan.zakatRecordId)
           .get();
-      if (record.data()?['isSubmitted'] != true ||
+      if (record.data()?['deletedAt'] != null ||
+          record.data()?['isSubmitted'] != true ||
           record.data()?['currency'] != plan.currency) {
         throw const FormatException(
             'Choose a submitted Zakat record in the same currency.');
@@ -75,7 +76,8 @@ class MonthlyService {
         final record = await tx.get(_user(plan.userId)
             .collection('zakatRecords')
             .doc(plan.zakatRecordId));
-        if (record.data()?['isSubmitted'] != true ||
+        if (record.data()?['deletedAt'] != null ||
+            record.data()?['isSubmitted'] != true ||
             record.data()?['currency'] != plan.currency) {
           throw const FormatException(
               'The selected Zakat record must be submitted and use the same currency.');

@@ -1,7 +1,7 @@
 const { readFileSync } = require('node:fs');
 const { before, after, beforeEach, test } = require('node:test');
 const { initializeTestEnvironment, assertSucceeds, assertFails } = require('@firebase/rules-unit-testing');
-const { doc, setDoc, updateDoc, deleteDoc, getDoc, writeBatch } = require('firebase/firestore');
+const { doc, setDoc, updateDoc, deleteDoc, getDoc, writeBatch, deleteField } = require('firebase/firestore');
 let env;
 const record = (submitted = false) => ({
   userId: 'alice', name: 'Zakat', currency: 'USD', hawlStartDate: 1600000000000,
@@ -109,4 +109,42 @@ test('profile language accepts Arabic and English and rejects unsupported values
   await assertSucceeds(updateDoc(profile, {language:'ar'}));
   await assertSucceeds(updateDoc(profile, {language:'en'}));
   await assertFails(updateDoc(profile, {language:'invalid'}));
+});
+
+test('submitted records can be recycled and restored, with immutable financial data and a fixed 60-day window', async () => {
+  const db=alice(), r=ref(db), deletedAt=Date.now(), purgeAt=deletedAt+60*86400000;
+  await setDoc(r,record(true));
+  await assertFails(updateDoc(r,{deletedAt,purgeAt,cashLocal:1}));
+  await assertFails(updateDoc(r,{deletedAt,purgeAt:purgeAt+1}));
+  await assertSucceeds(updateDoc(r,{deletedAt,purgeAt}));
+  await assertFails(updateDoc(r,{purgeAt:purgeAt+86400000}));
+  await assertFails(updateDoc(r,{cashLocal:1}));
+  await assertFails(setDoc(doc(db,'users/alice/payments/new'),payment()));
+  await assertFails(setDoc(doc(db,'users/alice/monthlyPlans/p'),plan()));
+  await assertFails(deleteDoc(r));
+  await assertSucceeds(updateDoc(r,{deletedAt:deleteField(),purgeAt:deleteField()}));
+  await assertSucceeds(setDoc(doc(db,'users/alice/payments/new'),payment()));
+});
+test('expired records cannot be restored and recycled payment history cannot be changed or deleted', async () => {
+  const db=alice(), r=ref(db), p=doc(db,'users/alice/payments/p');
+  await setDoc(r,record(true)); await setDoc(p,payment());
+  const removedAt=Date.now();
+  await updateDoc(r,{deletedAt:removedAt,purgeAt:removedAt+60*86400000});
+  await assertFails(updateDoc(p,{amount:50})); await assertFails(deleteDoc(p));
+  await env.withSecurityRulesDisabled(async ctx => {
+    await updateDoc(ref(ctx.firestore()),{deletedAt:Date.now()-61*86400000,purgeAt:Date.now()-86400000});
+  });
+  await assertFails(updateDoc(r,{deletedAt:deleteField(),purgeAt:deleteField()}));
+});
+
+test('monthly receipts and ledger cannot be created or undone while the parent record is recycled', async () => {
+ const db=alice(), r=ref(db);
+ await setDoc(r,record(true));await setDoc(doc(db,'users/alice/monthlyPlans/p'),plan());
+ const at=Date.now();await updateDoc(r,{deletedAt:at,purgeAt:at+60*86400000});
+ const rec=doc(db,'users/alice/monthlyPayments/p_2026-11'), pay=doc(db,'users/alice/payments/monthly_p_2026-11');
+ const blocked=writeBatch(db);blocked.set(rec,receipt());blocked.set(pay,ledger());await assertFails(blocked.commit());
+ await updateDoc(r,{deletedAt:deleteField(),purgeAt:deleteField()});
+ const accepted=writeBatch(db);accepted.set(rec,receipt());accepted.set(pay,ledger());await assertSucceeds(accepted.commit());
+ const again=Date.now();await updateDoc(r,{deletedAt:again,purgeAt:again+60*86400000});
+ const undo=writeBatch(db);undo.delete(rec);undo.delete(pay);await assertFails(undo.commit());
 });

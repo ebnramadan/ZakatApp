@@ -89,9 +89,11 @@ void main() {
       expect(find.text('Zakat Tracker'), findsOneWidget);
       expect(tracker.selectedRecord!.totalWealth, 10000);
       expect(calc.draft, isNull);
-      await tester.tap(find.text('Calculator'));
+      await tester.tap(find.text('Records'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Zakat ${DateTime.now().year}'));
+      await tester.ensureVisible(find.text('Open payment tracker'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Open payment tracker'));
       await tester.pumpAndSettle();
       expect(find.text('Zakat Tracker'), findsOneWidget);
       await tester.pumpWidget(const SizedBox());

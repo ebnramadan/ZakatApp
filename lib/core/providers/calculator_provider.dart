@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 import '../constants.dart';
 import '../calculation/zakat_calculator.dart';
 import '../models/zakat_record.dart';
+import '../models/payment.dart';
 import '../services/firestore_service.dart';
 import '../services/price_service.dart';
 
@@ -24,7 +25,16 @@ class CalculatorProvider extends ChangeNotifier {
   bool _disposed = false;
   int _priceRequest = 0;
 
-  List<ZakatRecord> get records => List.unmodifiable(_records);
+  StreamSubscription<List<Payment>>? _paymentSub;
+  List<Payment> _allPayments = [];
+  bool paymentsLoading = true;
+  String? paymentsError;
+  List<Payment> get allPayments => List.unmodifiable(_allPayments);
+  List<ZakatRecord> get records =>
+      List.unmodifiable(_records.where((r) => !r.isDeleted));
+  List<ZakatRecord> get recycledRecords =>
+      List.unmodifiable(_records.where((r) => r.canRestoreAt(DateTime.now())));
+  bool isRecordActive(String id) => records.any((r) => r.id == id);
   ZakatRecord? get draft => _draft;
   bool get loading => _loading;
   bool get recordsLoading => _recordsLoading;
@@ -39,6 +49,19 @@ class CalculatorProvider extends ChangeNotifier {
 
   void loadRecords(String uid) {
     _sub?.cancel();
+    _paymentSub?.cancel();
+    paymentsLoading = true;
+    paymentsError = null;
+    _paymentSub = _fs.allPaymentsStream(uid).listen((payments) {
+      _allPayments = payments;
+      paymentsLoading = false;
+      paymentsError = null;
+      _notify();
+    }, onError: (Object e) {
+      paymentsLoading = false;
+      paymentsError = 'Payment totals could not load. Please retry.';
+      _notify();
+    });
     _recordsLoading = true;
     _notify();
     _sub = _fs.recordsStream(uid).listen((list) {
@@ -102,7 +125,7 @@ class CalculatorProvider extends ChangeNotifier {
   }
 
   void resumeRecord(ZakatRecord record) {
-    if (record.isSubmitted) return;
+    if (record.isSubmitted || record.isDeleted) return;
     _draft = ZakatRecord.fromMap(record.id, record.toMap());
     _goldPricePerGram = _draft!.goldPricePerGram24k;
     _error = null;
@@ -194,9 +217,33 @@ class CalculatorProvider extends ChangeNotifier {
   }
 
   Future<void> deleteDraft() async {
-    if (_draft != null) await _fs.deleteRecord(_draft!.userId, _draft!.id);
+    if (_draft != null) await _fs.recycleRecord(_draft!.userId, _draft!.id);
     _draft = null;
     _notify();
+  }
+
+  Future<bool> recycleRecord(ZakatRecord record) async {
+    try {
+      await _fs.recycleRecord(record.userId, record.id);
+      if (_draft?.id == record.id) _draft = null;
+      return true;
+    } catch (_) {
+      _error = 'Could not move the record to the recycle bin. Please retry.';
+      _notify();
+      return false;
+    }
+  }
+
+  Future<bool> restoreRecord(ZakatRecord record) async {
+    try {
+      await _fs.restoreRecord(record.userId, record.id);
+      return true;
+    } catch (_) {
+      _error =
+          'Could not restore the record. Check your connection and the 60-day window.';
+      _notify();
+      return false;
+    }
   }
 
   void clearError() {
@@ -209,6 +256,7 @@ class CalculatorProvider extends ChangeNotifier {
     _disposed = true;
     _priceRequest++;
     _sub?.cancel();
+    _paymentSub?.cancel();
     super.dispose();
   }
 }

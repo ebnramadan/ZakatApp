@@ -63,8 +63,17 @@ async function sendReminders({db, auth, fetchImpl = fetch, now = new Date(), api
         base.collection('reminderDeliveries').where('month', '==', month).get(),
       ]);
       const map = s => s.docs.map(d => ({id: d.id, ...d.data()}));
-      const due = duePlans(map(plansSnapshot), map(paymentsSnapshot), map(deliveriesSnapshot), now)
+      let due = duePlans(map(plansSnapshot), map(paymentsSnapshot), map(deliveriesSnapshot), now)
         .filter(p => Number.isFinite(p.amount) && p.amount > 0 && p.amount < 1e15 && typeof p.recipient === 'string' && p.recipient.length <= 120 && /^[A-Z]{3}$/.test(p.currency) && ['zakat', 'sadaqah'].includes(p.kind));
+      const allowed = [];
+      for (const plan of due) {
+        if (plan.kind === 'zakat') {
+          const record = await base.collection('zakatRecords').doc(plan.zakatRecordId).get();
+          if (!record.exists || record.data().deletedAt != null || record.data().isSubmitted !== true || record.data().currency !== plan.currency) continue;
+        }
+        allowed.push(plan);
+      }
+      due = allowed;
       if (!due.length) continue;
       if (dryRun) { log(`Would send one digest for ${due.length} due commitments (account identity omitted).`); continue; }
       const message = composeMessage(due, now, appUrl);

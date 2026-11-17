@@ -9,7 +9,7 @@ const fs = require('node:fs');
   const client = await new GoogleAuth({scopes:['https://www.googleapis.com/auth/cloud-platform']}).getClient();
   let incomplete = false;
   try {
-    const permissions=['firebaserules.rulesets.create','firebaserules.releases.create','firebaserules.releases.update','datastore.entities.get','datastore.entities.list','datastore.entities.create','datastore.entities.update','firebaseauth.users.get'];
+    const permissions=['firebaserules.rulesets.create','firebaserules.releases.create','firebaserules.releases.update','datastore.entities.get','datastore.entities.list','datastore.entities.create','datastore.entities.update','datastore.entities.delete','firebaseauth.users.get'];
     const result=await client.request({url:`https://cloudresourcemanager.googleapis.com/v1/projects/${project}:testIamPermissions`,method:'POST',data:{permissions}});
     const present=new Set(result.data.permissions||[]);
     const missing=permissions.filter(p=>!present.has(p));
