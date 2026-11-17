@@ -52,24 +52,32 @@ class _GivingForecastCardState extends State<GivingForecastCard> {
                       selected: c == currency,
                       onSelected: (_) => setState(() => _selected = c)))
                   .toList()),
-        ListTile(
-            contentPadding: EdgeInsets.zero,
-            title: Text(l(context, 'Next 12 months')),
-            trailing: Text(money(annual, currency),
-                style: const TextStyle(fontWeight: FontWeight.w700))),
+        Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(l(context, 'Next 12 months'),
+                      style: Theme.of(context).textTheme.bodySmall),
+                  const SizedBox(height: 4),
+                  Text(money(annual, currency),
+                      style: Theme.of(context).textTheme.titleLarge),
+                ])),
         ...widget.months.map((month) => Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Row(children: [
-                    Expanded(
-                        child: Text(
-                            l(context, DateFormat.yMMM().format(month.month)),
-                            style: Theme.of(context).textTheme.bodySmall)),
-                    Text(money(month.total(currency), currency),
-                        style: const TextStyle(fontWeight: FontWeight.w600))
-                  ]),
+                  Wrap(
+                      alignment: WrapAlignment.spaceBetween,
+                      spacing: 12,
+                      runSpacing: 4,
+                      children: [
+                        Text(l(context, DateFormat.yMMM().format(month.month)),
+                            style: Theme.of(context).textTheme.bodySmall),
+                        Text(money(month.total(currency), currency),
+                            style: const TextStyle(fontWeight: FontWeight.w600))
+                      ]),
                   const SizedBox(height: 6),
                   Semantics(
                       label:

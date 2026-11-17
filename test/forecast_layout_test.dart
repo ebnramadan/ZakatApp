@@ -36,7 +36,7 @@ void main() {
                   months: List.generate(
                       12,
                       (i) => GivingForecastMonth(DateTime(2026, 11 + i),
-                          {'EGP': 1500, 'USD': 10}, {'EGP': 100}))),
+                          {'EGP': 10000000000000, 'USD': 10}, {'EGP': 100}))),
             ])))));
     await tester.pumpAndSettle();
     await tester.tap(find.text('خطة عطائك لـ ١٢ شهر'));
