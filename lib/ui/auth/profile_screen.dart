@@ -12,6 +12,7 @@ import '../widgets/searchable_picker.dart';
 import 'account_reset_card.dart';
 import '../onboarding/onboarding_screen.dart';
 import 'sharing_settings_card.dart';
+import '../notifications/push_reminder_card.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -174,6 +175,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     isScrollControlled: true,
                     builder: (_) => const MonthlySettings())),
           ])),
+          Card(
+              child: ListTile(
+                  leading: const Icon(Icons.notifications_outlined),
+                  title: Text(l(context, 'Giving notifications')),
+                  subtitle:
+                      Text(l(context, 'Monthly giving and Zakat reminders')),
+                  trailing: const Icon(Icons.chevron_right, size: 20),
+                  onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                      builder: (_) => Scaffold(
+                          appBar: AppBar(
+                              title: Text(l(context, 'Giving notifications'))),
+                          body: ListView(
+                              padding: const EdgeInsets.all(16),
+                              children: const [PushReminderCard()])))))),
           _groupLabel(context, 'Progress sharing'),
           const SharingSettingsCard(),
           _groupLabel(context, 'Account'),
