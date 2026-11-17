@@ -27,8 +27,13 @@ Future<html.ServiceWorkerRegistration?> _registration() async {
   final container = html.window.navigator.serviceWorker;
   if (container == null) return null;
   // The generated DOM binding incorrectly assumes getRegistration never returns null.
-  return js.promiseToFuture<html.ServiceWorkerRegistration?>(
-      js.callMethod(container, 'getRegistration', [_scope]));
+  final registration =
+      await js.promiseToFuture<html.ServiceWorkerRegistration?>(
+          js.callMethod(container, 'getRegistration', [_scope]));
+  // getRegistration returns the root Flutter worker when the push worker is absent.
+  return registration?.scope == Uri.base.resolve(_scope).toString()
+      ? registration
+      : null;
 }
 
 Future<bool> syncPushSession(String? uid,
@@ -63,6 +68,18 @@ Future<Map<String, dynamic>?> currentPushSubscription() async {
       js.dartify(js.callMethod(sub, 'toJSON', [])) as Map);
 }
 
+Future<html.ServiceWorkerRegistration> _ensureRegistration() async {
+  final registration = await html.window.navigator.serviceWorker!
+      .register('/push-worker.js', {'scope': _scope});
+  for (var i = 0; registration.active == null && i < 40; i++) {
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+  }
+  if (registration.active == null) {
+    throw StateError('The notification service did not start.');
+  }
+  return registration;
+}
+
 Future<Map<String, dynamic>> subscribePush(String key) async {
   if (pushSupport != 'supported') {
     throw StateError('Push is not supported here.');
@@ -72,14 +89,7 @@ Future<Map<String, dynamic>> subscribePush(String key) async {
   if (permission != 'granted') {
     throw StateError('Notification permission was not granted.');
   }
-  final registration = await html.window.navigator.serviceWorker!
-      .register('/push-worker.js', {'scope': _scope});
-  for (var i = 0; registration.active == null && i < 40; i++) {
-    await Future<void>.delayed(const Duration(milliseconds: 100));
-  }
-  if (registration.active == null) {
-    throw StateError('The notification service did not start.');
-  }
+  final registration = await _ensureRegistration();
   final existing = await currentPushSubscription();
   if (existing != null) return existing;
   final subscription = await registration.pushManager!.subscribe({
@@ -103,10 +113,15 @@ Future<void> unsubscribePush() async {
 }
 
 Future<void> showPushTest(String title, String body) async {
-  final registration = await _registration();
-  if (registration == null || pushPermission != 'granted') {
-    throw StateError('Enable notifications first.');
+  if (pushSupport != 'supported') {
+    throw StateError('Push is not supported here.');
   }
+  // Local testing needs OS permission, but no account settings or VAPID subscription.
+  final permission = await html.Notification.requestPermission();
+  if (permission != 'granted') {
+    throw StateError('Notification permission was not granted.');
+  }
+  final registration = await _ensureRegistration();
   await registration.showNotification(title, {
     'body': body,
     'icon': '/icons/zakat-v4-192.png',

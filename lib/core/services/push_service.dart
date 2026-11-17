@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'push_configuration.dart';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import '../platform/push_platform.dart' as platform;
@@ -14,14 +16,30 @@ class PushService {
   String _id(Map<String, dynamic> subscription) => sha256
       .convert(utf8.encode(subscription['endpoint'] as String))
       .toString();
-  Future<Map<String, dynamic>> configuration() async =>
-      (await db
+  Future<Map<String, dynamic>> configuration() async {
+    final project = Firebase.app().options.projectId;
+    const emulator =
+        kDebugMode && bool.fromEnvironment('USE_FIREBASE_EMULATORS');
+    const origin =
+        emulator ? 'http://127.0.0.1:8080' : 'https://firestore.googleapis.com';
+    final uri = Uri.parse(
+        '$origin/v1/projects/$project/databases/(default)/documents/appConfig/push');
+    try {
+      return await PushConfiguration().load(uri);
+    } catch (_) {
+      // An offline user may already have a valid configuration cached by the SDK.
+      final cached = (await db
               .doc('appConfig/push')
-              .get()
-              .timeout(const Duration(seconds: 10)))
-          .data() ??
-      {};
+              .get(const GetOptions(source: Source.cache))
+              .timeout(const Duration(seconds: 2)))
+          .data();
+      if (cached?['publicKey'] is String) return cached!;
+      rethrow;
+    }
+  }
+
   Future<Map<String, dynamic>?> settings(String uid) async {
+    if (permission != 'granted') return null;
     final subscription = await platform.currentPushSubscription();
     if (subscription == null) return null;
     return (await db
