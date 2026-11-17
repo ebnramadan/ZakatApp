@@ -1,0 +1,37 @@
+name: Repair legacy record currencies
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: 'Set EGP only on records with no saved currency (all users)'
+        type: boolean
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: legacy-currency-repair
+  cancel-in-progress: false
+jobs:
+  repair:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_ZAKAT_APP_36C58 }}
+          project_id: zakat-app-36c58
+      - name: Backfill missing currencies
+        env:
+          APPLY_REPAIR: ${{ inputs.apply }}
+        run: |
+          if [ "$APPLY_REPAIR" = 'true' ]; then
+            node scripts/backfill-legacy-currency.cjs --apply
+          else
+            node scripts/backfill-legacy-currency.cjs
+          fi

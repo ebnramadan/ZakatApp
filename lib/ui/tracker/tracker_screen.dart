@@ -61,7 +61,7 @@ class _TrackerScreenState extends State<TrackerScreen> {
     final auth = context.read<AuthProvider>();
     final calc = context.watch<CalculatorProvider>();
     final tracker = context.watch<TrackerProvider>();
-    final currency = tracker.selectedRecord?.currency ?? 'UNKNOWN';
+    final currency = tracker.selectedRecord?.currency;
     final submitted = calc.records.where((r) => r.isSubmitted).toList();
     if (tracker.selectedRecord == null && submitted.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -194,16 +194,18 @@ class _TrackerScreenState extends State<TrackerScreen> {
 // ─────────────────────────────────────────────────────────────────────────────
 class _Header extends StatelessWidget {
   final TrackerProvider tracker;
-  final String currency;
+  final String? currency;
 
   const _Header({required this.tracker, required this.currency});
 
   @override
   Widget build(BuildContext context) {
-    final fmt = NumberFormat.currency(
-        name: currency,
-        symbol: currencySymbol(currency),
-        decimalDigits: currencyDecimals(currency));
+    final fmt = currency == null
+        ? NumberFormat('#,##0.00')
+        : NumberFormat.currency(
+            name: currency,
+            symbol: currencySymbol(currency!),
+            decimalDigits: currencyDecimals(currency!));
     final r = tracker.selectedRecord!;
     final pct = tracker.totalDue > 0
         ? (tracker.totalPaid / tracker.totalDue).clamp(0.0, 1.0)
@@ -348,7 +350,7 @@ class _PaymentList extends StatelessWidget {
   final List<Payment> payments;
   final bool searching;
   final VoidCallback? onOpenMonthly;
-  final String currency;
+  final String? currency;
   final void Function(Payment) onEdit;
   final void Function(Payment) onDelete;
 
@@ -388,10 +390,12 @@ class _PaymentList extends StatelessWidget {
       );
     }
 
-    final fmt = NumberFormat.currency(
-        name: currency,
-        symbol: currencySymbol(currency),
-        decimalDigits: currencyDecimals(currency));
+    final fmt = currency == null
+        ? NumberFormat('#,##0.00')
+        : NumberFormat.currency(
+            name: currency,
+            symbol: currencySymbol(currency!),
+            decimalDigits: currencyDecimals(currency!));
     final dateFmt = DateFormat('d MMM yyyy');
 
     return ListView.builder(
