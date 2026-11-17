@@ -135,4 +135,67 @@ void main() {
     tracker.dispose();
     monthly.dispose();
   });
+  testWidgets(
+      'adding a recipient from a previous month keeps its payment in that month',
+      (tester) async {
+    final db = FakeFirebaseFirestore();
+    final local = FirestoreService(database: db);
+    final auth = AuthProvider(
+        auth: AuthService(
+            auth: MockFirebaseAuth(
+                mockUser: MockUser(
+                    uid: 'u', email: 'u@example.com', isEmailVerified: true),
+                signedIn: true)),
+        store: local);
+    final calc = CalculatorProvider(store: local),
+        tracker = TrackerProvider(store: local),
+        monthly = MonthlyProvider(store: MonthlyService(database: db));
+    await tester.pumpWidget(MultiProvider(
+        providers: [
+          ChangeNotifierProvider.value(value: auth),
+          ChangeNotifierProvider.value(value: calc),
+          ChangeNotifierProvider.value(value: tracker),
+          ChangeNotifierProvider.value(value: monthly),
+        ],
+        child: MaterialApp(
+            theme: AppTheme.light, home: const HomeScreen(initialTab: 3))));
+    await tester.pumpAndSettle();
+    final past = DateTime(DateTime.now().year, DateTime.now().month - 1);
+    await tester.tap(find.byTooltip('Previous month'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Add your first recipient'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Add your first recipient'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextFormField).at(0), 'Retro family');
+    await tester.enterText(find.byType(TextFormField).at(1), '1200');
+    await tester.tap(find.text('Save recipient'));
+    await tester.pumpAndSettle();
+    expect(monthly.plans.single.startMonth, monthKey(past));
+    final list = find
+        .descendant(
+            of: find.byKey(const Key('monthly-list')),
+            matching: find.byType(Scrollable))
+        .first;
+    await tester.scrollUntilVisible(find.text('Mark as paid'), 250,
+        scrollable: list);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Mark as paid'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Yes, I paid'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    expect(monthly.payments.single.month, monthKey(past));
+    expect(monthKey(monthly.payments.single.paidAt), monthKey(past));
+    expect(monthly.forMonth(monthKey(DateTime.now())), isEmpty);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox());
+    auth.dispose();
+    calc.dispose();
+    tracker.dispose();
+    monthly.dispose();
+  });
 }

@@ -8,16 +8,23 @@ const givingBrown = Color(0xFF875C43);
 /// A gift rising from open hands, with quiet rays rather than flashing confetti.
 class GivingArtwork extends StatelessWidget {
   final double progress;
-  const GivingArtwork({super.key, this.progress = 1});
+  final Color accentColor, outlineColor;
+  const GivingArtwork(
+      {super.key,
+      this.progress = 1,
+      this.accentColor = givingBurgundy,
+      this.outlineColor = givingBrown});
   @override
   Widget build(BuildContext context) => ExcludeSemantics(
       child: CustomPaint(
-          size: const Size(180, 160), painter: _GivingPainter(progress)));
+          size: const Size(180, 160),
+          painter: _GivingPainter(progress, accentColor, outlineColor)));
 }
 
 class _GivingPainter extends CustomPainter {
   final double progress;
-  _GivingPainter(this.progress);
+  final Color accentColor, outlineColor;
+  _GivingPainter(this.progress, this.accentColor, this.outlineColor);
   @override
   void paint(Canvas canvas, Size size) {
     canvas.save();
@@ -26,7 +33,7 @@ class _GivingPainter extends CustomPainter {
     canvas.drawCircle(
         const Offset(90, 77), 53, Paint()..color = const Color(0xFFF1E3D1));
     final ray = Paint()
-      ..color = givingBrown.withOpacity(.45 * p)
+      ..color = outlineColor.withOpacity(.45 * p)
       ..strokeWidth = 2
       ..strokeCap = StrokeCap.round;
     for (var i = 0; i < 9; i++) {
@@ -45,7 +52,7 @@ class _GivingPainter extends CustomPainter {
       ..cubicTo(120, 72, 100, 84, 90, 94)
       ..close();
     canvas.drawPath(
-        heart, Paint()..color = givingBurgundy.withOpacity(.3 + .7 * p));
+        heart, Paint()..color = accentColor.withOpacity(.3 + .7 * p));
     canvas.restore();
     final hands = Path()
       ..moveTo(24, 114)
@@ -61,7 +68,7 @@ class _GivingPainter extends CustomPainter {
       ..close();
     canvas.drawPath(hands, Paint()..color = const Color(0xFFE4C3A3));
     final outline = Paint()
-      ..color = givingBrown
+      ..color = outlineColor
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.6
       ..strokeCap = StrokeCap.round
@@ -79,5 +86,7 @@ class _GivingPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _GivingPainter oldDelegate) =>
-      progress != oldDelegate.progress;
+      progress != oldDelegate.progress ||
+      accentColor != oldDelegate.accentColor ||
+      outlineColor != oldDelegate.outlineColor;
 }

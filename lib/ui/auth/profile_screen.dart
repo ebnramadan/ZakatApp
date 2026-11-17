@@ -9,6 +9,7 @@ import 'account_security_card.dart';
 import '../monthly/monthly_screen.dart';
 import '../home/recycle_bin_screen.dart';
 import '../widgets/searchable_picker.dart';
+import '../widgets/location_currency_button.dart';
 import 'account_reset_card.dart';
 import '../onboarding/onboarding_screen.dart';
 import 'sharing_settings_card.dart';
@@ -155,6 +156,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(content: Text(l(context, auth.error!))));
                       }),
+                  LocationCurrencyButton(onSelected: (c) async {
+                    final ok = await auth.updateProfileFields(currency: c);
+                    if (!mounted || !context.mounted) return;
+                    if (ok) {
+                      setState(() => _selectedCurrency = c);
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text(l(context, auth.error!))));
+                    }
+                  }),
                 ])),
             const Divider(height: 1, indent: 16, endIndent: 16),
             ListTile(
