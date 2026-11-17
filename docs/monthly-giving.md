@@ -78,8 +78,8 @@ The emulator flag is accepted only in debug builds. It uses `demo-zakat-app`, no
 
 ## Installation and URLs
 
-The installed app is named **Zakat Tracker**. The manifest has standalone display, branded normal/maskable icons, and an opaque 180×180 Apple touch icon. The free `zakat-tracker.web.app` Hosting site is reserved in the original Firebase project; `zakat-app-36c58.web.app` remains available.
+The installed app is named **Zakat Tracker**. The manifest has standalone display, branded normal/maskable icons, and an opaque 180×180 Apple touch icon. The free `ztracker.web.app` Hosting site is reserved in the original Firebase project; `zakat-app-36c58.web.app` remains available.
 
-Before using the new URL, add `zakat-tracker.web.app` and `zakat-tracker.firebaseapp.com` under Firebase Authentication → Settings → Authorized domains. Deployment checks this rather than publishing a broken Google-login URL.
+Before using the new URL, add `ztracker.web.app` and `ztracker.firebaseapp.com` under Firebase Authentication → Settings → Authorized domains. Deployment checks this rather than publishing a broken Google-login URL.
 
 On iOS use Share → Add to Home Screen. Existing saved shortcuts may need to be removed and added again to pick up the new icon/name cached by iOS.

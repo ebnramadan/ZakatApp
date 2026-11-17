@@ -14,7 +14,7 @@ Flutter app for calculating Zakat on local cash, foreign cash and gold, then rec
 
 ## Local setup
 
-The web app is configured for the existing Firebase project `zakat-app-36c58`, with Hosting at https://zakat-tracker.web.app and the previous https://zakat-app-36c58.web.app address. The Firebase web configuration is public client configuration, not deployment credentials. Android/iOS options remain placeholders. Hosting deployment requires separately authenticated Firebase access.
+The web app is configured for the existing Firebase project `zakat-app-36c58`, with Hosting at https://ztracker.web.app and the previous https://zakat-app-36c58.web.app address. The Firebase web configuration is public client configuration, not deployment credentials. Android/iOS options remain placeholders. Hosting deployment requires separately authenticated Firebase access.
 
 1. Install **Flutter 3.24.5 / Dart 3.5.4**, Java 17, and Android SDK 35 with Build Tools 34.0.0 and NDK 26.1.10909125. The lockfile records the tested dependency set. iOS requires macOS, Xcode and CocoaPods.
 2. Run `flutter pub get`.

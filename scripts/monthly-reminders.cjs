@@ -105,7 +105,7 @@ if (require.main === module) {
   const {getAuth} = require('firebase-admin/auth');
   initializeApp({credential: applicationDefault(), projectId: 'zakat-app-36c58'});
   sendReminders({db: getFirestore(), auth: getAuth(), apiKey: process.env.RESEND_API_KEY,
-    from: process.env.REMINDER_FROM, smtpUser:process.env.REMINDER_SMTP_USER, smtpPassword:process.env.REMINDER_SMTP_APP_PASSWORD, appUrl: 'https://zakat-tracker.web.app',
+    from: process.env.REMINDER_FROM, smtpUser:process.env.REMINDER_SMTP_USER, smtpPassword:process.env.REMINDER_SMTP_APP_PASSWORD, appUrl: 'https://ztracker.web.app',
     dryRun: process.argv.includes('--dry-run')}).catch(e => { console.error(e.message); process.exitCode = 1; });
 }
 module.exports = {monthKey, dueDate, duePlans, composeMessage, sendReminders, createSender};

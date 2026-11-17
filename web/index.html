@@ -25,26 +25,52 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="Zakat Tracker">
-  <link rel="apple-touch-icon" sizes="180x180" href="icons/zakat-v2-apple.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/zakat-v3-apple.png">
 
   <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png"/>
+  <link rel="icon" type="image/png" href="favicon-v3.png"/>
 
   <style>
-    html, body { margin:0; width:100%; height:100%; height:100dvh; overflow:hidden; position:fixed; background:#F4F6F5; overscroll-behavior:none; }
-    #app-loading { position:fixed; inset:0; display:grid; place-items:center; background:#F4F6F5; z-index:10; }
-    .loading-ring { width:22px; height:22px; border:2px solid #DDE5E1; border-top-color:#146356; border-radius:50%; animation:spin .8s linear infinite; }
-    @keyframes spin { to { transform:rotate(360deg); } }
-    @media (prefers-reduced-motion:reduce) { .loading-ring { animation:none; } }
+    html, body { margin:0; width:100%; height:100%; height:100dvh; overflow:hidden; position:fixed; background:#FBF5E9; overscroll-behavior:none; }
+    #app-loading { position:fixed; inset:0; display:grid; place-items:center; background:#FBF5E9; z-index:10; }
+    .giving-intro { width:min(300px,calc(100vw - 48px)); text-align:center; font:12px/1.4 system-ui,sans-serif; color:#875C43; }
+    .giving-intro svg { display:block; width:180px; height:160px; margin:0 auto 18px; animation:give-float 2.4s ease-in-out infinite; }
+    .giving-heart { transform-origin:90px 75px; animation:give-heart 2.4s ease-in-out infinite; }
+    .giving-intro strong { display:block; margin-bottom:8px; font-size:16px; font-weight:600; color:#652B3F; }
+    @keyframes give-float { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-3px); } }
+    @keyframes give-heart { 0%,100% { transform:translateY(3px) scale(.96); opacity:.8; } 50% { transform:translateY(-3px) scale(1); opacity:1; } }
+    @media (prefers-reduced-motion:reduce) { .giving-intro svg,.giving-heart { animation:none; } }
   </style>
   <title>Zakat Tracker</title>
   <link rel="manifest" href="manifest.json">
-  <link rel="canonical" href="https://zakat-tracker.web.app/">
+  <link rel="canonical" href="https://ztracker.web.app/">
   <meta name="theme-color" content="#146356">
   <meta name="application-name" content="Zakat Tracker">
 </head>
 <body>
-  <div id="app-loading" role="status" aria-label="Loading Zakat Tracker"><div class="loading-ring" aria-hidden="true"></div></div>
+  <div id="app-loading" role="status" aria-label="Preparing your space for giving">
+    <div class="giving-intro">
+      <svg viewBox="0 0 180 160" aria-hidden="true">
+        <circle cx="90" cy="77" r="53" fill="#F1E3D1"/>
+        <g fill="none" stroke="#875C43" stroke-width="2" stroke-linecap="round" opacity=".45"><path d="M27 79h-5M35 50l-4-3M57 28l-2-5M90 21v-5M123 28l2-5M145 50l4-3M153 79h5"/></g>
+        <path class="giving-heart" d="M90 94C80 84 60 72 60 58C60 40 81 37 90 52C99 37 120 40 120 58C120 72 100 84 90 94Z" fill="#652B3F"/>
+        <path d="M24 114L41 101Q48 95 57 100L78 113Q90 120 102 113L123 100Q132 95 139 101L156 114L140 136Q90 160 40 136Z" fill="#E4C3A3" stroke="#875C43" stroke-width="2.6" stroke-linejoin="round"/>
+        <path d="M50 113L70 125Q90 137 110 125L130 113" fill="none" stroke="#875C43" stroke-width="2.6" stroke-linecap="round"/>
+      </svg>
+      <strong id="giving-title">Small acts. Lasting good.</strong>
+      <span id="giving-caption">Preparing your space for giving</span>
+    </div>
+  </div>
+  <script>
+    try {
+      if (JSON.parse(localStorage.getItem('flutter.language') || 'null') === 'ar') {
+        document.getElementById('app-loading').dir = 'rtl';
+        document.getElementById('app-loading').setAttribute('aria-label', 'بنجهّزلك مساحة للخير');
+        document.getElementById('giving-title').textContent = 'خير بسيط، وأثره كبير.';
+        document.getElementById('giving-caption').textContent = 'بنجهّزلك مساحة للخير';
+      }
+    } catch (_) {}
+  </script>
   <script>window.addEventListener("flutter-first-frame", function () { document.getElementById("app-loading")?.remove(); });</script>
   <noscript>Zakat Tracker needs JavaScript enabled to open your private account.</noscript>
   <script src="flutter_bootstrap.js" async></script>

@@ -1,12 +1,14 @@
 import '../../core/localization/strings.dart';
 import 'package:flutter/material.dart';
-import '../../core/constants.dart';
+import 'giving_artwork.dart';
 
 Future<void> showGivingCelebration(BuildContext context,
-        {bool planReady = false, bool sadaqah = false}) =>
-    showDialog<void>(
-        context: context,
-        builder: (_) => _Celebration(planReady: planReady, sadaqah: sadaqah));
+    {bool planReady = false, bool sadaqah = false}) {
+  FocusManager.instance.primaryFocus?.unfocus();
+  return showDialog<void>(
+      context: context,
+      builder: (_) => _Celebration(planReady: planReady, sadaqah: sadaqah));
+}
 
 class _Celebration extends StatefulWidget {
   final bool planReady, sadaqah;
@@ -18,7 +20,7 @@ class _Celebration extends StatefulWidget {
 class _CelebrationState extends State<_Celebration>
     with SingleTickerProviderStateMixin {
   late final AnimationController _animation = AnimationController(
-      vsync: this, duration: const Duration(milliseconds: 1000));
+      vsync: this, duration: const Duration(milliseconds: 1600));
   bool started = false;
   @override
   void didChangeDependencies() {
@@ -42,40 +44,17 @@ class _CelebrationState extends State<_Celebration>
   @override
   Widget build(BuildContext context) => AlertDialog(
           key: const Key('giving-celebration'),
+          backgroundColor: givingCream,
+          scrollable: true,
           content: SingleChildScrollView(
               child: Column(mainAxisSize: MainAxisSize.min, children: [
             SizedBox(
-                height: 132,
-                width: 240,
+                width: 216,
+                height: 192,
                 child: AnimatedBuilder(
                     animation: _animation,
-                    builder: (context, child) =>
-                        Stack(alignment: Alignment.center, children: [
-                          for (final (i, alignment) in [
-                            Alignment.topLeft,
-                            Alignment.topRight,
-                            Alignment.bottomLeft,
-                            Alignment.bottomRight
-                          ].indexed)
-                            Align(
-                                alignment: alignment,
-                                child: Opacity(
-                                    opacity: _animation.value,
-                                    child: Transform.translate(
-                                        offset: Offset(
-                                            0,
-                                            (1 - _animation.value) *
-                                                (i.isEven ? 24 : -24)),
-                                        child: const Icon(Icons.auto_awesome,
-                                            color: Color(0xFFAC812A),
-                                            size: 24)))),
-                          ScaleTransition(
-                              scale: CurvedAnimation(
-                                  parent: _animation,
-                                  curve: Curves.easeOutBack),
-                              child: const Icon(Icons.nightlight_round,
-                                  color: kPrimaryGreen, size: 88)),
-                        ]))),
+                    builder: (context, _) =>
+                        GivingArtwork(progress: _animation.value))),
             const SizedBox(height: 12),
             Text(
                 widget.planReady
@@ -88,12 +67,21 @@ class _CelebrationState extends State<_Celebration>
                     .textTheme
                     .titleLarge
                     ?.copyWith(fontWeight: FontWeight.w700)),
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
+            Text(
+                l(
+                    context,
+                    widget.planReady
+                        ? 'A good intention is a beautiful beginning.'
+                        : 'Small acts. Lasting good.'),
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: givingBrown, fontSize: 13)),
+            const SizedBox(height: 18),
             const Text('اللهم تقبل منا وبارك لنا فيما رزقتنا',
                 textDirection: TextDirection.rtl,
                 textAlign: TextAlign.center,
-                style:
-                    TextStyle(fontSize: 23, height: 1.7, color: kPrimaryGreen)),
+                style: TextStyle(
+                    fontSize: 23, height: 1.7, color: givingBurgundy)),
             const SizedBox(height: 12),
             Text(
                 widget.planReady
@@ -106,6 +94,7 @@ class _CelebrationState extends State<_Celebration>
           actions: [
             FilledButton(
                 onPressed: () => Navigator.pop(context),
+                style: FilledButton.styleFrom(backgroundColor: givingBurgundy),
                 child: Text(l(context, "Continue")))
           ]);
 }

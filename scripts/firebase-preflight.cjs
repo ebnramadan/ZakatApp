@@ -24,7 +24,7 @@ const fs = require('node:fs');
     const sites=await client.request({url:`https://firebasehosting.googleapis.com/v1beta1/projects/6510733442/sites`,params:{pageSize:100}});
     const owned=new Set((sites.data.sites||[]).map(s=>s.name.split('/').pop()));
     let chosen;
-    for(const candidate of ['zakat-tracker','zakat-tracker-app','zakat-tracker-36c58']) {
+    for(const candidate of ['ztracker']) {
       if(owned.has(candidate)){chosen=candidate;break;}
       try {
         await client.request({url:`https://firebasehosting.googleapis.com/v1beta1/projects/6510733442/sites`,method:'POST',params:{siteId:candidate},data:{}});
