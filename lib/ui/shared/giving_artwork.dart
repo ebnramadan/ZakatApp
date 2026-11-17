@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 
 const givingBurgundy = Color(0xFF652B3F);
 const givingCream = Color(0xFFFBF5E9);
-const givingBrown = Color(0xFFA57555);
+const givingBrown = Color(0xFF875C43);
 
 /// A gift rising from open hands, with quiet rays rather than flashing confetti.
 class GivingArtwork extends StatelessWidget {

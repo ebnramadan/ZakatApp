@@ -128,98 +128,101 @@ class _AddPaymentSheetState extends State<AddPaymentSheet> {
             MediaQuery.paddingOf(context).bottom +
             24,
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
+      child: SingleChildScrollView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                  _isEdit
-                      ? l(context, "Edit Payment")
-                      : l(context, "Add Payment"),
-                  style: const TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.bold)),
-              const Spacer(),
-              IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () => Navigator.of(context).pop()),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // Amount
-          TextFormField(
-            controller: _amountCtrl,
-            autofocus: !_isEdit,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            inputFormatters: [
-              TextInputFormatter.withFunction((oldValue, newValue) =>
-                  RegExp(r'^\d*\.?\d*$')
-                          .hasMatch(normalizeNumber(newValue.text))
-                      ? newValue
-                      : oldValue)
-            ],
-            decoration: InputDecoration(
-              labelText: l(context, "Amount"),
-              prefixText:
-                  currency == null ? null : '${currencySymbol(currency)} ',
-              prefixStyle: const TextStyle(
-                  color: kPrimaryGreen, fontWeight: FontWeight.bold),
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          TextField(
-              controller: _nameCtrl,
-              decoration: InputDecoration(
-                  labelText: l(context, "Payment name (optional)"))),
-          if (tracker.payeeNames.isNotEmpty)
-            Wrap(
-                spacing: 6,
-                children: tracker.payeeNames
-                    .take(5)
-                    .map((name) => ActionChip(
-                        label: Text(l(context, name)),
-                        onPressed: () => _nameCtrl.text = name))
-                    .toList()),
-          const SizedBox(height: 12),
-
-          // Date
-          InkWell(
-            onTap: _pickDate,
-            child: InputDecorator(
-              decoration: InputDecoration(
-                labelText: l(context, "Date"),
-                prefixIcon: const Icon(Icons.calendar_today, size: 18),
+              Row(
+                children: [
+                  Text(
+                      _isEdit
+                          ? l(context, "Edit Payment")
+                          : l(context, "Add Payment"),
+                      style: const TextStyle(
+                          fontSize: 18, fontWeight: FontWeight.bold)),
+                  const Spacer(),
+                  IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.of(context).pop()),
+                ],
               ),
-              child: Text(l(context, dateFmt.format(_date))),
-            ),
-          ),
-          const SizedBox(height: 12),
+              const SizedBox(height: 16),
 
-          // Recipient
-          TextField(
-            controller: _recipientCtrl,
-            decoration:
-                InputDecoration(labelText: l(context, "Recipient (optional)")),
-          ),
-          const SizedBox(height: 20),
+              // Amount
+              TextFormField(
+                controller: _amountCtrl,
+                autofocus: !_isEdit,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                inputFormatters: [
+                  TextInputFormatter.withFunction((oldValue, newValue) =>
+                      RegExp(r'^\d*\.?\d*$')
+                              .hasMatch(normalizeNumber(newValue.text))
+                          ? newValue
+                          : oldValue)
+                ],
+                decoration: InputDecoration(
+                  labelText: l(context, "Amount"),
+                  prefixText:
+                      currency == null ? null : '${currencySymbol(currency)} ',
+                  prefixStyle: const TextStyle(
+                      color: kPrimaryGreen, fontWeight: FontWeight.bold),
+                ),
+              ),
+              const SizedBox(height: 12),
 
-          ElevatedButton(
-            onPressed: _saving ? null : _save,
-            child: _saving
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(
-                        color: Colors.white, strokeWidth: 2))
-                : Text(_isEdit
-                    ? l(context, "Save Changes")
-                    : l(context, "Add Payment")),
-          ),
-        ],
-      ),
+              TextField(
+                  controller: _nameCtrl,
+                  decoration: InputDecoration(
+                      labelText: l(context, "Payment name (optional)"))),
+              if (tracker.payeeNames.isNotEmpty)
+                Wrap(
+                    spacing: 6,
+                    children: tracker.payeeNames
+                        .take(5)
+                        .map((name) => ActionChip(
+                            label: Text(l(context, name)),
+                            onPressed: () => _nameCtrl.text = name))
+                        .toList()),
+              const SizedBox(height: 12),
+
+              // Date
+              InkWell(
+                onTap: _pickDate,
+                child: InputDecorator(
+                  decoration: InputDecoration(
+                    labelText: l(context, "Date"),
+                    prefixIcon: const Icon(Icons.calendar_today, size: 18),
+                  ),
+                  child: Text(l(context, dateFmt.format(_date))),
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Recipient
+              TextField(
+                controller: _recipientCtrl,
+                decoration: InputDecoration(
+                    labelText: l(context, "Recipient (optional)")),
+              ),
+              const SizedBox(height: 20),
+
+              ElevatedButton(
+                onPressed: _saving ? null : _save,
+                child: _saving
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                            color: Colors.white, strokeWidth: 2))
+                    : Text(_isEdit
+                        ? l(context, "Save Changes")
+                        : l(context, "Add Payment")),
+              ),
+            ],
+          )),
     );
   }
 }
