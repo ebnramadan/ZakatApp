@@ -10,23 +10,23 @@
   "prefer_related_applications": false,
   "icons": [
     {
-      "src": "icons/zakat-v3-192.png",
+      "src": "icons/zakat-v4-192.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "icons/zakat-v3-512.png",
+      "src": "icons/zakat-v4-512.png",
       "sizes": "512x512",
       "type": "image/png"
     },
     {
-      "src": "icons/zakat-v3-maskable-192.png",
+      "src": "icons/zakat-v4-maskable-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "icons/zakat-v3-maskable-512.png",
+      "src": "icons/zakat-v4-maskable-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
