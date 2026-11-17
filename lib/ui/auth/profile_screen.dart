@@ -12,6 +12,7 @@ import '../widgets/searchable_picker.dart';
 import 'account_reset_card.dart';
 import '../onboarding/onboarding_screen.dart';
 import 'sharing_settings_card.dart';
+import '../notifications/push_reminder_card.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -174,6 +175,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     isScrollControlled: true,
                     builder: (_) => const MonthlySettings())),
           ])),
+          const PushReminderCard(),
           _groupLabel(context, 'Progress sharing'),
           const SharingSettingsCard(),
           _groupLabel(context, 'Account'),

@@ -137,6 +137,10 @@ service cloud.firestore {
           ? linkedRecord(uid, d.zakatRecordId, d.currency) && receiptAndLedgerMatch(uid, id)
           : d.zakatRecordId == '' && !existsAfter(/databases/$(database)/documents/users/$(uid)/payments/$("monthly_" + id)));
     }
+    match /appConfig/push {
+      allow read: if true;
+      allow write: if false;
+    }
     match /appConfig/reminders {
       allow read: if true;
       allow write: if false;
@@ -185,6 +189,25 @@ service cloud.firestore {
           && request.resource.data.createdAt == resource.data.createdAt;
         allow delete: if resetting(uid) || (owner(uid) && !profileResetting(uid) && (resource.data.kind != 'zakat' || activeRecord(uid, resource.data.zakatRecordId)) && (resource.data.kind != 'zakat'
           || !existsAfter(/databases/$(database)/documents/users/$(uid)/payments/$("monthly_" + id))));
+      }
+      match /pushSubscriptions/{id} {
+        allow read, delete: if owner(uid);
+        allow create, update: if owner(uid) && !profileResetting(uid)
+          && request.resource.data.keys().hasOnly(['userId','endpoint','keys','monthly','zakat','showNames','timeZone','createdAt','updatedAt'])
+          && request.resource.data.userId == uid && id.matches('^[a-f0-9]{64}$')
+          && request.resource.data.endpoint is string && request.resource.data.endpoint.size() <= 4096
+          && request.resource.data.endpoint.matches('^https://(fcm[.]googleapis[.]com|updates[.]push[.]services[.]mozilla[.]com|web[.]push[.]apple[.]com|[a-z0-9-]+[.]notify[.]windows[.]com)/[^ ].+$')
+          && request.resource.data.keys is map && request.resource.data.keys.keys().hasOnly(['p256dh','auth'])
+          && request.resource.data.keys.p256dh is string && request.resource.data.keys.p256dh.matches('^[A-Za-z0-9_-]{87}$')
+          && request.resource.data.keys.auth is string && request.resource.data.keys.auth.matches('^[A-Za-z0-9_-]{22}$')
+          && request.resource.data.monthly is bool && request.resource.data.zakat is bool && request.resource.data.showNames is bool
+          && request.resource.data.timeZone is string && request.resource.data.timeZone.size() <= 80
+          && request.resource.data.createdAt is int && request.resource.data.updatedAt is int;
+      }
+      match /pushDeliveries/{id} {
+        allow read: if owner(uid);
+        allow delete: if resetting(uid);
+        allow create, update: if false;
       }
       match /reminderDeliveries/{id} {
         allow read: if owner(uid);

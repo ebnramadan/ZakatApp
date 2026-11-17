@@ -189,3 +189,22 @@ test('delayed requests retry with the same id and recipients, and cancellation c
  await assertSucceeds(updateDoc(profile,{'sheetRequest.status':'cancelled'}));
  await assertFails(updateDoc(profile,{'sheetRequest.status':'sent'}));
 });
+
+const pushSubscription = () => ({userId:'alice',endpoint:'https://web.push.apple.com/device-token',keys:{p256dh:'A'.repeat(87),auth:'A'.repeat(22)},monthly:true,zakat:true,showNames:false,timeZone:'Africa/Cairo',createdAt:1,updatedAt:1});
+test('push subscriptions are private to verified owners and only accept supported provider endpoints',async()=>{
+ const id='a'.repeat(64), path='users/alice/pushSubscriptions/'+id;
+ await assertSucceeds(setDoc(doc(alice(),path),pushSubscription()));
+ const bob=env.authenticatedContext('bob',{email:'bob@example.com',email_verified:true}).firestore();
+ await assertFails(getDoc(doc(bob,path)));
+ await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(),path)));
+ await assertFails(setDoc(doc(alice(),path),{...pushSubscription(),endpoint:'https://127.0.0.1/private'}));
+ await assertFails(setDoc(doc(alice(),path),{...pushSubscription(),keys:{p256dh:'short',auth:'short'}}));
+ await assertFails(setDoc(doc(alice(),path),{...pushSubscription(),sentAt:1}));
+ await assertSucceeds(deleteDoc(doc(alice(),path)));
+});
+test('public push configuration cannot be edited and VAPID private keys and delivery receipts stay server-controlled',async()=>{
+ await assertSucceeds(getDoc(doc(env.unauthenticatedContext().firestore(),'appConfig/push')));
+ await assertFails(setDoc(doc(alice(),'appConfig/push'),{publicKey:'fake',scheduledAt:1}));
+ await assertFails(getDoc(doc(alice(),'_system/webPushKeys')));
+ await assertFails(setDoc(doc(alice(),'users/alice/pushDeliveries/device'),{sentAt:1}));
+});

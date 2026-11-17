@@ -183,6 +183,12 @@ class _AuthGate extends StatelessWidget {
               padding: EdgeInsets.all(24), child: AccountResetCard()));
     }
     if (!auth.profile!.onboardingCompleted) return const OnboardingScreen();
-    return const HomeScreen();
+    final target = Uri.base.queryParameters['open'];
+    return HomeScreen(
+        initialTab: target == 'monthly'
+            ? 3
+            : target == 'tracker'
+                ? 2
+                : 0);
   }
 }

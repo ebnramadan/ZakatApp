@@ -811,5 +811,33 @@ const Map<String, String> arabic = {
   "Counts toward the Zakat record you choose, only after you confirm payment.":
       "بتتحسب من سجل الزكاة اللي تختاره، بس بعد ما تأكد إنك دفعت.",
   "Add a recipient and amount in Monthly Giving. Mark payments after you give.":
-      "ضيف اسم الشخص والمبلغ في شهريات، وسجّل كل دفعة بعد ما تدفعها."
+      "ضيف اسم الشخص والمبلغ في شهريات، وسجّل كل دفعة بعد ما تدفعها.",
+  "Giving notifications": "تذكيرات العطاء",
+  "Gentle reminders for monthly giving and Zakat, up to twice a week during daytime.":
+      "تذكير لطيف بالشهريات والزكاة، لحد مرتين في الأسبوع وفي وقت النهار.",
+  "On iPhone: open in Safari, tap Share → Add to Home Screen, then open the installed app to enable notifications.":
+      "على الآيفون: افتح التطبيق في Safari، اختار مشاركة ← إضافة للشاشة الرئيسية، وبعدين افتحه من الأيقونة لتشغيل الإشعارات.",
+  "Push notifications are not supported in this browser. In-app reminders are still available.":
+      "المتصفح ده مش بيدعم إشعارات Push. التذكيرات جوه التطبيق لسه متاحة.",
+  "Notification delivery is being prepared. In-app reminders are available now.":
+      "بنجهّز إرسال الإشعارات. التذكيرات جوه التطبيق متاحة دلوقتي.",
+  "Automatic notification scheduling has not been confirmed yet. You can set up this device; reminders will start once scheduling is active.":
+      "لسه ما اتأكدناش إن الجدولة التلقائية اشتغلت. تقدر تجهّز الجهاز، والتذكيرات هتبدأ لما الجدولة تتفعّل.",
+  "Monthly giving reminders": "تذكيرات الشهريات",
+  "Zakat reminders": "تذكيرات الزكاة",
+  "Show recipient names": "إظهار أسماء الناس",
+  "Names may appear on your lock screen. Amounts are not included.":
+      "الأسماء ممكن تظهر على شاشة القفل. المبالغ مش هتظهر.",
+  "Save notification preferences": "حفظ تفضيلات الإشعارات",
+  "Enable notifications on this device": "تشغيل الإشعارات على الجهاز ده",
+  "Notifications are allowed on this device. May Allah accept your giving.":
+      "الإشعارات مسموح بيها على الجهاز ده. ربنا يتقبّل منك ويبارك لك.",
+  "Show a test notification": "عرض إشعار تجريبي",
+  "Turn off on this device": "إيقاف على الجهاز ده",
+  "Notification settings could not load. Please retry.":
+      "إعدادات الإشعارات ما اتحمّلتش. جرّب تاني.",
+  "Notifications are blocked. Allow them in your browser or iPhone notification settings.":
+      "الإشعارات مقفولة. اسمح بيها من إعدادات المتصفح أو إشعارات الآيفون.",
+  "Could not update notifications. Check your connection and retry.":
+      "ما قدرناش نحدّث الإشعارات. اتأكد من الاتصال وجرّب تاني."
 };

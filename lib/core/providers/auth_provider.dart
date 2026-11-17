@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/user_profile.dart';
 import '../platform/device_currency.dart';
+import '../services/push_service.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
 
@@ -80,6 +81,7 @@ class AuthProvider extends ChangeNotifier {
     final generation = ++_generation;
     final changedAccount = _user?.uid != user?.uid;
     _user = user;
+    PushService.syncSession(user?.emailVerified == true ? user?.uid : null);
     if (_resetting && !changedAccount) return;
     if (changedAccount || user == null || !user.emailVerified) _profile = null;
     _isLoading = _profile == null && user != null && user.emailVerified;
@@ -196,6 +198,7 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> signOut() async {
     try {
+      await PushService.beforeSignOut(_user?.uid);
       await _auth.signOut();
     } catch (_) {
       _error = 'Sign out failed. Retry.';
@@ -220,6 +223,7 @@ class AuthProvider extends ChangeNotifier {
               displayName: user.displayName ?? user.email!.split('@').first,
               email: user.email!,
               photoUrl: user.photoURL);
+          await PushService.beforeSignOut(user.uid);
           await _fs.resetAppData(fresh);
           _profile = fresh;
           dataRevision++;
