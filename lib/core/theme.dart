@@ -105,7 +105,8 @@ class AppTheme {
             color: Color(0xFF63716B)),
         iconColor: Color(0xFF52655F),
       ),
-      bottomSheetTheme: const BottomSheetThemeData(showDragHandle: true),
+      bottomSheetTheme: const BottomSheetThemeData(
+          showDragHandle: true, backgroundColor: Color(0xFFFFFCF7)),
       dividerTheme: const DividerThemeData(
           color: Color(0xFFDDE5E1), thickness: 1, space: 1),
       snackBarTheme: SnackBarThemeData(
