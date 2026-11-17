@@ -46,3 +46,16 @@ test('manual request ignores date and monthly opt-in, sends once, and preserves 
  await user.update({sharingEnabled:true});await sendProgressSheets({...options,manualOnly:false,now});assert.equal(sent,2);
  }finally{await db.recursiveDelete(db.collection('users'));await deleteApp(app);}
 });
+test('retry reuses accepted delivery receipts and cancellation before SMTP sends nothing',async()=>{
+ const {initializeApp,deleteApp}=require('firebase-admin/app'),{getFirestore}=require('firebase-admin/firestore');
+ const app=initializeApp({projectId:'demo-retry-progress'},'retry-progress-test'),db=getFirestore(app),user=db.doc('users/u');let sent=0;
+ const request={id:'same-request-123456',status:'queued',requestedAt:now.getTime(),recipients:['trusted@example.com']};
+ const options={db,auth:{getUser:async()=>({emailVerified:true})},now,manualOnly:true,smtpUser:'sender@gmail.com',smtpPassword:'fake',smtpTransport:{verify:async()=>{},sendMail:async()=>{sent++;return{messageId:'accepted',rejected:[]};}},log:()=>{}};
+ try{await db.recursiveDelete(db.collection('users'));await user.set({shareRecipients:request.recipients,sheetRequest:request});
+ await sendProgressSheets(options);assert.equal(sent,1);
+ await user.update({sheetRequest:request});await sendProgressSheets(options);assert.equal(sent,1,'retry must keep delivery receipts');
+ await user.update({sheetRequest:{...request,id:'cancel-request-123456'}});
+ await sendProgressSheets({...options,smtpTransport:{verify:async()=>{await user.update({'sheetRequest.status':'cancelled'});},sendMail:async()=>{throw Error('cancelled requests must not send');}}});
+ assert.equal(sent,1);assert.equal((await user.get()).data().sheetRequest.status,'cancelled');
+ }finally{await db.recursiveDelete(db.collection('users'));await deleteApp(app);}
+});

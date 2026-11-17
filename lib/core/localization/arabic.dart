@@ -737,5 +737,28 @@ const Map<String, String> arabic = {
   "Sent": "أُرسل",
   "Failed": "تعذر الإرسال",
   "Other records": "السجلات الأخرى",
-  "No other records yet.": "لا توجد سجلات أخرى بعد."
+  "No other records yet.": "لا توجد سجلات أخرى بعد.",
+  "Preferences": "التفضيلات",
+  "Progress sharing": "مشاركة التقدم",
+  "Account": "الحساب",
+  "Sign-in methods and password": "طرق الدخول وكلمة المرور",
+  "Edit name": "تعديل الاسم",
+  "Day {0} · {1} recipient(s)": "اليوم {0} · {1} مستلم",
+  "Send a snapshot of your giving": "شارك ملخصًا لعطائك",
+  "Retry delivery": "إعادة محاولة الإرسال",
+  "Cancel request": "إلغاء الطلب",
+  "Delivery status could not load. Check your connection.":
+      "تعذر تحميل حالة الإرسال. تحقق من اتصالك.",
+  "Delivery is delayed. Your request is saved. Retry keeps the same request and delivery history.":
+      "تأخر الإرسال. طلبك محفوظ، وإعادة المحاولة تحتفظ بالطلب وسجل الإرسال نفسه.",
+  "Waiting for background delivery. Scheduling can be delayed; you can close the app.":
+      "بانتظار الإرسال في الخلفية. قد تتأخر الجدولة؛ يمكنك إغلاق التطبيق.",
+  "Zakat and Sadaqah, together in one private report.":
+      "الزكاة والصدقة معًا في تقرير خاص.",
+  "Could not retry. Check your saved recipients and try again.":
+      "تعذرت إعادة المحاولة. تحقق من المستلمين المحفوظين وحاول مجددًا.",
+  "The request changed. Refresh its status and try again.":
+      "تغير الطلب. حدّث حالته وحاول مجددًا.",
+  "Monthly": "شهريات",
+  "حسابي": "حسابي"
 };

@@ -86,14 +86,16 @@ void main() {
         child: MaterialApp(
             theme: AppTheme.light, home: const HomeScreen(initialTab: 3))));
     await tester.pumpAndSettle();
-    expect(find.text('Monthly Giving'), findsNWidgets(2));
+    expect(find.text('Monthly Giving'), findsOneWidget);
+    expect(find.text('Monthly'), findsOneWidget);
     expect(await auth.updateProfileFields(language: 'ar'), isTrue);
     await tester.pumpAndSettle();
     expect(find.text('شهريات'), findsNWidgets(2));
     expect((await store.getProfile('u'))!.language, 'ar');
     expect(await auth.updateProfileFields(language: 'en'), isTrue);
     await tester.pumpAndSettle();
-    expect(find.text('Monthly Giving'), findsNWidgets(2));
+    expect(find.text('Monthly Giving'), findsOneWidget);
+    expect(find.text('Monthly'), findsOneWidget);
     expect(find.text('Family support'), findsOneWidget);
     await tester.scrollUntilVisible(find.text('Mark as paid'), 300,
         scrollable: find
@@ -113,7 +115,7 @@ void main() {
     await tester.tap(find.text('Tracker'));
     await tester.pumpAndSettle();
     expect(find.byTooltip('Manage in Monthly Giving'), findsOneWidget);
-    await tester.tap(find.text('Monthly Giving'));
+    await tester.tap(find.text('Monthly'));
     await tester.pumpAndSettle();
     await tester.scrollUntilVisible(find.text('Undo payment'), 300,
         scrollable: find

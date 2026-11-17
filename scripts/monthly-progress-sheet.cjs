@@ -55,7 +55,7 @@ async function sendProgressSheets({db,auth,now=new Date(),dryRun=false,manualOnl
     const valid=(p)=>eligible({...p,sharingEnabled:true,shareDay:1},now);
     if(manualOnly){if(!request||request.status!=='queued')continue;if(request.requestedAt<now.getTime()-86400000){if(!dryRun)await requestStatus(db,user.ref,requestId,'failed');continue;}if(!valid(profile)){if(!dryRun)await requestStatus(db,user.ref,requestId,'cancelled');continue;}}
     else if(!eligible(profile,now))continue;
-    const account=await auth.getUser(user.id);if(!account.emailVerified||account.disabled)continue;
+    const account=await auth.getUser(user.id);if(!account.emailVerified||account.disabled){if(manualOnly&&!dryRun)await requestStatus(db,user.ref,requestId,'cancelled');continue;}
     eligibleAccounts++;
     const recipients=[...new Set((manualOnly?request.recipients:profile.shareRecipients).map(e=>e.toLowerCase()))].filter(e=>profile.shareRecipients.map(e=>e.toLowerCase()).includes(e));
     const pending=[];
@@ -71,7 +71,7 @@ async function sendProgressSheets({db,auth,now=new Date(),dryRun=false,manualOnl
     for(const recipient of pending){
       // Recheck consent immediately before each external send, including reset/recipient changes.
       const fresh=(await user.ref.get()).data();
-      if(!(manualOnly?valid(fresh)&&fresh.sheetRequest?.id===request.id:eligible(fresh,now))||!fresh.shareRecipients.map(e=>e.toLowerCase()).includes(recipient.email))continue;
+      if(!(manualOnly?valid(fresh)&&fresh.sheetRequest?.id===request.id&&fresh.sheetRequest?.status==='queued':eligible(fresh,now))||!fresh.shareRecipients.map(e=>e.toLowerCase()).includes(recipient.email))continue;
       const key=crypto.createHash('sha256').update(`${user.id}:${recipient.key}`).digest('hex');
       const providerId=await sender.send(recipient.email,{subject:`${profile.language==='ar'?'تقرير العطاء الشهري':'Monthly giving progress'} · ${monthKey(now)}`,
         text:profile.language==='ar'?`اختار ${account.displayName||'مستخدم متتبع الزكاة'} مشاركة تقرير عطائه معك.\n\nيتضمن ملف Excel المرفق سجلات الزكاة والدفعات والشهريات والصدقة، وهو نسخة وليس دخولًا مباشرًا للحساب. تظل العملات منفصلة، ويجب مراجعة الحول قبل أداء الزكاة.\n\nيمكن لصاحب الحساب إيقاف المشاركة من الملف الشخصي ← تقرير التقدم الشهري.`:`${account.displayName||'A Zakat Tracker user'} has chosen to share this progress sheet with you.\n\nThe attached Excel workbook is a snapshot of Zakat records, recorded payments, and monthly Zakat/Sadaqah giving. It is not live account access. Amounts stay in their original currencies; estimates must be checked against Hawl.\n\nSent with the account owner's monthly sharing preference. The owner can stop future sharing in Profile → Monthly progress sheet.`,

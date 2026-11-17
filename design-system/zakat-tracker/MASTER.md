@@ -9,8 +9,8 @@ Content-first personal finance, inspired by Apple clarity and Google Material in
 - Primary emerald #146356; dark emerald #103F36; ink #172C27
 - Canvas #F4F6F5; surface #FFFFFF; muted #52655F; border #DDE5E1
 - Destructive #B3261E; amber #9A6500 (statuses also use words/icons)
-- Spacing 4/8/12/16/24/32; cards 20px radius; controls >=48px
-- Body 16px, secondary 13px, page title 28px, financial total 32px
+- Spacing 4/8/12/16/24/32; cards 16px radius; controls >=48px
+- Body 14–15px with 1.4 line height, secondary 12px, page title 25px, financial total 34px
 
 ## Navigation and behavior
 Five stable destinations: Dashboard, Records, Tracker, Monthly Giving, Profile. Bottom navigation on phones; labeled rail on tablets/desktop. Dashboard is the default landing view. Record creation is a named primary action. Keep submitted financial calculations locked. Record removal is always a confirmed move to the recycle bin, with an undo action and a 60-day restore window. Never rely on swipe to expose essential actions.
@@ -22,3 +22,5 @@ Keep currencies separate. Show due Zakat separately from future estimates. Dashb
 Use LayoutBuilder, full available desktop width with a two-column dashboard, wrapping actions and stats, visible labels, keyboard-accessible controls, tooltips on icon actions, high-contrast text. Respect safe areas and reduced-motion preferences; do not animate financial values. Validate at 375, 768 and 1440 CSS pixels and with enlarged text.
 
 Default records stay above search and filters, use a bordered emerald card and explicit badge, and require typing the record name before deletion. Other records retain a simple confirmation and 60-day recovery. All essential actions are visible.
+
+Mobile profile groups related settings into a shared surface rather than one large card per row. Security details open on a dedicated route. Use static font weights 400/500/600/700 for predictable rendering; short navigation labels stay on one line. Keep 48px tap targets even as visual density increases.

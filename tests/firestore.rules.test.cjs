@@ -179,3 +179,13 @@ test('manual sheet requests require saved recipients, server time, rate limits, 
  await env.withSecurityRulesDisabled(async ctx=>updateDoc(doc(ctx.firestore(),'users/alice'),{'sheetRequest.status':'sent'}));
  await assertFails(updateDoc(profile,{sheetRequest:{...request,id:'different-request-123'}}));
 });
+test('delayed requests retry with the same id and recipients, and cancellation cannot forge delivery',async()=>{
+ const profile=doc(alice(),'users/alice'),at=Date.now(),old={id:'retry-request-123456',status:'queued',requestedAt:at-660000,recipients:['trusted@example.com']};
+ await env.withSecurityRulesDisabled(ctx=>setDoc(doc(ctx.firestore(),'users/alice'),{displayName:'Alice',email:'alice@example.com',currency:'EGP',shareRecipients:['trusted@example.com'],sheetRequest:old}));
+ await assertFails(updateDoc(profile,{sheetRequest:{...old,id:'new-request-123456',requestedAt:at}}));
+ await assertFails(updateDoc(profile,{sheetRequest:{...old,recipients:['new@example.com'],requestedAt:at}}));
+ await assertSucceeds(updateDoc(profile,{sheetRequest:{...old,requestedAt:at}}));
+ await assertFails(updateDoc(profile,{sheetRequest:{...old,requestedAt:at+1}}));
+ await assertSucceeds(updateDoc(profile,{'sheetRequest.status':'cancelled'}));
+ await assertFails(updateDoc(profile,{'sheetRequest.status':'sent'}));
+});

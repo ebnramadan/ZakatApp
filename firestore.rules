@@ -23,12 +23,18 @@ service cloud.firestore {
       let old = resource.data.get('sheetRequest', {});
       let next = d.get('sheetRequest', {});
       return next == old || resetting(uid) || (
+        !profileResetting(uid) && old.get('status','') == 'queued' && next.get('status','') == 'cancelled'
+        && next.diff(old).affectedKeys().hasOnly(['status'])
+      ) || (
         !profileResetting(uid) && next is map && next.keys().hasOnly(['id','status','requestedAt','recipients'])
         && next.id is string && next.id.size() <= 80 && next.id.size() >= 16
         && next.recipients == d.get('shareRecipients',[])
         && next.status == 'queued' && next.requestedAt is int
         && next.requestedAt >= request.time.toMillis()-300000 && next.requestedAt <= request.time.toMillis()+300000
-        && old.get('status','') != 'queued' && old.get('id','') != next.id
+        && ((old.get('status','') != 'queued' && old.get('id','') != next.id)
+          || (old.get('id','') == next.id && next.recipients == old.get('recipients',[])
+            && (old.get('status','') == 'failed' || (old.get('status','') == 'queued'
+              && old.get('requestedAt',0) <= request.time.toMillis()-600000))))
         && old.get('requestedAt',0) <= request.time.toMillis()-60000
         && d.get('shareRecipients',[]).size() >= 1
       );

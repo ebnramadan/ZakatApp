@@ -126,6 +126,20 @@ class _HomeScreenState extends State<HomeScreen> {
       auth.profile?.monthlyGivingLabel ?? 'Monthly Giving',
       ar ? 'الملف الشخصي' : 'Profile'
     ];
+    final mobileLabels = [
+      labels[0],
+      labels[1],
+      labels[2],
+      ar ? 'شهريات' : 'Monthly',
+      ar ? 'حسابي' : 'Profile'
+    ];
+    const selectedIcons = [
+      Icons.space_dashboard_rounded,
+      Icons.folder_rounded,
+      Icons.track_changes_rounded,
+      Icons.calendar_month_rounded,
+      Icons.person_rounded
+    ];
     const icons = [
       Icons.space_dashboard_outlined,
       Icons.folder_open_outlined,
@@ -222,7 +236,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 destinations: List.generate(
                     5,
                     (i) => NavigationDestination(
-                        icon: navIcon(i), label: labels[i]))),
+                        icon: navIcon(i),
+                        selectedIcon: Icon(selectedIcons[i]),
+                        label: mobileLabels[i]))),
       );
     });
   }
