@@ -20,6 +20,7 @@ class CalculatorProvider extends ChangeNotifier {
   bool _loading = false;
   bool _recordsLoading = false;
   String? _error;
+  String? _recordsError;
   double _goldPricePerGram = 0;
   bool _pricesLoading = false;
   bool _disposed = false;
@@ -39,6 +40,7 @@ class CalculatorProvider extends ChangeNotifier {
   bool get loading => _loading;
   bool get recordsLoading => _recordsLoading;
   String? get error => _error;
+  String? get recordsError => _recordsError;
   double get goldPricePerGram => _goldPricePerGram;
   double get nisabValue =>
       (_draft?.goldPricePerGram24k ?? _goldPricePerGram) * kNisabGrams;
@@ -63,14 +65,17 @@ class CalculatorProvider extends ChangeNotifier {
       _notify();
     });
     _recordsLoading = true;
+    _recordsError = null;
     _notify();
     _sub = _fs.recordsStream(uid).listen((list) {
       _records = list;
+      _recordsError = null;
       _recordsLoading = false;
       _notify();
     }, onError: (Object e) {
       _recordsLoading = false;
-      _error = 'Could not load records. Check your connection and retry.';
+      _recordsError =
+          'Could not load records. Check your connection and retry.';
       _notify();
     });
   }

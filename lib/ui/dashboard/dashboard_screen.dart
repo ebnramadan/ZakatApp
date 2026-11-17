@@ -48,7 +48,7 @@ class DashboardScreen extends StatelessWidget {
             child: Padding(
                 padding: EdgeInsets.all(32),
                 child: Center(child: CircularProgressIndicator())))
-      else if (calc.error != null || calc.paymentsError != null)
+      else if (calc.recordsError != null || calc.paymentsError != null)
         ActionCard(
             icon: Icons.cloud_off_outlined,
             title: 'Your overview couldn’t load',
