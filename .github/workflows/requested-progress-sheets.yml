@@ -3,7 +3,7 @@ on:
   schedule:
     - cron: '*/5 * * * *'
   push:
-    branches: ['claude/zakat-app-build-0NR5K']
+    branches: ['claude/zakat-app-build-0NR5K', 'main']
     paths:
       - 'scripts/monthly-progress-sheet.cjs'
       - '.github/workflows/requested-progress-sheets.yml'
