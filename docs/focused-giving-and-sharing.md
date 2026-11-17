@@ -11,7 +11,7 @@ Currencies can be searched by ISO code or currency name. Long record/day selecto
 The gold input remains a pure 24K reference price. Changing carat or grams immediately updates the effective per-gram rate and gold value. Purity is applied once, in the shared calculation model. Changing record currency warns when amounts exist, does not convert amounts, and clears/refetches gold and foreign-exchange quotes.
 
 ## Onboarding and celebrations
-New account profiles start a three-step welcome flow with currency and whole-app language choices. Existing profiles without the onboarding flag are treated as already onboarded. Profile's Getting started can review it again. Reset restarts onboarding.
+New account profiles start a four-step welcome flow with currency and whole-app language choices. Existing profiles without the onboarding flag are treated as already onboarded. Profile's Getting started can review it again. Reset restarts onboarding.
 
 A short crescent/star animation and original duʿā appear after successful calculation submission or recorded giving. The calculation message says the plan is ready; it never claims Zakat has been paid. Payment messages are for confirmed actual giving. Animations are finite and honor reduced-motion settings. Editing/undo does not celebrate.
 
@@ -83,3 +83,9 @@ No location, timezone or locale lookup changes a new account’s EGP default. On
 Adding a monthly recipient now passes the viewed month into the form’s First month value. Recording payment from that month stores its receipt/date there. The commitment remains recurring in later months, but the past payment never counts as a current-month payment.
 
 Startup artwork uses the app’s green on cream. The HTML loader fetches a fresh bootstrap script online to break old Flutter-cache loader cycles, with a cached loader fallback when offline. This addresses installed web apps continuing to show old notification settings after deployment. Browser subscription keys are normalized to unpadded URL-safe base64 before validation for browser compatibility.
+
+## Home and notification onboarding
+
+Primary navigation has four destinations: Home, Tracker, Monthly and Profile. Home groups the default record under My Zakat records with one View all records action. The library opens as a child page with Back to Home; selecting a record closes the library and opens its tracker or draft. Tracker’s records shortcut returns to Home. Hidden tabs are excluded from Hero transitions so record restoration cannot animate hidden payment controls.
+
+Onboarding has four short steps with pinned navigation: introduction, language/currency, monthly giving default, and optional notifications. The notification step reuses the same device preferences as Profile, in a compact layout. Permission is requested only by Enable notifications; Start tracking can finish without opting in. Recipient names default on for a new subscription, with a lock-screen disclosure. Existing saved choices to hide names remain respected. Notification deep links and calculation completion use the updated tab positions.

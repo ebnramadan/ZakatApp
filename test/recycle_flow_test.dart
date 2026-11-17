@@ -45,8 +45,16 @@ void main() {
     ], child: MaterialApp(theme: AppTheme.light, home: const HomeScreen())));
     await tester.pumpAndSettle();
     expect(find.text('For Allah. One step at a time.'), findsOneWidget);
+    expect(
+        tester.widget<NavigationBar>(find.byType(NavigationBar)).destinations,
+        hasLength(4));
+    expect(
+        find.descendant(
+            of: find.byType(NavigationBar), matching: find.text('Records')),
+        findsNothing);
+    expect(find.text('Home'), findsOneWidget);
     expect(find.text('USD 150.00'), findsOneWidget);
-    await tester.tap(find.text('Records'));
+    await tester.tap(find.text('View all records'));
     await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('Delete default record'));
     await tester.pumpAndSettle();
@@ -81,6 +89,13 @@ void main() {
     expect(calc.recycledRecords, isEmpty);
     expect((await db.doc('users/u/payments/p').get()).data()!['amount'], 100);
     expect(find.text('Your recycle bin is empty'), findsOneWidget);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    expect(
+        tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex,
+        0);
     await tester.pumpWidget(const SizedBox());
     auth.dispose();
     calc.dispose();

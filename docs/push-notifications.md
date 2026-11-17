@@ -2,7 +2,7 @@
 
 Web Push uses a dedicated `/push-worker.js` registered under `/push-scope/`, separate from Flutter’s asset-cache worker. It works without Firebase Functions, Blaze, SMTP, or a new paid service. VAPID keys are generated once by the trusted GitHub worker: the private key stays in server-only `_system/webPushKeys`; only the public key is published at `appConfig/push`. Never print the private key or subscription endpoints in logs.
 
-Profile offers opt-in per device, separate monthly/Zakat preferences, optional recipient names (off by default), a local test notification, and an off button. Names can appear on the lock screen when opted in; amounts never appear. On iOS 16.4+ the site must be added to the Home Screen and opened from that icon before enabling notifications. Permission is requested only from the user’s tap.
+Profile offers opt-in per device, separate monthly/Zakat preferences, recipient names (on by default for new setup; existing choices are preserved), a local test notification, and an off button. Names can appear on the lock screen when opted in; amounts never appear. On iOS 16.4+ the site must be added to the Home Screen and opened from that icon before enabling notifications. Permission is requested only from the user’s tap.
 
 ## Frequency and eligibility
 

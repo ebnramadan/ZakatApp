@@ -126,13 +126,6 @@ class DashboardScreen extends StatelessWidget {
                           label: Text(l(context, "Calculate my Zakat"))),
                     ])))
       else ...[
-        Row(children: [
-          Expanded(
-              child: Text(l(context, "Default record"),
-                  style: const TextStyle(color: Color(0xFF52655F)))),
-          TextButton(
-              onPressed: onRecords, child: Text(l(context, "View all records")))
-        ]),
         Card(
             color: const Color(0xFF103F36),
             clipBehavior: Clip.antiAlias,
@@ -159,6 +152,10 @@ class DashboardScreen extends StatelessWidget {
                   child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        Text(l(context, 'Default record'),
+                            style: const TextStyle(
+                                fontSize: 12, color: Color(0xFFD6E9E1))),
+                        const SizedBox(height: 6),
                         Text(current.name,
                             style: const TextStyle(
                                 color: Colors.white,
@@ -330,6 +327,15 @@ class DashboardScreen extends StatelessWidget {
           title: l(context, "For Allah. One step at a time."),
           description: l(
               context, "Your default Zakat record and the next things to do.")),
+      Row(children: [
+        const Icon(Icons.folder_open_outlined, size: 20),
+        const SizedBox(width: 8),
+        Expanded(
+            child: Text(l(context, 'My Zakat records'),
+                style: Theme.of(context).textTheme.titleMedium)),
+        TextButton(
+            onPressed: onRecords, child: Text(l(context, 'View all records'))),
+      ]),
       LayoutBuilder(builder: (context, constraints) {
         final left = Column(
             crossAxisAlignment: CrossAxisAlignment.stretch, children: overview);

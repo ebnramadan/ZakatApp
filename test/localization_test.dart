@@ -13,6 +13,7 @@ import 'package:zakat_app/core/providers/auth_provider.dart';
 import 'package:zakat_app/core/services/auth_service.dart';
 import 'package:zakat_app/core/services/firestore_service.dart';
 import 'package:zakat_app/ui/onboarding/onboarding_screen.dart';
+import 'push_reminder_card_test.dart' show TestPushService;
 
 void main() {
   test('Arabic and Persian numeric inputs preserve financial amounts', () {
@@ -57,6 +58,7 @@ void main() {
       'onboarding language switches all interface copy and direction immediately',
       (tester) async {
     SharedPreferences.setMockInitialValues({});
+    final notifications = TestPushService();
     final auth = AuthProvider(
         auth: AuthService(
             auth: MockFirebaseAuth(
@@ -77,7 +79,7 @@ void main() {
                 ],
                 home: value.profile == null
                     ? const SizedBox()
-                    : const OnboardingScreen()))));
+                    : OnboardingScreen(notificationService: notifications)))));
     await tester.pumpAndSettle();
     await tester.scrollUntilVisible(find.text('Next'), 300,
         scrollable: find.byType(Scrollable).first);
@@ -100,6 +102,22 @@ void main() {
     await tester.tap(find.text('Next'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Zakat'));
+    await tester.tap(find.text('Next'));
+    await tester.pumpAndSettle();
+    expect(notifications.registrations, 0);
+    expect(
+        tester
+            .widget<SwitchListTile>(
+                find.widgetWithText(SwitchListTile, 'Show recipient names'))
+            .value,
+        isTrue);
+    await tester
+        .ensureVisible(find.text('Enable notifications on this device'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Enable notifications on this device'));
+    await tester.pumpAndSettle();
+    expect(notifications.registrations, 1);
+    expect(notifications.lastShowNames, isTrue);
     await tester.scrollUntilVisible(find.text('Start tracking'), 250,
         scrollable: find.byType(Scrollable).first);
     await tester.pumpAndSettle();
