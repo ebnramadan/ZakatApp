@@ -1,8 +1,9 @@
+import '../../core/localization/amount_formatter.dart';
 import '../../core/localization/strings.dart';
 import '../shared/giving_celebration.dart';
 import '../widgets/searchable_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:intl/intl.dart' hide TextDirection;
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import '../../core/constants.dart';
@@ -184,6 +185,7 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
                           .fold(0.0, (s, p) => s + p.amount);
                       final outstanding = all
                           .where((p) =>
+                              p.active &&
                               p.currency == currency &&
                               available(p.kind, p.zakatRecordId) &&
                               monthly.paid(p.id, key) == null)
@@ -196,6 +198,14 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
                               padding: const EdgeInsets.all(18),
                               child:
                                   Wrap(spacing: 28, runSpacing: 12, children: [
+                                _MonthlyStat(
+                                    l(context, "Planned this month"),
+                                    fmt.format(all
+                                        .where((p) =>
+                                            p.active &&
+                                            p.currency == currency &&
+                                            available(p.kind, p.zakatRecordId))
+                                        .fold(0.0, (s, p) => s + p.amount))),
                                 _MonthlyStat(l(context, "Given this month"),
                                     fmt.format(paidTotal)),
                                 _MonthlyStat(l(context, "Still to give"),
@@ -424,82 +434,109 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
                                               Text(l(context, "Undo payment")))
                                     else
                                       OutlinedButton.icon(
-                                          onPressed:
-                                              monthly.busy ||
-                                                      blocked ||
-                                                      key.compareTo(nowKey) > 0
-                                                  ? null
-                                                  : () async {
-                                                      final confirmed = await showDialog<
-                                                              bool>(
-                                                          context: context,
-                                                          builder: (ctx) =>
-                                                              AlertDialog(
-                                                                  title: Text(l(
-                                                                      context,
-                                                                      "Record this month’s payment?")),
-                                                                  content: Text(l(
-                                                                      context,
-                                                                      "Confirm that you gave {0} {1} to {2}.{3}",
-                                                                      [
-                                                                        plan.currency,
-                                                                        plan.amount
-                                                                            .toStringAsFixed(currencyDecimals(plan.currency)),
-                                                                        plan.recipient,
-                                                                        plan.kind ==
-                                                                                'zakat'
-                                                                            ? l(context,
-                                                                                " This will reduce the remaining amount on your selected Zakat record.")
-                                                                            : l(context,
-                                                                                " Your Zakat balance will not change.")
-                                                                      ])),
-                                                                  actions: [
-                                                                    TextButton(
-                                                                        onPressed: () => Navigator.pop(
+                                          onPressed: monthly.busy ||
+                                                  blocked ||
+                                                  key.compareTo(nowKey) > 0
+                                              ? null
+                                              : () async {
+                                                  FocusManager
+                                                      .instance.primaryFocus
+                                                      ?.unfocus();
+                                                  final today = DateTime.now();
+                                                  final end = DateTime(
+                                                      _month.year,
+                                                      _month.month + 1,
+                                                      0);
+                                                  final latest =
+                                                      end.isBefore(today)
+                                                          ? end
+                                                          : today;
+                                                  DateTime? paidOn = today;
+                                                  if (key != nowKey) {
+                                                    paidOn = await showDatePicker(
+                                                        context: context,
+                                                        initialDate: latest,
+                                                        firstDate: _month,
+                                                        lastDate: latest,
+                                                        helpText: l(context,
+                                                            'When did you give this payment?'));
+                                                  }
+                                                  if (paidOn == null ||
+                                                      !context.mounted) {
+                                                    return;
+                                                  }
+                                                  final confirmed = await showDialog<
+                                                          bool>(
+                                                      context: context,
+                                                      builder: (ctx) =>
+                                                          AlertDialog(
+                                                              title: Text(l(
+                                                                  context,
+                                                                  "Record this month’s payment?")),
+                                                              content: Text(l(
+                                                                  context,
+                                                                  "Confirm that you gave {0} {1} to {2}.{3}",
+                                                                  [
+                                                                    plan.currency,
+                                                                    plan.amount.toStringAsFixed(
+                                                                        currencyDecimals(
+                                                                            plan.currency)),
+                                                                    plan.recipient,
+                                                                    plan.kind ==
+                                                                            'zakat'
+                                                                        ? l(context,
+                                                                            " This will reduce the remaining amount on your selected Zakat record.")
+                                                                        : l(context,
+                                                                            " Your Zakat balance will not change.")
+                                                                  ])),
+                                                              actions: [
+                                                                TextButton(
+                                                                    onPressed: () =>
+                                                                        Navigator.pop(
                                                                             ctx,
                                                                             false),
-                                                                        child: Text(l(
-                                                                            context,
-                                                                            "Not yet"))),
-                                                                    TextButton(
-                                                                        onPressed: () => Navigator.pop(
+                                                                    child: Text(l(
+                                                                        context,
+                                                                        "Not yet"))),
+                                                                TextButton(
+                                                                    onPressed: () =>
+                                                                        Navigator.pop(
                                                                             ctx,
                                                                             true),
-                                                                        child: Text(l(
-                                                                            context,
-                                                                            "Yes, I paid")))
-                                                                  ]));
-                                                      if (confirmed != true ||
-                                                          !context.mounted) {
-                                                        return;
-                                                      }
-                                                      final ok = await monthly
-                                                          .markPaid(plan, key);
-                                                      if (ok &&
-                                                          context.mounted) {
-                                                        await showGivingCelebration(
-                                                            context,
-                                                            sadaqah:
-                                                                plan.kind ==
-                                                                    'sadaqah');
-                                                      }
-                                                      if (context.mounted) {
-                                                        ScaffoldMessenger.of(
-                                                                context)
-                                                            .showSnackBar(SnackBar(
-                                                                content: Text(ok
-                                                                    ? l(
+                                                                    child: Text(l(
                                                                         context,
-                                                                        "Payment recorded for {0}.",
-                                                                        [
-                                                                            plan.recipient
-                                                                          ])
-                                                                    : l(
-                                                                        context,
-                                                                        monthly
-                                                                            .error!))));
-                                                      }
-                                                    },
+                                                                        "Yes, I paid")))
+                                                              ]));
+                                                  if (confirmed != true ||
+                                                      !context.mounted) {
+                                                    return;
+                                                  }
+                                                  final ok = await monthly
+                                                      .markPaid(plan, key,
+                                                          paidAt: paidOn);
+                                                  if (ok && context.mounted) {
+                                                    await showGivingCelebration(
+                                                        context,
+                                                        sadaqah: plan.kind ==
+                                                            'sadaqah');
+                                                  }
+                                                  if (context.mounted) {
+                                                    ScaffoldMessenger.of(
+                                                            context)
+                                                        .showSnackBar(SnackBar(
+                                                            content: Text(ok
+                                                                ? l(
+                                                                    context,
+                                                                    "Payment recorded for {0}.",
+                                                                    [
+                                                                        plan.recipient
+                                                                      ])
+                                                                : l(
+                                                                    context,
+                                                                    monthly
+                                                                        .error!))));
+                                                  }
+                                                },
                                           icon: const Icon(
                                               Icons.check_circle_outline),
                                           label:
@@ -570,6 +607,7 @@ class _MonthlyPlanDialogState extends State<MonthlyPlanDialog> {
   late String _kind;
   late String _record;
   late int _day;
+  late DateTime _start;
   String? _error;
   @override
   void initState() {
@@ -582,6 +620,9 @@ class _MonthlyPlanDialogState extends State<MonthlyPlanDialog> {
     _kind = p?.kind ?? profile.monthlyDefaultKind;
     _record = p?.zakatRecordId ?? '';
     _day = p?.reminderDay ?? 1;
+    _start = p != null && p.active
+        ? monthFromKey(p.startMonth)
+        : DateTime(DateTime.now().year, DateTime.now().month);
   }
 
   @override
@@ -632,6 +673,8 @@ class _MonthlyPlanDialogState extends State<MonthlyPlanDialog> {
                           const SizedBox(height: 14),
                           TextFormField(
                               controller: _amount,
+                              textDirection: TextDirection.ltr,
+                              inputFormatters: const [GroupedAmountFormatter()],
                               keyboardType:
                                   const TextInputType.numberWithOptions(
                                       decimal: true),
@@ -697,6 +740,39 @@ class _MonthlyPlanDialogState extends State<MonthlyPlanDialog> {
                                       "Create and submit a Zakat calculation in this currency first. You can also choose Sadaqah for now."))),
                           ],
                           const SizedBox(height: 14),
+                          ListTile(
+                              contentPadding: EdgeInsets.zero,
+                              leading: const Icon(Icons.history),
+                              title: Text(l(context, 'First month')),
+                              subtitle: Text(l(
+                                  context, DateFormat.yMMMM().format(_start))),
+                              trailing:
+                                  const Icon(Icons.edit_calendar_outlined),
+                              onTap: monthly.busy
+                                  ? null
+                                  : () async {
+                                      FocusManager.instance.primaryFocus
+                                          ?.unfocus();
+                                      final picked = await showDatePicker(
+                                          context: context,
+                                          initialDate:
+                                              _start.isAfter(DateTime.now())
+                                                  ? DateTime.now()
+                                                  : _start,
+                                          firstDate: DateTime(2000),
+                                          lastDate: DateTime.now(),
+                                          helpText: l(context,
+                                              'Choose any day in the first month'));
+                                      if (picked != null && mounted) {
+                                        setState(() => _start = DateTime(
+                                            picked.year, picked.month));
+                                      }
+                                    }),
+                          Text(
+                              l(context,
+                                  'Choose an earlier month to record giving you already made. No payments are created automatically.'),
+                              style: Theme.of(context).textTheme.bodySmall),
+                          const SizedBox(height: 14),
                           SearchablePicker<int>(
                               label: l(context, "Remind me each month on day"),
                               value: _day,
@@ -741,9 +817,7 @@ class _MonthlyPlanDialogState extends State<MonthlyPlanDialog> {
                           kind: _kind,
                           zakatRecordId: _kind == 'zakat' ? _record : '',
                           reminderDay: _day,
-                          startMonth: p != null && p.active
-                              ? p.startMonth
-                              : monthKey(DateTime.now()),
+                          startMonth: monthKey(_start),
                           active: true,
                           createdAt: p?.createdAt ?? DateTime.now());
                       final ok = await monthly.save(plan);

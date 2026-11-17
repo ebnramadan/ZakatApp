@@ -51,7 +51,15 @@ class MonthlyService {
       throw const FormatException(
           'Choose a month from the start of this commitment through the current month.');
     }
-    final date = paidAt ?? now;
+    final selectedMonth = monthFromKey(month);
+    final date = paidAt ??
+        (month == monthKey(now)
+            ? now
+            : DateTime(selectedMonth.year, selectedMonth.month + 1, 0));
+    if (monthKey(date) != month) {
+      throw const FormatException(
+          'Choose a payment date within the selected month.');
+    }
     if (date.isAfter(now)) {
       throw const FormatException('A future payment cannot be marked paid.');
     }

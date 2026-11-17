@@ -416,15 +416,14 @@ class _RecordsTabState extends State<_RecordsTab> {
                 onPressed: widget.onCreate,
                 icon: const Icon(Icons.add),
                 label: Text(l(context, "New Calculation"))),
-            OutlinedButton.icon(
+            IconButton.outlined(
+                tooltip: l(context, 'Recycle bin'),
                 onPressed: () => Navigator.of(context).push(MaterialPageRoute(
                     builder: (_) => const RecycleBinScreen())),
-                icon: const Icon(Icons.delete_outline),
-                label: Text(l(context, "Recycle bin{0}", [
-                  calc.recycledRecords.isEmpty
-                      ? ''
-                      : ' (${calc.recycledRecords.length})'
-                ]))),
+                icon: Badge(
+                    isLabelVisible: calc.recycledRecords.isNotEmpty,
+                    label: Text('${calc.recycledRecords.length}'),
+                    child: const Icon(Icons.delete_outline))),
           ])),
       if (calc.recordsError != null)
         Card(

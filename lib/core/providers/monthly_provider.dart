@@ -130,8 +130,8 @@ class MonthlyProvider extends ChangeNotifier {
   }
 
   Future<bool> save(MonthlyPlan plan) => _perform(() => service.savePlan(plan));
-  Future<bool> markPaid(MonthlyPlan plan, String month) =>
-      _perform(() => service.markPaid(plan, month));
+  Future<bool> markPaid(MonthlyPlan plan, String month, {DateTime? paidAt}) =>
+      _perform(() => service.markPaid(plan, month, paidAt: paidAt));
   Future<bool> undo(MonthlyPayment payment) =>
       _perform(() => service.undoPayment(payment));
   @override

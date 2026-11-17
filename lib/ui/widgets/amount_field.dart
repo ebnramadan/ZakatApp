@@ -1,6 +1,6 @@
 import '../../core/localization/strings.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import '../../core/localization/amount_formatter.dart';
 import '../../core/constants.dart';
 
 class AmountField extends StatelessWidget {
@@ -35,13 +35,9 @@ class AmountField extends StatelessWidget {
         TextFormField(
           controller: controller,
           readOnly: readOnly,
+          textDirection: TextDirection.ltr,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          inputFormatters: [
-            TextInputFormatter.withFunction((oldValue, newValue) =>
-                RegExp(r'^\d*\.?\d*$').hasMatch(normalizeNumber(newValue.text))
-                    ? newValue
-                    : oldValue),
-          ],
+          inputFormatters: const [GroupedAmountFormatter()],
           onChanged: onChanged,
           decoration: InputDecoration(
             hintText: l(context, hint ?? '0.00'),

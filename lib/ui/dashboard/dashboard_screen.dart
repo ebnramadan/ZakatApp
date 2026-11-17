@@ -1,3 +1,5 @@
+import '../../core/models/giving_forecast.dart';
+import 'giving_forecast_card.dart';
 import '../../core/localization/strings.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -325,7 +327,7 @@ class DashboardScreen extends StatelessWidget {
         child: ListView(padding: EdgeInsets.all(compact ? 20 : 28), children: [
       PageIntro(
           eyebrow: l(context, "Your giving"),
-          title: l(context, "One intention. Clear progress."),
+          title: l(context, "For Allah. One step at a time."),
           description: l(
               context, "Your default Zakat record and the next things to do.")),
       LayoutBuilder(builder: (context, constraints) {
@@ -348,6 +350,13 @@ class DashboardScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [left, tasks, history]);
       }),
+      if (!loading && !hasError && !monthly.loading && monthly.error == null)
+        GivingForecastCard(
+            months: givingForecast(
+                plans: monthly.plans,
+                from: now,
+                recordAvailable: (id, currency) => calc.records.any((r) =>
+                    r.id == id && r.isSubmitted && r.currency == currency))),
     ]));
   }
 }

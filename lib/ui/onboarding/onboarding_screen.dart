@@ -14,12 +14,13 @@ class OnboardingScreen extends StatefulWidget {
 
 class _OnboardingScreenState extends State<OnboardingScreen> {
   int step = 0;
-  late String currency, language;
+  late String currency, language, monthlyKind;
   bool busy = false;
   @override
   void initState() {
     super.initState();
     final p = context.read<AuthProvider>().profile!;
+    monthlyKind = p.monthlyDefaultKind;
     currency = p.currency;
     language = p.language;
   }
@@ -58,7 +59,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         l(
                             context,
                             [
-                              'Your giving, with intention.',
+                              'Give for Allah, with intention.',
                               'Make it feel like yours.',
                               'A simple rhythm for giving.'
                             ][step]),
@@ -113,6 +114,28 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           style: const TextStyle(fontSize: 13)),
                     ],
                     if (step == 2) ...[
+                      Text(l(context, 'Default for monthly giving'),
+                          style: Theme.of(context).textTheme.titleMedium),
+                      const SizedBox(height: 12),
+                      SegmentedButton<String>(
+                          segments: [
+                            ButtonSegment(
+                                value: 'sadaqah',
+                                label: Text(l(context, 'صدقة · Sadaqah'))),
+                            ButtonSegment(
+                                value: 'zakat',
+                                label:
+                                    Text(l(context, 'زكاة · Part of Zakat'))),
+                          ],
+                          selected: {
+                            monthlyKind
+                          },
+                          onSelectionChanged: (v) =>
+                              setState(() => monthlyKind = v.single)),
+                      const SizedBox(height: 12),
+                      Text(l(context,
+                          'Sadaqah is extra giving. Zakat payments reduce the record you choose, only after you mark them paid.')),
+                      const SizedBox(height: 20),
                       ListTile(
                           leading: const Icon(Icons.calculate_outlined),
                           title: Text(l(context, "1. Calculate")),
@@ -148,6 +171,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                 setState(() => busy = true);
                                 final auth = context.read<AuthProvider>();
                                 final ok = await auth.updateProfileFields(
+                                    monthlyDefaultKind: monthlyKind,
                                     currency: currency,
                                     language: language,
                                     onboardingCompleted: true);

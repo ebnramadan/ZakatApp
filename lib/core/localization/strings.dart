@@ -58,6 +58,7 @@ String normalizeNumber(String text) => text
       return (n >= 0x6f0 ? n - 0x6f0 : n - 0x660).toString();
     })
     .replaceAll('٫', '.')
-    .replaceAll('٬', '');
+    .replaceAll('٬', '')
+    .replaceAll(',', '');
 double? parseLocalizedNumber(String text) =>
     double.tryParse(normalizeNumber(text).trim());
