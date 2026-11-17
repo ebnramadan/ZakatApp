@@ -79,10 +79,10 @@ void main() {
                     ? const SizedBox()
                     : const OnboardingScreen()))));
     await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(find.text('Continue'), 300,
+    await tester.scrollUntilVisible(find.text('Next'), 300,
         scrollable: find.byType(Scrollable).first);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Continue'));
+    await tester.tap(find.text('Next'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('العربية'));
     await tester.pumpAndSettle();
@@ -97,9 +97,9 @@ void main() {
     expect(find.text('Make it feel like yours.'), findsOneWidget);
     expect(Directionality.of(tester.element(find.byType(OnboardingScreen))),
         TextDirection.ltr);
-    await tester.tap(find.text('Continue'));
+    await tester.tap(find.text('Next'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Zakat · Part of Zakat'));
+    await tester.tap(find.text('Zakat'));
     await tester.scrollUntilVisible(find.text('Start tracking'), 250,
         scrollable: find.byType(Scrollable).first);
     await tester.pumpAndSettle();

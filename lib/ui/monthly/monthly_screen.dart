@@ -149,7 +149,10 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
                       IconButton(
                           tooltip: l(context, "Previous month"),
                           onPressed: () => _shift(-1),
-                          icon: const Icon(Icons.chevron_left)),
+                          icon: Icon(
+                              Directionality.of(context) == TextDirection.rtl
+                                  ? Icons.chevron_right
+                                  : Icons.chevron_left)),
                       Expanded(
                           child: Text(
                               l(context, DateFormat.yMMMM().format(_month)),
@@ -158,7 +161,10 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
                       IconButton(
                           tooltip: l(context, "Next month"),
                           onPressed: () => _shift(1),
-                          icon: const Icon(Icons.chevron_right))
+                          icon: Icon(
+                              Directionality.of(context) == TextDirection.rtl
+                                  ? Icons.chevron_left
+                                  : Icons.chevron_right))
                     ]),
                     if (key != nowKey)
                       Center(
@@ -566,11 +572,13 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
                         style: const TextStyle(
                             color: Colors.black54, fontSize: 12, height: 1.6)),
                   ])),
-      floatingActionButton: FloatingActionButton.extended(
-          heroTag: 'monthly-add',
-          onPressed: monthly.busy ? null : () => _edit(),
-          icon: const Icon(Icons.add),
-          label: Text(l(context, "Add recipient"))),
+      floatingActionButton: all.isEmpty
+          ? null
+          : FloatingActionButton.extended(
+              heroTag: 'monthly-add',
+              onPressed: monthly.busy ? null : () => _edit(),
+              icon: const Icon(Icons.add),
+              label: Text(l(context, "Add recipient"))),
     );
   }
 }

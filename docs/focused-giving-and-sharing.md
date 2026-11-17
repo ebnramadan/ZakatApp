@@ -68,3 +68,9 @@ Bottom navigation has a 64px content area. Real CSS/Flutter safe-area insets are
 The expandable home forecast projects the next 12 months starting this month. Active commitments are grouped by currency and classification; unavailable/unsubmitted/currency-mismatched Zakat records are excluded. Future starts enter in their month. Projections assume commitments continue at the current amount, without converting currencies, creating payments, or changing balances. Monthly summaries show planned, actually given, and still to give; paused unpaid commitments are excluded from outstanding amounts.
 
 Recipients can start in a previous month. Browse to it to record actual giving and choose its date; future months cannot be marked paid. Retroactive Zakat uses the same atomic, deterministic linked ledger receipt as current giving. Editing a commitment never rewrites saved receipts.
+
+## Onboarding navigation and Arabic typography
+
+Onboarding has a fixed safe-area footer with Back and Next/Start tracking; the compact body fits all three steps on normal phone sizes, with scrolling reserved for enlarged text or unusually small windows. The final step focuses on the monthly classification rather than repeating a long feature tour. Existing currency choices stay intact; new accounts suggest currency from the device timezone/region and fall back to EGP, without GPS permission or external location requests.
+
+Arabic selects Tajawal as its primary font, rather than relying on Inter fallback metrics. Button, chip, heading, date, and list label line boxes allow the Arabic ascenders/descenders to fit. Empty monthly screens have one add-recipient action, and month arrows follow the interface direction.

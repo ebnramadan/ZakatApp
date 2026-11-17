@@ -802,5 +802,14 @@ const Map<String, String> arabic = {
   "Giving forecast is unavailable until records and monthly giving finish loading.":
       "خطة العطاء هتظهر بعد ما سجلاتك وشهرياتك يحمّلوا.",
   "Choose a payment date within the selected month.":
-      "اختار تاريخ الدفع جوه الشهر اللي بتسجّل له."
+      "اختار تاريخ الدفع جوه الشهر اللي بتسجّل له.",
+  "{0} of {1}": "{0} من {1}",
+  "Suggested from your device region, or EGP when unavailable. You can change it.":
+      "اقترحنا العملة حسب بلد الجهاز، ولو مش معروف اخترنا EGP. تقدر تغيّرها.",
+  "Extra giving, separate from Zakat. You can choose differently for each recipient.":
+      "عطاء زيادة عن الزكاة. وتقدر تختار تصنيف مختلف لكل شخص.",
+  "Counts toward the Zakat record you choose, only after you confirm payment.":
+      "بتتحسب من سجل الزكاة اللي تختاره، بس بعد ما تأكد إنك دفعت.",
+  "Add a recipient and amount in Monthly Giving. Mark payments after you give.":
+      "ضيف اسم الشخص والمبلغ في شهريات، وسجّل كل دفعة بعد ما تدفعها."
 };

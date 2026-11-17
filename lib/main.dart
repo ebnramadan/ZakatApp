@@ -64,7 +64,7 @@ void main() async {
           GlobalWidgetsLocalizations.delegate,
           GlobalCupertinoLocalizations.delegate
         ],
-        theme: AppTheme.light,
+        theme: AppTheme.forLanguage(language),
         home: Builder(
             builder: (context) => Scaffold(
                 body: Center(
@@ -117,7 +117,7 @@ class ZakatApp extends StatelessWidget {
                             GlobalCupertinoLocalizations.delegate
                           ],
                           debugShowCheckedModeBanner: false,
-                          theme: AppTheme.light,
+                          theme: AppTheme.forLanguage(auth.language),
                           builder: (context, child) {
                             Intl.defaultLocale = auth.language;
                             HijriCalendar.setLocal(auth.language);

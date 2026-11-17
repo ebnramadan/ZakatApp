@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/user_profile.dart';
+import '../platform/device_currency.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
 
@@ -109,6 +110,7 @@ class AuthProvider extends ChangeNotifier {
         displayName: user.displayName ?? user.email?.split('@').first ?? 'User',
         email: user.email ?? '',
         language: _deviceLanguage,
+        currency: suggestedDeviceCurrency(),
         photoUrl: user.photoURL,
       );
       await _fs.saveProfile(profile);
@@ -214,6 +216,7 @@ class AuthProvider extends ChangeNotifier {
           await _auth.refreshUser();
           final fresh = UserProfile(
               uid: user.uid,
+              currency: suggestedDeviceCurrency(),
               displayName: user.displayName ?? user.email!.split('@').first,
               email: user.email!,
               photoUrl: user.photoURL);

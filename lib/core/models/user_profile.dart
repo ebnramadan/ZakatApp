@@ -18,7 +18,7 @@ class UserProfile {
       required this.displayName,
       required this.email,
       this.photoUrl,
-      this.currency = 'USD',
+      this.currency = 'EGP',
       this.language = 'en',
       this.monthlyDefaultKind = 'sadaqah',
       this.monthlyEmailReminders = false,
@@ -34,7 +34,7 @@ class UserProfile {
           displayName: map['displayName'] as String? ?? '',
           email: map['email'] as String? ?? '',
           photoUrl: map['photoUrl'] as String?,
-          currency: map['currency'] as String? ?? 'USD',
+          currency: map['currency'] as String? ?? 'EGP',
           language: map['language'] == 'ar' ? 'ar' : 'en',
           monthlyDefaultKind:
               map['monthlyDefaultKind'] == 'zakat' ? 'zakat' : 'sadaqah',
