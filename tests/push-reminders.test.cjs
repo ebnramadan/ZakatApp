@@ -91,3 +91,15 @@ test('service worker hides names and rejects stale-account notifications even if
  state={...state,uid:'other'};await deliver(payload);assert.equal(shown.length,1);
  state={...state,uid:'u',enabled:false};await deliver(payload);assert.equal(shown.length,1);
 });
+
+test('device tests stay visible without reminder opt-in, but are cleared on account changes',async()=>{
+ const vm=require('node:vm'),{readFileSync}=require('node:fs');
+ const handlers={};let state={uid:'u',enabled:false};let testsClosed=0,remindersClosed=0;
+ const context=vm.createContext({self:{addEventListener:(kind,fn)=>handlers[kind]=fn,registration:{getNotifications:async()=>[{tag:'ztracker-test',close:()=>testsClosed++},{tag:'ztracker-giving-reminder',close:()=>remindersClosed++}]}},URL});
+ vm.runInContext(readFileSync('web/push-worker.js','utf8'),context);
+ context.readState=()=>state;context.writeState=value=>{state=value;};
+ vm.runInContext("stateStore = async (mode,action) => mode === 'readonly' ? readState() : action({put: next => writeState(next)})",context);
+ const sync=async uid=>{let work;handlers.message({data:{type:'push-session',uid},ports:[],waitUntil:p=>work=p});await work;};
+ await sync('u');assert.equal(testsClosed,0);assert.equal(remindersClosed,1);
+ await sync('other');assert.equal(testsClosed,1);
+});

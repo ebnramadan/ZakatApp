@@ -5,13 +5,14 @@ import '../../core/providers/auth_provider.dart';
 import '../../core/services/push_service.dart';
 
 class PushReminderCard extends StatefulWidget {
-  const PushReminderCard({super.key});
+  final PushService? service;
+  const PushReminderCard({super.key, this.service});
   @override
   State<PushReminderCard> createState() => _PushReminderCardState();
 }
 
 class _PushReminderCardState extends State<PushReminderCard> {
-  final _service = PushService();
+  late final _service = widget.service ?? PushService();
   Map<String, dynamic> _config = {};
   bool _loading = true,
       _busy = false,
@@ -19,7 +20,8 @@ class _PushReminderCardState extends State<PushReminderCard> {
       _monthly = true,
       _zakat = true,
       _names = false;
-  String? _error;
+  String? _error, _loadError;
+  bool _settingsFailed = false;
   @override
   void initState() {
     super.initState();
@@ -27,10 +29,18 @@ class _PushReminderCardState extends State<PushReminderCard> {
   }
 
   Future<void> _load() async {
-    try {
-      final uid = context.read<AuthProvider>().user!.uid;
-      if (_service.support == 'supported') {
+    final uid = context.read<AuthProvider>().user!.uid;
+    _loadError = null;
+    _error = null;
+    _settingsFailed = false;
+    _enabled = false;
+    if (_service.support == 'supported') {
+      try {
         _config = await _service.configuration();
+      } catch (_) {
+        _loadError = 'Notification settings could not load. Please retry.';
+      }
+      try {
         final settings = await _service.settings(uid);
         if (settings != null && _service.permission == 'granted') {
           _enabled = true;
@@ -38,12 +48,24 @@ class _PushReminderCardState extends State<PushReminderCard> {
           _zakat = settings['zakat'] == true;
           _names = settings['showNames'] == true;
         }
+      } catch (_) {
+        _settingsFailed = true;
+        _loadError = 'Notification settings could not load. Please retry.';
       }
-    } catch (_) {
-      _error = 'Notification settings could not load. Please retry.';
     }
     if (mounted) setState(() => _loading = false);
   }
+
+  Future<void> _test() => _perform(() async {
+        await _service.showTest(
+            l(context, 'Zakat Tracker'),
+            l(context,
+                'Notifications are allowed on this device. May Allah accept your giving.'));
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(l(context,
+                'Test notification requested. Check Notification Centre if no banner appears.'))));
+      });
 
   Future<void> _perform(Future<void> Function() action) async {
     setState(() {
@@ -100,6 +122,19 @@ class _PushReminderCardState extends State<PushReminderCard> {
                       l(context,
                           'Gentle reminders for monthly giving and Zakat, up to twice a week during daytime.'),
                       style: Theme.of(context).textTheme.bodySmall),
+                  if (support == 'supported') ...[
+                    const SizedBox(height: 14),
+                    OutlinedButton.icon(
+                        key: const Key('test-notification'),
+                        onPressed: _busy ? null : _test,
+                        icon: const Icon(Icons.notifications_active_outlined),
+                        label: Text(l(context, 'Send test notification'))),
+                    const SizedBox(height: 6),
+                    Text(
+                        l(context,
+                            'Tests this device only. Enable reminders below for automatic notifications.'),
+                        style: Theme.of(context).textTheme.bodySmall),
+                  ],
                   if (_loading)
                     const Padding(
                         padding: EdgeInsets.all(12),
@@ -115,12 +150,12 @@ class _PushReminderCardState extends State<PushReminderCard> {
                         child: Text(l(context,
                             'Push notifications are not supported in this browser. In-app reminders are still available.')))
                   else ...[
-                    if (_error != null) ...[
+                    if (_loadError != null || _error != null) ...[
                       const SizedBox(height: 12),
-                      Text(l(context, _error!),
+                      Text(l(context, _error ?? _loadError!),
                           style: TextStyle(
                               color: Theme.of(context).colorScheme.error)),
-                      if (_config['publicKey'] == null)
+                      if (_loadError != null)
                         TextButton(
                             onPressed: _busy
                                 ? null
@@ -130,7 +165,7 @@ class _PushReminderCardState extends State<PushReminderCard> {
                                   },
                             child: Text(l(context, 'Retry'))),
                     ],
-                    if (_config['publicKey'] == null && _error == null)
+                    if (_config['publicKey'] == null && _loadError == null)
                       Padding(
                           padding: const EdgeInsets.only(top: 12),
                           child: Text(l(context,
@@ -166,7 +201,9 @@ class _PushReminderCardState extends State<PushReminderCard> {
                               _busy ? null : (v) => setState(() => _names = v)),
                       FilledButton.icon(
                           onPressed:
-                              _busy || (!_monthly && !_zakat) ? null : _save,
+                              _busy || _settingsFailed || (!_monthly && !_zakat)
+                                  ? null
+                                  : _save,
                           icon: const Icon(Icons.notifications_active_outlined),
                           label: Text(_busy
                               ? l(context, 'Saving…')
@@ -176,15 +213,6 @@ class _PushReminderCardState extends State<PushReminderCard> {
                                       'Enable notifications on this device'))),
                       if (_enabled)
                         Wrap(spacing: 8, children: [
-                          TextButton(
-                              onPressed: _busy
-                                  ? null
-                                  : () => _perform(() => _service.showTest(
-                                      l(context, 'Zakat Tracker'),
-                                      l(context,
-                                          'Notifications are allowed on this device. May Allah accept your giving.'))),
-                              child:
-                                  Text(l(context, 'Show a test notification'))),
                           TextButton(
                               onPressed: _busy
                                   ? null

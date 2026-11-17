@@ -841,5 +841,10 @@ const Map<String, String> arabic = {
   "Could not update notifications. Check your connection and retry.":
       "ما قدرناش نحدّث الإشعارات. اتأكد من الاتصال وجرّب تاني.",
   "Monthly giving and Zakat reminders": "تذكيرات الشهريات والزكاة",
-  "Refresh notification status": "تحديث حالة الإشعارات"
+  "Refresh notification status": "تحديث حالة الإشعارات",
+  "Send test notification": "إرسال إشعار تجريبي",
+  "Tests this device only. Enable reminders below for automatic notifications.":
+      "ده اختبار للجهاز بس. فعّل التذكيرات تحت عشان الإشعارات التلقائية.",
+  "Test notification requested. Check Notification Centre if no banner appears.":
+      "طلبنا عرض الإشعار التجريبي. لو مش ظاهر، بص في مركز الإشعارات."
 };
