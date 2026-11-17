@@ -773,5 +773,13 @@ const Map<String, String> arabic = {
       "ضيف سعر الذهب من «تفاصيل أكتر» علشان تكمّل.",
   "Small acts. Lasting good.": "خير بسيط، وأثره كبير.",
   "Preparing your space for giving": "بنجهّزلك مساحة للخير",
-  "A good intention is a beautiful beginning.": "النيّة الطيبة بداية خير."
+  "A good intention is a beautiful beginning.": "النيّة الطيبة بداية خير.",
+  "Loading your saved records…": "بنحمّل سجلاتك المحفوظة…",
+  "If this takes too long, retry here. You do not need to close the app.":
+      "لو التحميل اتأخر، جرّب تاني من هنا. مش محتاج تقفل التطبيق.",
+  "Retry connection": "جرّب الاتصال تاني",
+  "Your records are taking too long to load. Check your connection and retry.":
+      "تحميل السجلات اتأخر. اتأكد من اتصالك وجرّب تاني.",
+  "Payment totals are taking too long to load. Check your connection and retry.":
+      "تحميل إجمالي الدفعات اتأخر. اتأكد من اتصالك وجرّب تاني."
 };

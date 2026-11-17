@@ -18,6 +18,7 @@ class MonthlyProvider extends ChangeNotifier {
   bool _plansLoaded = false;
   bool _paymentsLoaded = false;
   Timer? _clock;
+  Timer? _loadDeadline;
   String _today = DateTime.now().toIso8601String().substring(0, 10);
   int _generation = 0;
   StreamSubscription<List<MonthlyPlan>>? _plans;
@@ -31,6 +32,7 @@ class MonthlyProvider extends ChangeNotifier {
     if (_uid == uid && !force) return;
     _uid = uid;
     final generation = ++_generation;
+    _loadDeadline?.cancel();
     _plansLoaded = false;
     _paymentsLoaded = false;
     _clock ??= Timer.periodic(const Duration(minutes: 1), (_) {
@@ -47,9 +49,17 @@ class MonthlyProvider extends ChangeNotifier {
     payments = [];
     loading = true;
     error = null;
+    _loadDeadline = Timer(const Duration(seconds: 20), () {
+      if (_disposed || generation != _generation || !loading) return;
+      loading = false;
+      error =
+          'Monthly giving could not be loaded. Check your connection and retry.';
+      _notify();
+    });
     void failed(Object e) {
       if (_disposed || generation != _generation) return;
       loading = false;
+      _loadDeadline?.cancel();
       error =
           'Monthly giving could not be loaded. Check your connection and retry.';
       _notify();
@@ -59,20 +69,30 @@ class MonthlyProvider extends ChangeNotifier {
       if (_disposed || generation != _generation) return;
       plans = data;
       _plansLoaded = true;
-      loading = !(_plansLoaded && _paymentsLoaded);
+      loading = error == null && !(_plansLoaded && _paymentsLoaded);
+      if (_plansLoaded && _paymentsLoaded) {
+        error = null;
+        _loadDeadline?.cancel();
+      }
       _notify();
     }, onError: failed);
     _payments = service.payments(uid).listen((data) {
       if (_disposed || generation != _generation) return;
       payments = data;
       _paymentsLoaded = true;
-      loading = !(_plansLoaded && _paymentsLoaded);
+      loading = error == null && !(_plansLoaded && _paymentsLoaded);
+      if (_plansLoaded && _paymentsLoaded) {
+        error = null;
+        _loadDeadline?.cancel();
+      }
       _notify();
     }, onError: failed);
     _readiness = service.emailReadiness().listen((ready) {
+      if (_disposed || generation != _generation) return;
       emailReady = ready;
       _notify();
     }, onError: (Object e) {
+      if (_disposed || generation != _generation) return;
       emailReady = false;
       _notify();
     });
@@ -118,6 +138,7 @@ class MonthlyProvider extends ChangeNotifier {
   void dispose() {
     _disposed = true;
     _clock?.cancel();
+    _loadDeadline?.cancel();
     _generation++;
     _plans?.cancel();
     _payments?.cancel();

@@ -71,14 +71,37 @@ class DashboardScreen extends StatelessWidget {
     final loading = calc.recordsLoading || calc.paymentsLoading;
     final hasError = calc.recordsError != null || calc.paymentsError != null;
     final overview = <Widget>[
-      if (loading)
-        const Center(child: CircularProgressIndicator())
-      else if (hasError)
+      if (hasError)
         ActionCard(
             icon: Icons.cloud_off_outlined,
             title: l(context, "Your progress couldn’t load"),
             subtitle: l(context, "Tap to retry; saved payments are unchanged."),
-            onTap: () => calc.loadRecords(auth.user!.uid))
+            onTap: () => calc.retryRecords(auth.user!.uid))
+      else if (loading)
+        Card(
+            child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const LinearProgressIndicator(),
+                      const SizedBox(height: 14),
+                      Text(l(context, 'Loading your saved records…'),
+                          style: const TextStyle(fontWeight: FontWeight.w600)),
+                      const SizedBox(height: 6),
+                      Text(
+                          l(context,
+                              'If this takes too long, retry here. You do not need to close the app.'),
+                          style: const TextStyle(fontSize: 12)),
+                      const SizedBox(height: 8),
+                      Align(
+                          alignment: AlignmentDirectional.centerStart,
+                          child: TextButton.icon(
+                              onPressed: () =>
+                                  calc.retryRecords(auth.user!.uid),
+                              icon: const Icon(Icons.refresh_rounded),
+                              label: Text(l(context, 'Retry connection')))),
+                    ])))
       else if (current == null)
         Card(
             child: Padding(

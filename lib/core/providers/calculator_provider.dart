@@ -11,9 +11,17 @@ import '../services/price_service.dart';
 class CalculatorProvider extends ChangeNotifier {
   final FirestoreService _fs;
   final PriceService _prices;
-  CalculatorProvider({FirestoreService? store, PriceService? prices})
+  final Duration _initialLoadTimeout;
+  Timer? _loadDeadline;
+  int _dataGeneration = 0;
+  String? _recordsUid;
+  CalculatorProvider(
+      {FirestoreService? store,
+      PriceService? prices,
+      Duration initialLoadTimeout = const Duration(seconds: 10)})
       : _fs = store ?? FirestoreService(),
-        _prices = prices ?? PriceService();
+        _prices = prices ?? PriceService(),
+        _initialLoadTimeout = initialLoadTimeout;
   StreamSubscription<List<ZakatRecord>>? _sub;
   List<ZakatRecord> _records = [];
   ZakatRecord? _draft;
@@ -57,33 +65,104 @@ class CalculatorProvider extends ChangeNotifier {
     if (!_disposed) notifyListeners();
   }
 
-  void loadRecords(String uid) {
+  void loadRecords(String uid) => _listenRecords(uid, retries: 1);
+
+  Future<void> retryRecords(String uid) async {
+    if (_disposed) return;
+    final generation = ++_dataGeneration;
+    _loadDeadline?.cancel();
     _sub?.cancel();
     _paymentSub?.cancel();
+    if (_recordsUid != uid) {
+      _records = [];
+      _allPayments = [];
+      if (_draft?.userId != uid) _draft = null;
+    }
+    _recordsUid = uid;
+    _recordsLoading = true;
     paymentsLoading = true;
+    _recordsError = null;
     paymentsError = null;
+    _notify();
+    try {
+      await _fs.reconnectNetwork().timeout(const Duration(seconds: 6));
+    } catch (_) {
+      /* A fresh listener can still recover after a transport error. */
+    }
+    if (_disposed || generation != _dataGeneration) return;
+    _listenRecords(uid, retries: 0);
+  }
+
+  void _finishInitialLoad() {
+    if (!_recordsLoading && !paymentsLoading) {
+      _loadDeadline?.cancel();
+      _loadDeadline = null;
+    }
+  }
+
+  void _listenRecords(String uid, {required int retries}) {
+    if (_disposed) return;
+    final generation = ++_dataGeneration;
+    _loadDeadline?.cancel();
+    _sub?.cancel();
+    _paymentSub?.cancel();
+    if (_recordsUid != uid) {
+      _records = [];
+      _allPayments = [];
+      if (_draft?.userId != uid) _draft = null;
+    }
+    _recordsUid = uid;
+    _recordsLoading = true;
+    paymentsLoading = true;
+    _recordsError = null;
+    paymentsError = null;
+    _loadDeadline = Timer(_initialLoadTimeout, () {
+      if (_disposed || generation != _dataGeneration) return;
+      if (!_recordsLoading && !paymentsLoading) return;
+      if (retries > 0 && _recordsError == null && paymentsError == null) {
+        unawaited(retryRecords(uid));
+        return;
+      }
+      if (_recordsLoading) {
+        _recordsLoading = false;
+        _recordsError =
+            'Your records are taking too long to load. Check your connection and retry.';
+      }
+      if (paymentsLoading) {
+        paymentsLoading = false;
+        paymentsError =
+            'Payment totals are taking too long to load. Check your connection and retry.';
+      }
+      _notify();
+    });
+    _notify();
     _paymentSub = _fs.allPaymentsStream(uid).listen((payments) {
+      if (_disposed || generation != _dataGeneration) return;
       _allPayments = payments;
       paymentsLoading = false;
       paymentsError = null;
+      _finishInitialLoad();
       _notify();
     }, onError: (Object e) {
+      if (_disposed || generation != _dataGeneration) return;
       paymentsLoading = false;
       paymentsError = 'Payment totals could not load. Please retry.';
+      _finishInitialLoad();
       _notify();
     });
-    _recordsLoading = true;
-    _recordsError = null;
-    _notify();
     _sub = _fs.recordsStream(uid).listen((list) {
+      if (_disposed || generation != _dataGeneration) return;
       _records = list;
       _recordsError = null;
       _recordsLoading = false;
+      _finishInitialLoad();
       _notify();
     }, onError: (Object e) {
+      if (_disposed || generation != _dataGeneration) return;
       _recordsLoading = false;
       _recordsError =
           'Could not load records. Check your connection and retry.';
+      _finishInitialLoad();
       _notify();
     });
   }
@@ -268,6 +347,8 @@ class CalculatorProvider extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    _dataGeneration++;
+    _loadDeadline?.cancel();
     _priceRequest++;
     _sub?.cancel();
     _paymentSub?.cancel();

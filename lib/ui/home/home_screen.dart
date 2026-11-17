@@ -25,7 +25,7 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   late int _tab;
   String? _monthlyFocus;
   void _selectTab(int index) {
@@ -71,14 +71,45 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _tab = widget.initialTab;
+    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final uid = context.read<AuthProvider>().user?.uid;
-      if (uid != null) {
-        context.read<CalculatorProvider>().loadRecords(uid);
-        context.read<MonthlyProvider>().load(uid);
-      }
+      if (mounted) _loadAccountData();
     });
+  }
+
+  void _loadAccountData({bool onlyIfPending = false}) {
+    final auth = context.read<AuthProvider>();
+    final uid = auth.user?.uid;
+    if (uid == null || !auth.isVerified) return;
+    final calc = context.read<CalculatorProvider>();
+    final monthly = context.read<MonthlyProvider>();
+    if (!onlyIfPending ||
+        calc.recordsLoading ||
+        calc.paymentsLoading ||
+        calc.recordsError != null ||
+        calc.paymentsError != null) {
+      if (onlyIfPending) {
+        calc.retryRecords(uid);
+      } else {
+        calc.loadRecords(uid);
+      }
+    }
+    if (!onlyIfPending || monthly.loading || monthly.error != null) {
+      monthly.load(uid, force: onlyIfPending);
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && mounted) {
+      _loadAccountData(onlyIfPending: true);
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
   }
 
   @override
