@@ -40,3 +40,11 @@ Arabic preferences apply immediately, including onboarding, forms, date formatti
 GitHub schedule triggers are best effort, not an immediate delivery service. A request still waiting after ten minutes now shows a delayed state instead of an indefinitely disabled button. Retry preserves its ID, recipients, and delivery receipts; changing saved recipients requires cancelling and creating a new request. Cancellation is rechecked before sending, but cannot retract mail already accepted by the provider. Failed requests can retry with the same delivery history. The worker cancels requests for unverified/disabled accounts and also runs when its delivery code is deployed. The schedule is staggered away from the busiest minute boundaries. For guaranteed low-latency delivery, this free scheduled worker would need to be replaced with an authenticated server endpoint.
 
 Mobile profile uses a compact identity header, grouped preferences, a report card with status and recovery, and a separate security screen. Navigation uses single-line labels, filled selected icons, and a 64px bar with safe-area padding. Bundled static Inter and Noto Sans Arabic weights make typography consistent across browsers; system text scaling remains enabled.
+
+## iPhone setup and branding
+
+Deletion now uses a scrollable warning with explicit Cancel/Move actions, without a text challenge. Focus is cleared before opening the dialog. The shell hides bottom tabs while the keyboard is visible, uses CSS safe-area insets as a Safari fallback, and keeps form actions above the home indicator. Material text inputs use 16px text to avoid unwanted iOS focus zoom while ordinary body copy stays compact.
+
+Calculation setup keeps currency and Hawl start visible. More details contains Nisab pricing, Hijri display, and calculation assumptions; missing gold pricing opens that section before continuing. Arabic copy uses Egyptian wording while preserving religious terminology and duʿā. The crescent/gift icon replaces the previous illustration; startup uses a small matching progress ring with no oversized logo transition. iOS may retain an installed home-screen icon until the shortcut is added again.
+
+Submitting below Nisab saves a submitted record with zero calculated Zakat. Submitting a new record selects it as the default; existing records and payments stay independent.
