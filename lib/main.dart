@@ -19,6 +19,7 @@ import 'core/providers/calculator_provider.dart';
 import 'core/providers/tracker_provider.dart';
 import 'core/providers/monthly_provider.dart';
 import 'ui/auth/login_screen.dart';
+import 'ui/shared/warm_loading_screen.dart';
 import 'ui/auth/verify_email_screen.dart';
 import 'ui/home/home_screen.dart';
 import 'ui/onboarding/onboarding_screen.dart';
@@ -152,18 +153,12 @@ class _AuthGate extends StatelessWidget {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
     if (auth.user == null) {
-      if (auth.isLoading) {
-        return const Scaffold(
-            body: Center(
-                child: SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(strokeWidth: 2))));
-      }
+      if (auth.isLoading) return const WarmLoadingScreen();
       return const LoginScreen();
     }
     if (!auth.isVerified) return const VerifyEmailScreen();
     if (auth.profile == null) {
+      if (auth.isLoading) return const WarmLoadingScreen();
       return Scaffold(
           body: Center(
               child: auth.isLoading

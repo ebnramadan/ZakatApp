@@ -7,7 +7,7 @@ Content-first personal finance, inspired by Apple clarity and Google Material in
 
 ## Tokens
 - Primary emerald #146356; dark emerald #103F36; ink #172C27
-- Canvas #F4F6F5; surface #FFFFFF; muted #52655F; border #DDE5E1
+- Canvas #FBF5E9; surface #FFFCF7; muted #52655F; border #DDE5E1
 - Destructive #B3261E; amber #9A6500 (statuses also use words/icons)
 - Spacing 4/8/12/16/24/32; cards 16px radius; controls >=48px
 - Body 14–15px with 1.4 line height, secondary 12px, page title 25px, financial total 34px
@@ -25,4 +25,4 @@ Default records stay above search and filters, use a bordered emerald card and e
 
 Mobile profile groups related settings into a shared surface rather than one large card per row. Security details open on a dedicated route. Use static font weights 400/500/600/700 for predictable rendering; short navigation labels stay on one line. Keep 48px tap targets even as visual density increases.
 
-Use CSS safe-area insets as a fallback for standalone Safari and keep controls above the home indicator. Hide bottom navigation while the keyboard is open. Startup uses one small loading indicator rather than a large logo followed by a smaller one. The app icon shows an elderly sheikh giving a gift to a seated recipient, using burgundy, cream and warm brown. Calculation setup keeps Nisab pricing and Hijri display in More details.
+Use CSS safe-area insets as a fallback for standalone Safari and keep controls above the home indicator. Hide bottom navigation while the keyboard is open. Startup uses matching giving artwork in HTML and Flutter: a heart rising from open hands on a warm cream canvas. The celebration uses the same illustration with a one-shot reveal, a short duʿā, and burgundy/brown accents. Reduced motion keeps both scenes still. The app icon shows an elderly sheikh giving a gift to a seated recipient, using burgundy, cream and warm brown. Calculation setup keeps Nisab pricing and Hijri display in More details.

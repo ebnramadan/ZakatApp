@@ -56,7 +56,7 @@ class AppTheme {
                   const TextStyle(fontSize: 14, fontWeight: FontWeight.w600))),
       navigationBarTheme: NavigationBarThemeData(
           height: 56,
-          backgroundColor: Colors.white,
+          backgroundColor: const Color(0xFFFFFCF7),
           elevation: 0,
           indicatorColor: const Color(0xFFDDEEE6),
           labelTextStyle: WidgetStateProperty.resolveWith((states) => TextStyle(
@@ -122,7 +122,7 @@ class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: Colors.white,
+        fillColor: const Color(0xFFFFFCF7),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
           borderSide: const BorderSide(color: Color(0xFF869B91)),
@@ -139,7 +139,7 @@ class AppTheme {
             const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       ),
       cardTheme: CardTheme(
-        color: Colors.white,
+        color: const Color(0xFFFFFCF7),
         elevation: 0,
         shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
@@ -147,14 +147,14 @@ class AppTheme {
         margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
       ),
       chipTheme: ChipThemeData(
-        backgroundColor: Colors.white,
+        backgroundColor: const Color(0xFFFFFCF7),
         selectedColor: kPrimaryGreen.withOpacity(0.15),
         side: const BorderSide(color: kPrimaryGreen),
         labelStyle: const TextStyle(color: kPrimaryGreen, fontSize: 13),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-        backgroundColor: Colors.white,
+        backgroundColor: Color(0xFFFFFCF7),
         selectedItemColor: kPrimaryGreen,
         unselectedItemColor: Colors.grey,
         elevation: 8,

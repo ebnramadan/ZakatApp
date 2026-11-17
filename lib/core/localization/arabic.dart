@@ -770,5 +770,8 @@ const Map<String, String> arabic = {
   "Search payments…": "دوّر في الدفعات…",
   "No matching records": "مفيش سجلات مطابقة",
   "Add the gold price in More details to continue.":
-      "ضيف سعر الذهب من «تفاصيل أكتر» علشان تكمّل."
+      "ضيف سعر الذهب من «تفاصيل أكتر» علشان تكمّل.",
+  "Small acts. Lasting good.": "خير بسيط، وأثره كبير.",
+  "Preparing your space for giving": "بنجهّزلك مساحة للخير",
+  "A good intention is a beautiful beginning.": "النيّة الطيبة بداية خير."
 };
