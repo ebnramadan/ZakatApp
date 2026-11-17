@@ -25,6 +25,9 @@ class FirestoreService {
   Future<void> saveProfile(UserProfile profile) =>
       _users().doc(profile.uid).set(profile.toMap(), SetOptions(merge: true));
 
+  Future<void> updateProfileFields(String uid, Map<String, dynamic> fields) =>
+      _users().doc(uid).set(fields, SetOptions(merge: true));
+
   // ─── Zakat Records ─────────────────────────────────────────────────────────
 
   Stream<List<ZakatRecord>> recordsStream(String uid) {

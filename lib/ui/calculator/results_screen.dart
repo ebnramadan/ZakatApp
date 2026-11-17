@@ -22,7 +22,9 @@ class ResultsScreen extends StatelessWidget {
     }
 
     final fmt = NumberFormat.currency(
-        symbol: currencySymbol(currency), decimalDigits: 2);
+        name: currency,
+        symbol: currencySymbol(currency),
+        decimalDigits: currencyDecimals(currency));
 
     return Scaffold(
       appBar: AppBar(title: const Text('Zakat Summary')),

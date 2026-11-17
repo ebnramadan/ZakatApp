@@ -5,6 +5,8 @@ class UserProfile {
   String? photoUrl;
   String currency;
   List<String> shareRecipients;
+  String monthlyDefaultKind;
+  bool monthlyEmailReminders;
   String shareFrequency; // 'weekly' | 'monthly' | 'yearly'
 
   UserProfile({
@@ -13,6 +15,8 @@ class UserProfile {
     required this.email,
     this.photoUrl,
     this.currency = 'USD',
+    this.monthlyDefaultKind = 'sadaqah',
+    this.monthlyEmailReminders = false,
     this.shareRecipients = const [],
     this.shareFrequency = 'yearly',
   });
@@ -24,6 +28,9 @@ class UserProfile {
       email: map['email'] as String? ?? '',
       photoUrl: map['photoUrl'] as String?,
       currency: map['currency'] as String? ?? 'USD',
+      monthlyDefaultKind:
+          map['monthlyDefaultKind'] == 'zakat' ? 'zakat' : 'sadaqah',
+      monthlyEmailReminders: map['monthlyEmailReminders'] == true,
       shareRecipients: List<String>.from(map['shareRecipients'] as List? ?? []),
       shareFrequency: map['shareFrequency'] as String? ?? 'yearly',
     );
@@ -34,12 +41,17 @@ class UserProfile {
         'email': email,
         'photoUrl': photoUrl,
         'currency': currency,
+        'monthlyDefaultKind': monthlyDefaultKind,
+        'monthlyEmailReminders': monthlyEmailReminders,
         'shareRecipients': shareRecipients,
         'shareFrequency': shareFrequency,
       };
 
   UserProfile copyWith({
     String? displayName,
+    String? email,
+    String? monthlyDefaultKind,
+    bool? monthlyEmailReminders,
     String? photoUrl,
     String? currency,
     List<String>? shareRecipients,
@@ -48,9 +60,12 @@ class UserProfile {
     return UserProfile(
       uid: uid,
       displayName: displayName ?? this.displayName,
-      email: email,
+      email: email ?? this.email,
       photoUrl: photoUrl ?? this.photoUrl,
       currency: currency ?? this.currency,
+      monthlyDefaultKind: monthlyDefaultKind ?? this.monthlyDefaultKind,
+      monthlyEmailReminders:
+          monthlyEmailReminders ?? this.monthlyEmailReminders,
       shareRecipients: shareRecipients ?? this.shareRecipients,
       shareFrequency: shareFrequency ?? this.shareFrequency,
     );

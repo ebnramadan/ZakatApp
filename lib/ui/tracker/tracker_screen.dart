@@ -11,7 +11,8 @@ import 'add_payment_sheet.dart';
 import '../calculator/entry_mode_screen.dart';
 
 class TrackerScreen extends StatefulWidget {
-  const TrackerScreen({super.key});
+  final VoidCallback? onOpenMonthly;
+  const TrackerScreen({super.key, this.onOpenMonthly});
 
   @override
   State<TrackerScreen> createState() => _TrackerScreenState();
@@ -81,47 +82,51 @@ class _TrackerScreenState extends State<TrackerScreen> {
             ),
         ],
       ),
-      body: tracker.selectedRecord == null
-          ? _EmptyState(onSetup: () {
-              Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const EntryModeScreen()));
-            })
-          : Column(
-              children: [
-                if (tracker.error != null)
-                  TextButton(
-                      onPressed: tracker.reload,
-                      child: Text('${tracker.error!} Tap to retry.',
-                          style: const TextStyle(color: Colors.red))),
-                if (tracker.selectedRecord!.currency == null)
-                  const Padding(
-                      padding: EdgeInsets.all(12),
-                      child: Text(
-                          'This older record has no saved currency. Amounts are shown without a currency; adding payments is disabled.')),
-                _Header(tracker: tracker, currency: currency),
-                const Divider(height: 1),
-                _SearchBar(
-                  controller: _searchCtrl,
-                  onChanged: (q) => setState(() => _query = q),
-                ),
-                Expanded(
-                  child: _PaymentList(
-                    payments: tracker.search(_query),
-                    currency: currency,
-                    onEdit: (p) => showModalBottomSheet(
-                      context: context,
-                      isScrollControlled: true,
-                      shape: const RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius.vertical(top: Radius.circular(20))),
-                      builder: (_) => AddPaymentSheet(existing: p),
+      body: calc.recordsLoading && tracker.selectedRecord == null
+          ? const Center(child: CircularProgressIndicator())
+          : tracker.selectedRecord == null
+              ? _EmptyState(onSetup: () {
+                  Navigator.of(context).push(MaterialPageRoute(
+                      builder: (_) => const EntryModeScreen()));
+                })
+              : Column(
+                  children: [
+                    if (tracker.error != null)
+                      TextButton(
+                          onPressed: tracker.reload,
+                          child: Text('${tracker.error!} Tap to retry.',
+                              style: const TextStyle(color: Colors.red))),
+                    if (tracker.selectedRecord!.currency == null)
+                      const Padding(
+                          padding: EdgeInsets.all(12),
+                          child: Text(
+                              'This older record has no saved currency. Amounts are shown without a currency; adding payments is disabled.')),
+                    _Header(tracker: tracker, currency: currency),
+                    const Divider(height: 1),
+                    _SearchBar(
+                      controller: _searchCtrl,
+                      onChanged: (q) => setState(() => _query = q),
                     ),
-                    onDelete: (p) =>
-                        _confirmDelete(context, p, auth.user!.uid, tracker),
-                  ),
+                    Expanded(
+                      child: _PaymentList(
+                        payments: tracker.search(_query),
+                        searching: _query.trim().isNotEmpty,
+                        onOpenMonthly: widget.onOpenMonthly,
+                        currency: currency,
+                        onEdit: (p) => showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          shape: const RoundedRectangleBorder(
+                              borderRadius: BorderRadius.vertical(
+                                  top: Radius.circular(20))),
+                          builder: (_) => AddPaymentSheet(existing: p),
+                        ),
+                        onDelete: (p) =>
+                            _confirmDelete(context, p, auth.user!.uid, tracker),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
       floatingActionButton: tracker.selectedRecord?.currency != null
           ? FloatingActionButton(
               heroTag: 'add-payment',
@@ -196,7 +201,9 @@ class _Header extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fmt = NumberFormat.currency(
-        symbol: currencySymbol(currency), decimalDigits: 2);
+        name: currency,
+        symbol: currencySymbol(currency),
+        decimalDigits: currencyDecimals(currency));
     final r = tracker.selectedRecord!;
     final pct = tracker.totalDue > 0
         ? (tracker.totalPaid / tracker.totalDue).clamp(0.0, 1.0)
@@ -210,12 +217,13 @@ class _Header extends StatelessWidget {
         children: [
           Row(
             children: [
-              Text(r.name,
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold)),
-              const Spacer(),
+              Expanded(
+                  child: Text(r.name,
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold))),
+              const SizedBox(width: 8),
               Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -338,12 +346,16 @@ class _SearchBar extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 class _PaymentList extends StatelessWidget {
   final List<Payment> payments;
+  final bool searching;
+  final VoidCallback? onOpenMonthly;
   final String currency;
   final void Function(Payment) onEdit;
   final void Function(Payment) onDelete;
 
   const _PaymentList({
     required this.payments,
+    this.searching = false,
+    this.onOpenMonthly,
     required this.currency,
     required this.onEdit,
     required this.onDelete,
@@ -352,24 +364,34 @@ class _PaymentList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (payments.isEmpty) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.volunteer_activism_outlined,
-                size: 48, color: Colors.grey),
-            SizedBox(height: 12),
-            Text('No payments yet', style: TextStyle(color: Colors.grey)),
-            SizedBox(height: 4),
-            Text('Tap + to record a payment',
-                style: TextStyle(color: Colors.grey, fontSize: 12)),
+            Icon(
+                searching
+                    ? Icons.search_off
+                    : Icons.volunteer_activism_outlined,
+                size: 48,
+                color: Colors.grey),
+            const SizedBox(height: 12),
+            Text(searching ? 'No matching payments' : 'No payments yet',
+                style: const TextStyle(color: Colors.grey)),
+            const SizedBox(height: 4),
+            Text(
+                searching
+                    ? 'Try a different name or recipient.'
+                    : 'Tap + to record a payment',
+                style: const TextStyle(color: Colors.grey, fontSize: 12)),
           ],
         ),
       );
     }
 
     final fmt = NumberFormat.currency(
-        symbol: currencySymbol(currency), decimalDigits: 2);
+        name: currency,
+        symbol: currencySymbol(currency),
+        decimalDigits: currencyDecimals(currency));
     final dateFmt = DateFormat('d MMM yyyy');
 
     return ListView.builder(
@@ -377,9 +399,15 @@ class _PaymentList extends StatelessWidget {
       itemCount: payments.length,
       itemBuilder: (ctx, i) {
         final p = payments[i];
+        final month = p.monthlyPaymentId?.split('_').last;
+        final period = month == null ? null : DateTime.tryParse('$month-01');
+        final monthlyLabel = period == null
+            ? 'Monthly giving'
+            : DateFormat.yMMMM().format(period);
         return Dismissible(
           key: Key(p.id),
-          direction: DismissDirection.endToStart,
+          direction:
+              p.isMonthly ? DismissDirection.none : DismissDirection.endToStart,
           background: Container(
             alignment: Alignment.centerRight,
             padding: const EdgeInsets.only(right: 20),
@@ -397,10 +425,17 @@ class _PaymentList extends StatelessWidget {
                 child: const Icon(Icons.volunteer_activism,
                     color: kGold, size: 20),
               ),
-              title: Text(p.name.isEmpty ? 'Payment' : p.name,
+              title: Text(
+                  p.isMonthly
+                      ? p.recipient
+                      : p.name.isEmpty
+                          ? 'Payment'
+                          : p.name,
                   style: const TextStyle(fontWeight: FontWeight.w600)),
               subtitle: Text(
-                '${dateFmt.format(p.date)}${p.recipient.isNotEmpty ? ' · ${p.recipient}' : ''}',
+                p.isMonthly
+                    ? '$monthlyLabel\nPaid ${dateFmt.format(p.date)} · Managed in شهريات'
+                    : '${dateFmt.format(p.date)}${p.recipient.isNotEmpty ? ' · ${p.recipient}' : ''}',
                 style: const TextStyle(fontSize: 12),
               ),
               trailing: Row(
@@ -412,21 +447,28 @@ class _PaymentList extends StatelessWidget {
                           color: kPrimaryGreen,
                           fontSize: 14)),
                   const SizedBox(width: 4),
-                  PopupMenuButton<String>(
-                    icon: const Icon(Icons.more_vert,
-                        size: 18, color: Colors.grey),
-                    onSelected: (v) {
-                      if (v == 'edit') onEdit(p);
-                      if (v == 'delete') onDelete(p);
-                    },
-                    itemBuilder: (_) => const [
-                      PopupMenuItem(value: 'edit', child: Text('Edit')),
-                      PopupMenuItem(
-                          value: 'delete',
-                          child: Text('Delete',
-                              style: TextStyle(color: Colors.red))),
-                    ],
-                  ),
+                  if (p.isMonthly)
+                    IconButton(
+                        tooltip: 'Manage in شهريات',
+                        onPressed: onOpenMonthly,
+                        icon:
+                            const Icon(Icons.calendar_month_outlined, size: 20))
+                  else
+                    PopupMenuButton<String>(
+                      icon: const Icon(Icons.more_vert,
+                          size: 18, color: Colors.grey),
+                      onSelected: (v) {
+                        if (v == 'edit') onEdit(p);
+                        if (v == 'delete') onDelete(p);
+                      },
+                      itemBuilder: (_) => const [
+                        PopupMenuItem(value: 'edit', child: Text('Edit')),
+                        PopupMenuItem(
+                            value: 'delete',
+                            child: Text('Delete',
+                                style: TextStyle(color: Colors.red))),
+                      ],
+                    ),
                 ],
               ),
             ),

@@ -2,6 +2,9 @@ class Payment {
   final String id;
   final String zakatRecordId;
   final String userId;
+  final String source;
+  final String? monthlyPaymentId;
+  bool get isMonthly => source == 'monthly';
   double amount;
   String name;
   DateTime date;
@@ -12,6 +15,8 @@ class Payment {
     required this.id,
     required this.zakatRecordId,
     required this.userId,
+    this.source = 'manual',
+    this.monthlyPaymentId,
     required this.amount,
     required this.name,
     required this.date,
@@ -23,6 +28,8 @@ class Payment {
         id: id,
         zakatRecordId: m['zakatRecordId'] as String,
         userId: m['userId'] as String,
+        source: m['source'] as String? ?? 'manual',
+        monthlyPaymentId: m['monthlyPaymentId'] as String?,
         amount: (m['amount'] as num).toDouble(),
         name: m['name'] as String? ?? '',
         date: DateTime.fromMillisecondsSinceEpoch(m['date'] as int),
@@ -33,6 +40,8 @@ class Payment {
   Map<String, dynamic> toMap() => {
         'zakatRecordId': zakatRecordId,
         'userId': userId,
+        'source': source,
+        if (monthlyPaymentId != null) 'monthlyPaymentId': monthlyPaymentId,
         'amount': amount,
         'name': name,
         'date': date.millisecondsSinceEpoch,

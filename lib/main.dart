@@ -1,22 +1,42 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart' show FirebaseAuth;
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:provider/provider.dart';
 import 'firebase_options.dart';
 import 'core/theme.dart';
 import 'core/providers/auth_provider.dart';
 import 'core/providers/calculator_provider.dart';
 import 'core/providers/tracker_provider.dart';
+import 'core/providers/monthly_provider.dart';
 import 'ui/auth/login_screen.dart';
+import 'ui/auth/verify_email_screen.dart';
 import 'ui/home/home_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
-    final options = DefaultFirebaseOptions.currentPlatform;
+    const emulatorMode = bool.fromEnvironment('USE_FIREBASE_EMULATORS');
+    if (emulatorMode && !kDebugMode) {
+      throw StateError('Emulators are only available in a debug build.');
+    }
+    final options = emulatorMode
+        ? const FirebaseOptions(
+            apiKey: 'demo-key',
+            appId: '1:123:web:demo',
+            messagingSenderId: '123',
+            projectId: 'demo-zakat-app',
+            authDomain: 'localhost')
+        : DefaultFirebaseOptions.currentPlatform;
     if (options.apiKey == 'REPLACE_ME') {
       throw StateError('Firebase is not configured');
     }
     await Firebase.initializeApp(options: options);
+    if (emulatorMode) {
+      await FirebaseAuth.instance.useAuthEmulator('127.0.0.1', 9099);
+      FirebaseFirestore.instance.useFirestoreEmulator('127.0.0.1', 8080);
+    }
     runApp(const ZakatApp());
   } catch (_) {
     runApp(MaterialApp(
@@ -25,9 +45,15 @@ void main() async {
             body: Center(
           child: Padding(
               padding: EdgeInsets.all(24),
-              child: Text(
-                  'Zakat could not start. Configure Firebase for this platform and check your connection, then restart the app.',
-                  textAlign: TextAlign.center)),
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                Icon(Icons.cloud_off_outlined, size: 48),
+                SizedBox(height: 16),
+                Text(
+                    'Zakat Tracker couldn’t connect. Check your connection and try again.',
+                    textAlign: TextAlign.center),
+                SizedBox(height: 16),
+                TextButton(onPressed: main, child: Text('Try again'))
+              ])),
         ))));
   }
 }
@@ -40,18 +66,27 @@ class ZakatApp extends StatelessWidget {
         child: Consumer<AuthProvider>(
             builder: (context, auth, _) => KeyedSubtree(
                   // Disposes all account data and navigation when the Firebase UID changes.
-                  key: ValueKey(auth.user?.uid),
+                  key: ValueKey('${auth.user?.uid}:${auth.isVerified}'),
                   child: MultiProvider(
                       providers: [
                         ChangeNotifierProvider(
                             create: (_) => CalculatorProvider()),
                         ChangeNotifierProvider(
                             create: (_) => TrackerProvider()),
+                        ChangeNotifierProvider(
+                            create: (_) => MonthlyProvider()),
                       ],
                       child: MaterialApp(
-                          title: 'Zakat',
+                          title: 'Zakat Tracker',
                           debugShowCheckedModeBanner: false,
                           theme: AppTheme.light,
+                          builder: (context, child) => ColoredBox(
+                              color: const Color(0xFFEDEFE9),
+                              child: Center(
+                                  child: ConstrainedBox(
+                                      constraints:
+                                          const BoxConstraints(maxWidth: 1080),
+                                      child: child ?? const SizedBox()))),
                           home: const _AuthGate())),
                 )),
       );
@@ -68,6 +103,7 @@ class _AuthGate extends StatelessWidget {
       }
       return const LoginScreen();
     }
+    if (!auth.isVerified) return const VerifyEmailScreen();
     if (auth.profile == null) {
       return Scaffold(
           body: Center(

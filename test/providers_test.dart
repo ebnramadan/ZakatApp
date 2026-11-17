@@ -137,7 +137,8 @@ void main() {
   });
   test('profile failures can retry, and sign-out clears the profile', () async {
     final firebase = MockFirebaseAuth(
-        mockUser: MockUser(uid: 'alice', email: 'alice@example.com'),
+        mockUser: MockUser(
+            uid: 'alice', email: 'alice@example.com', isEmailVerified: true),
         signedIn: true);
     final provider = AuthProvider(
         auth: AuthService(auth: firebase),

@@ -38,27 +38,15 @@ class _AssetFormScreenState extends State<AssetFormScreen> {
 
   Widget _number(String label, double value, ValueChanged<double> change,
       {bool positive = false, Key? key}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: TextFormField(
-        key: key,
-        initialValue: value == 0 ? '' : value.toString(),
-        decoration: InputDecoration(labelText: label),
-        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-        validator: (text) {
-          final number =
-              double.tryParse(text!.trim().isEmpty ? '0' : text.trim());
-          return number == null ||
-                  !number.isFinite ||
-                  number < 0 ||
-                  (positive && number == 0)
-              ? 'Enter a valid ${positive ? 'positive ' : ''}number'
-              : null;
-        },
-        onChanged: (text) => change(
-            double.tryParse(text.trim().isEmpty ? '0' : text.trim()) ??
-                double.nan),
-      ),
+    return _NumberInput(
+      key: key,
+      label: label,
+      value: value,
+      positive: positive,
+      onChanged: (number) {
+        change(number);
+        setState(() {});
+      },
     );
   }
 
@@ -138,6 +126,9 @@ class _AssetFormScreenState extends State<AssetFormScreen> {
     if (calc.computeResults()) {
       Navigator.push(
           context, MaterialPageRoute(builder: (_) => const ResultsScreen()));
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(calc.error ?? 'Check the calculation inputs.')));
     }
   }
 
@@ -203,9 +194,7 @@ class _AssetFormScreenState extends State<AssetFormScreen> {
             'Uses 85g pure gold Nisab and a 2.5% lunar-year rate. Includes cash and gold only, with no debt deductions. Confirm that wealth remained eligible throughout the Hawl. Estimates before the anniversary are not amounts currently due.'),
         _number('24K gold price per gram for Nisab (${currency ?? '?'})',
             d.goldPricePerGram24k, calc.updateGoldPrice,
-            positive: true,
-            key: ValueKey(
-                'nisab-${d.manualNisabPrice}-${d.manualNisabPrice ? 'manual' : d.goldPricePerGram24k}')),
+            positive: true, key: const ValueKey('nisab-price')),
         Text(d.manualNisabPrice ? 'Manual Nisab price' : 'Live Nisab price'),
         if (d.pricedAt != null)
           Text(
@@ -265,10 +254,7 @@ class _AssetFormScreenState extends State<AssetFormScreen> {
                     _fetching.remove(entry);
                     entry.exchangeRate = v;
                     entry.isManualRate = true;
-                  },
-                      positive: true,
-                      key: ValueKey(
-                          '${entry.currency}-${entry.isManualRate}-${entry.isManualRate ? 'manual' : entry.exchangeRate}')),
+                  }, positive: true, key: const ValueKey('foreign-rate')),
                   TextButton(
                       onPressed: currency == null || _fetching.contains(entry)
                           ? null
@@ -318,8 +304,7 @@ class _AssetFormScreenState extends State<AssetFormScreen> {
                     entry.isManualPrice = true;
                   },
                       positive: entry.grams > 0,
-                      key: ValueKey(
-                          '${entry.isManualPrice}-${entry.isManualPrice ? 'manual' : entry.pricePerGram24k}')),
+                      key: const ValueKey('gold-price')),
                   TextButton(
                       onPressed: () => setState(() {
                             entry.pricePerGram24k = d.goldPricePerGram24k;
@@ -402,4 +387,93 @@ class _AssetFormScreenState extends State<AssetFormScreen> {
               ])),
         ));
   }
+}
+
+class _NumberInput extends StatefulWidget {
+  final String label;
+  final double value;
+  final bool positive;
+  final ValueChanged<double> onChanged;
+  const _NumberInput(
+      {super.key,
+      required this.label,
+      required this.value,
+      required this.positive,
+      required this.onChanged});
+  @override
+  State<_NumberInput> createState() => _NumberInputState();
+}
+
+class _NumberInputState extends State<_NumberInput> {
+  late final TextEditingController _controller;
+  final _focus = FocusNode();
+  bool _typing = false;
+  String get _formatted => widget.value == 0 ? '' : widget.value.toString();
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: _formatted);
+    _focus.addListener(_focusChanged);
+  }
+
+  void _focusChanged() {
+    if (!_focus.hasFocus) {
+      _typing = false;
+      _sync();
+    }
+  }
+
+  void _sync() {
+    if (widget.value.isFinite &&
+        double.tryParse(_controller.text.trim().isEmpty
+                ? '0'
+                : _controller.text.trim()) !=
+            widget.value) {
+      _controller.text = _formatted;
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _NumberInput oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!_typing) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && !_typing) _sync();
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _focus.dispose();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: TextFormField(
+          controller: _controller,
+          focusNode: _focus,
+          decoration: InputDecoration(labelText: widget.label),
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          validator: (text) {
+            final number =
+                double.tryParse(text!.trim().isEmpty ? '0' : text.trim());
+            return number == null ||
+                    !number.isFinite ||
+                    number < 0 ||
+                    (widget.positive && number == 0)
+                ? 'Enter a valid ${widget.positive ? 'positive ' : ''}number'
+                : null;
+          },
+          onChanged: (text) {
+            _typing = true;
+            widget.onChanged(
+                double.tryParse(text.trim().isEmpty ? '0' : text.trim()) ??
+                    double.nan);
+          },
+        ),
+      );
 }

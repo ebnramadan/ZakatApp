@@ -4,9 +4,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../core/constants.dart';
 import '../../core/models/user_profile.dart';
 import '../../core/providers/auth_provider.dart';
-import '../../core/providers/calculator_provider.dart';
-import '../../core/models/zakat_record.dart';
-import 'package:intl/intl.dart';
+import 'account_security_card.dart';
+import '../monthly/monthly_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -37,11 +36,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _saveProfile(AuthProvider auth) async {
-    final profile = auth.profile!;
-    final ok = await auth.updateProfile(profile.copyWith(
-      displayName: _nameCtrl.text.trim(),
-      currency: _selectedCurrency,
-    ));
+    if (_nameCtrl.text.trim().isEmpty || _nameCtrl.text.trim().length > 80) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Enter a name of up to 80 characters.')));
+      return;
+    }
+    final ok =
+        await auth.updateProfileFields(displayName: _nameCtrl.text.trim());
     if (!mounted) return;
     if (ok) setState(() => _editingName = false);
     if (!ok) {
@@ -53,7 +54,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
-    final calc = context.watch<CalculatorProvider>();
     final profile = auth.profile;
     if (profile == null) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
@@ -91,11 +91,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _InfoTile(
               label: 'Email', value: profile.email, icon: Icons.email_outlined),
           const SizedBox(height: 20),
+          const AccountSecurityCard(),
+          const SizedBox(height: 20),
           _CurrencySelector(
             selected: _selectedCurrency ?? profile.currency,
             onChanged: (c) {
               setState(() => _selectedCurrency = c);
-              auth.updateProfile(profile.copyWith(currency: c)).then((ok) {
+              auth.updateProfileFields(currency: c).then((ok) {
                 if (!mounted || !context.mounted || ok) return;
                 setState(() => _selectedCurrency = profile.currency);
                 ScaffoldMessenger.of(context)
@@ -104,26 +106,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
             },
           ),
           const SizedBox(height: 20),
-          const ListTile(
-              leading: Icon(Icons.share_outlined),
-              title: Text('Summary sharing'),
-              subtitle:
-                  Text('Not available yet. No scheduled summaries are sent.')),
-          const SizedBox(height: 28),
-          const Text('Zakat Records',
-              style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: kPrimaryGreen)),
-          const SizedBox(height: 10),
-          if (calc.records.isEmpty)
-            const Center(
-                child: Text('No submitted records yet.',
-                    style: TextStyle(color: Colors.grey)))
-          else
-            ...calc.records
-                .where((r) => r.isSubmitted)
-                .map((r) => _RecordTile(record: r, currency: profile.currency)),
+          Card(
+              child: ListTile(
+            leading: const Icon(Icons.calendar_month_outlined),
+            title: const Text('Monthly giving preferences'),
+            subtitle: Text(
+                'Default: ${profile.monthlyDefaultKind == 'zakat' ? 'Zakat' : 'Sadaqah'} · Email reminders ${profile.monthlyEmailReminders ? 'on' : 'off'}'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                builder: (_) => const MonthlySettings()),
+          )),
+          const SizedBox(height: 12),
+          const Text(
+              'Changing your default currency affects new records and recipients only. Existing amounts keep their original currency.',
+              style:
+                  TextStyle(fontSize: 13, color: Colors.black54, height: 1.6)),
         ],
       ),
     );
@@ -246,6 +245,7 @@ class _CurrencySelector extends StatelessWidget {
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
           value: selected,
+          isExpanded: true,
           decoration: const InputDecoration(),
           items: kCurrencies.entries
               .map((e) => DropdownMenuItem(
@@ -256,35 +256,6 @@ class _CurrencySelector extends StatelessWidget {
           },
         ),
       ],
-    );
-  }
-}
-
-class _RecordTile extends StatelessWidget {
-  final ZakatRecord record;
-  final String currency;
-
-  const _RecordTile({required this.record, required this.currency});
-
-  @override
-  Widget build(BuildContext context) {
-    final fmt = NumberFormat.currency(
-        symbol: record.currency == null
-            ? 'Currency unknown '
-            : currencySymbol(record.currency!),
-        decimalDigits: 2);
-    final dateFmt = DateFormat('d MMM yyyy');
-    return Card(
-      child: ListTile(
-        leading: const Icon(Icons.lock_outline, color: kPrimaryGreen),
-        title: Text(record.name,
-            style: const TextStyle(fontWeight: FontWeight.w600)),
-        subtitle: Text(
-            '${dateFmt.format(record.hawlStartDate)}  ·  Zakat: ${fmt.format(record.zakatDue)}'),
-        trailing: record.nisabMet
-            ? const Icon(Icons.check_circle, color: Colors.green)
-            : const Icon(Icons.info_outline, color: Colors.orange),
-      ),
     );
   }
 }

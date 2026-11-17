@@ -10,6 +10,8 @@ import '../auth/profile_screen.dart';
 import '../calculator/entry_mode_screen.dart';
 import '../calculator/one_pager_screen.dart';
 import '../tracker/tracker_screen.dart';
+import '../monthly/monthly_screen.dart';
+import '../../core/providers/monthly_provider.dart';
 
 class HomeScreen extends StatefulWidget {
   final int initialTab;
@@ -23,6 +25,7 @@ class _HomeScreenState extends State<HomeScreen> {
   late int _tab;
 
   void openTracker() => setState(() => _tab = 1);
+  void openMonthly() => setState(() => _tab = 2);
 
   @override
   void initState() {
@@ -33,30 +36,41 @@ class _HomeScreenState extends State<HomeScreen> {
       final auth = context.read<AuthProvider>();
       if (auth.user != null) {
         context.read<CalculatorProvider>().loadRecords(auth.user!.uid);
+        context.read<MonthlyProvider>().load(auth.user!.uid);
       }
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    final monthly = context.watch<MonthlyProvider>();
+    final due = monthly.loading ? 0 : monthly.dueCount(DateTime.now());
     return Scaffold(
       body: IndexedStack(
         index: _tab,
-        children: const [
-          _RecordsTab(),
-          TrackerScreen(),
-          ProfileScreen(),
+        children: [
+          const _RecordsTab(),
+          TrackerScreen(onOpenMonthly: openMonthly),
+          const MonthlyScreen(),
+          const ProfileScreen(),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
         currentIndex: _tab,
         onTap: (i) => setState(() => _tab = i),
-        items: const [
-          BottomNavigationBarItem(
+        items: [
+          const BottomNavigationBarItem(
               icon: Icon(Icons.calculate_outlined), label: 'Calculator'),
-          BottomNavigationBarItem(
+          const BottomNavigationBarItem(
               icon: Icon(Icons.track_changes_outlined), label: 'Tracker'),
           BottomNavigationBarItem(
+              icon: Badge(
+                  isLabelVisible: due > 0,
+                  label: Text('$due'),
+                  child: const Icon(Icons.calendar_month_outlined)),
+              label: 'شهريات'),
+          const BottomNavigationBarItem(
               icon: Icon(Icons.person_outline), label: 'Profile'),
         ],
       ),
@@ -75,38 +89,66 @@ class _RecordsTab extends StatelessWidget {
     final auth = context.read<AuthProvider>();
     final calc = context.watch<CalculatorProvider>();
     final currency = auth.profile?.currency ?? 'USD';
+    final due = context.watch<MonthlyProvider>().dueCount(DateTime.now());
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Zakat')),
-      body: calc.error != null
-          ? Center(
-              child: Column(mainAxisSize: MainAxisSize.min, children: [
-              Text(calc.error!, textAlign: TextAlign.center),
-              TextButton(
-                  onPressed: () {
-                    calc.clearError();
-                    calc.loadRecords(auth.user!.uid);
-                  },
-                  child: const Text('Retry')),
-            ]))
-          : calc.records.isEmpty
-              ? _EmptyRecords()
-              : ListView(
-                  padding: const EdgeInsets.all(16),
-                  children: [
-                    Row(
+      appBar: AppBar(title: const Text('Zakat Tracker')),
+      body: calc.recordsLoading
+          ? const Center(child: CircularProgressIndicator())
+          : calc.error != null
+              ? Center(
+                  child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  Text(calc.error!, textAlign: TextAlign.center),
+                  TextButton(
+                      onPressed: () {
+                        calc.clearError();
+                        calc.loadRecords(auth.user!.uid);
+                      },
+                      child: const Text('Retry')),
+                ]))
+              : calc.records.isEmpty
+                  ? _EmptyRecords()
+                  : ListView(
+                      padding: const EdgeInsets.all(16),
                       children: [
-                        Text('${calc.records.length} record(s)',
-                            style: const TextStyle(
-                                color: Colors.grey, fontSize: 13)),
-                        const Spacer(),
+                        if (due > 0)
+                          Card(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .secondaryContainer,
+                              child: ListTile(
+                                  leading: const Icon(
+                                      Icons.notifications_active_outlined),
+                                  title: Text(
+                                      '$due monthly ${due == 1 ? 'commitment is' : 'commitments are'} ready to give'),
+                                  subtitle: const Text(
+                                      'Review this month’s giving in شهريات'),
+                                  trailing: const Icon(Icons.chevron_right),
+                                  onTap: () => context
+                                      .findAncestorStateOfType<
+                                          _HomeScreenState>()
+                                      ?.openMonthly())),
+                        Text('Your Zakat records',
+                            style: Theme.of(context).textTheme.headlineSmall),
+                        const SizedBox(height: 8),
+                        const Text(
+                            'Continue a draft or open a submitted record to track payments.',
+                            style:
+                                TextStyle(height: 1.5, color: Colors.black54)),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Text('${calc.records.length} record(s)',
+                                style: const TextStyle(
+                                    color: Colors.grey, fontSize: 13)),
+                            const Spacer(),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        ...calc.records.map(
+                            (r) => _RecordCard(record: r, currency: currency)),
                       ],
                     ),
-                    const SizedBox(height: 8),
-                    ...calc.records
-                        .map((r) => _RecordCard(record: r, currency: currency)),
-                  ],
-                ),
       floatingActionButton: FloatingActionButton.extended(
         heroTag: 'new-calculation',
         onPressed: () => Navigator.of(context)
@@ -127,10 +169,11 @@ class _RecordCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fmt = NumberFormat.currency(
+        name: record.currency ?? 'USD',
         symbol: record.currency == null
             ? 'Currency unknown '
             : currencySymbol(record.currency!),
-        decimalDigits: 2);
+        decimalDigits: currencyDecimals(record.currency ?? 'USD'));
     final dateFmt = DateFormat('d MMM yyyy');
 
     return Card(
@@ -177,7 +220,7 @@ class _RecordCard extends StatelessWidget {
                             fontWeight: FontWeight.bold, fontSize: 15)),
                     const SizedBox(height: 2),
                     Text(
-                      'Hawl: ${dateFmt.format(record.hawlStartDate)}',
+                      'Lunar year started ${dateFmt.format(record.hawlStartDate)}',
                       style: const TextStyle(color: Colors.grey, fontSize: 12),
                     ),
                     if (record.isSubmitted) ...[
@@ -243,7 +286,7 @@ class _EmptyRecords extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             const Text(
-              'Start your first Zakat calculation.\nMay Allah accept it.',
+              'Calculate your eligible wealth, then track what you give. You can also start with monthly giving in شهريات.',
               style: TextStyle(color: Colors.grey, height: 1.6),
               textAlign: TextAlign.center,
             ),

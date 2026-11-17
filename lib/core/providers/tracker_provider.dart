@@ -113,6 +113,9 @@ class TrackerProvider extends ChangeNotifier {
   Future<void> updatePayment(Payment updated) async {
     _error = null;
     try {
+      if (updated.isMonthly) {
+        throw const FormatException('Manage this payment in شهريات.');
+      }
       if (!updated.amount.isFinite || updated.amount <= 0) {
         throw const FormatException('Invalid amount');
       }
