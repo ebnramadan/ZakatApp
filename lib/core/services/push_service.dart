@@ -121,5 +121,6 @@ class PushService {
   }
 
   Future<void> showTest(String title, String body) =>
-      platform.showPushTest(title, body);
+      platform.showPushTest(title, body,
+          uid: kIsWeb ? FirebaseAuth.instance.currentUser?.uid : null);
 }

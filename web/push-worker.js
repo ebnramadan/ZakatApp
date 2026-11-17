@@ -25,7 +25,10 @@ self.addEventListener('message', event => {
     const next = old?.uid === event.data.uid ? {...old, ...event.data} : {enabled: false, ...event.data};
     await stateStore('readwrite', s => s.put(next, 'session'));
     if (!next.enabled || old?.uid !== next.uid) {
-      for (const notification of await self.registration.getNotifications()) notification.close();
+      for (const notification of await self.registration.getNotifications()) {
+        // A device test is not a reminder opt-in; retain it for the same account.
+        if (old?.uid !== next.uid || notification.tag !== 'ztracker-test') notification.close();
+      }
     }
     event.ports[0]?.postMessage({ok: true});
   });

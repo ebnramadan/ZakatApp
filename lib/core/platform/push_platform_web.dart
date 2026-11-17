@@ -112,7 +112,7 @@ Future<void> unsubscribePush() async {
   }
 }
 
-Future<void> showPushTest(String title, String body) async {
+Future<void> showPushTest(String title, String body, {String? uid}) async {
   if (pushSupport != 'supported') {
     throw StateError('Push is not supported here.');
   }
@@ -122,6 +122,9 @@ Future<void> showPushTest(String title, String body) async {
     throw StateError('Notification permission was not granted.');
   }
   final registration = await _ensureRegistration();
+  if (!await syncPushSession(uid)) {
+    throw StateError('The notification session was not confirmed.');
+  }
   await registration.showNotification(title, {
     'body': body,
     'icon': '/icons/zakat-v4-192.png',
