@@ -31,12 +31,12 @@ Future<html.ServiceWorkerRegistration?> _registration() async {
       js.callMethod(container, 'getRegistration', [_scope]));
 }
 
-Future<void> syncPushSession(String? uid,
+Future<bool> syncPushSession(String? uid,
     {Map<String, dynamic>? preferences}) async {
   try {
     final registration = await _registration();
     final worker = registration?.active;
-    if (worker == null) return;
+    if (worker == null) return false;
     final channel = html.MessageChannel();
     final complete = Completer<void>();
     channel.port1.onMessage.first.then((_) {
@@ -46,7 +46,10 @@ Future<void> syncPushSession(String? uid,
         {'type': 'push-session', 'uid': uid, ...?preferences}, [channel.port2]);
     await complete.future.timeout(const Duration(seconds: 3));
     channel.port1.close();
-  } catch (_) {}
+    return true;
+  } catch (_) {
+    return false;
+  }
 }
 
 Future<Map<String, dynamic>?> currentPushSubscription() async {

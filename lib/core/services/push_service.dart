@@ -50,12 +50,15 @@ class PushService {
         'createdAt': old.data()?['createdAt'] ?? now,
         'updatedAt': now
       }).timeout(const Duration(seconds: 10));
-      await platform.syncPushSession(uid, preferences: {
+      final confirmed = await platform.syncPushSession(uid, preferences: {
         'enabled': true,
         'monthly': monthly,
         'zakat': zakat,
         'showNames': showNames
       });
+      if (!confirmed) {
+        throw StateError('The notification session was not confirmed.');
+      }
     } catch (_) {
       await platform.syncPushSession(uid, preferences: {'enabled': false});
       rethrow;
