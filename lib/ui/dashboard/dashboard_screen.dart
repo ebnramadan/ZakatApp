@@ -222,7 +222,8 @@ class DashboardScreen extends StatelessWidget {
     ];
     final nextSteps = <Widget>[
       if (!loading && !hasError) ...[
-        SectionTitle(l(context, "Your next steps")),
+        if (current != null || due.isNotEmpty)
+          SectionTitle(l(context, "Your next steps")),
         if (current != null && !current.isSubmitted)
           ActionCard(
               icon: Icons.edit_note_outlined,

@@ -21,6 +21,8 @@ Keep currencies separate. Show due Zakat separately from future estimates. Dashb
 ## Responsive/accessibility
 Use LayoutBuilder, full available desktop width with a two-column dashboard, wrapping actions and stats, visible labels, keyboard-accessible controls, tooltips on icon actions, high-contrast text. Respect safe areas and reduced-motion preferences; do not animate financial values. Validate at 375, 768 and 1440 CSS pixels and with enlarged text.
 
-Default records stay above search and filters, use a bordered emerald card and explicit badge, and require typing the record name before deletion. Other records retain a simple confirmation and 60-day recovery. All essential actions are visible.
+Default records stay above search and filters, use a bordered emerald card and explicit badge, and show a clear warning before deletion, with no typing requirement. Other records retain a simple confirmation and 60-day recovery. All essential actions are visible.
 
 Mobile profile groups related settings into a shared surface rather than one large card per row. Security details open on a dedicated route. Use static font weights 400/500/600/700 for predictable rendering; short navigation labels stay on one line. Keep 48px tap targets even as visual density increases.
+
+Use CSS safe-area insets as a fallback for standalone Safari and keep controls above the home indicator. Hide bottom navigation while the keyboard is open. Startup uses one small loading indicator rather than a large logo followed by a smaller one. The app icon is a simple ivory crescent and gold gift mark on emerald. Calculation setup keeps Nisab pricing and Hijri display in More details.

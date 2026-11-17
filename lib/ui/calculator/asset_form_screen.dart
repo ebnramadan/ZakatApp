@@ -21,6 +21,8 @@ class AssetFormScreen extends StatefulWidget {
 class _AssetFormScreenState extends State<AssetFormScreen> {
   int _step = 0;
   final _form = GlobalKey<FormState>();
+  bool _showDetails = false;
+  int _detailsRevision = 0;
   final Set<ForeignCashEntry> _fetching = {};
   final Map<ForeignCashEntry, int> _requests = {};
   int _sequence = 0;
@@ -131,8 +133,27 @@ class _AssetFormScreenState extends State<AssetFormScreen> {
     return answer == 'leave';
   }
 
+  bool _checkGoldPrice() {
+    final draft = context.read<CalculatorProvider>().draft;
+    if (draft == null ||
+        draft.goldPricePerGram24k > 0 && draft.goldPricePerGram24k.isFinite) {
+      return true;
+    }
+    FocusManager.instance.primaryFocus?.unfocus();
+    setState(() {
+      _step = 0;
+      _showDetails = true;
+      _detailsRevision++;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(
+            l(context, 'Add the gold price in More details to continue.'))));
+    return false;
+  }
+
   void _results() {
     final calc = context.read<CalculatorProvider>();
+    if (!_checkGoldPrice()) return;
     if (!_form.currentState!.validate()) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(l(context,
@@ -215,12 +236,6 @@ class _AssetFormScreenState extends State<AssetFormScreen> {
                 _rate(e);
               }
             }),
-        SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: Text(l(context, "Show Hijri date")),
-            subtitle: Text(l(context, "Hawl always lasts one lunar year.")),
-            value: d.isHijriCalendar,
-            onChanged: (v) => setState(() => d.isHijriCalendar = v)),
         ListTile(
             contentPadding: EdgeInsets.zero,
             title: Text(l(context, "Hawl start")),
@@ -232,6 +247,7 @@ class _AssetFormScreenState extends State<AssetFormScreen> {
                 : l(context, DateFormat.yMMMd().format(d.hawlStartDate))),
             trailing: const Icon(Icons.calendar_today),
             onTap: () async {
+              FocusManager.instance.primaryFocus?.unfocus();
               final selected = await showDatePicker(
                   context: context,
                   initialDate: d.hawlStartDate,
@@ -241,31 +257,47 @@ class _AssetFormScreenState extends State<AssetFormScreen> {
                 setState(() => d.hawlStartDate = selected);
               }
             }),
-        Text(l(context, "Lunar anniversary: {0}",
-            [DateFormat.yMMMd().format(d.hawlEndDate)])),
-        const SizedBox(height: 12),
-        Text(l(context,
-            "Uses 85g pure gold Nisab and a 2.5% lunar-year rate. Includes cash and gold only, with no debt deductions. Confirm that wealth remained eligible throughout the Hawl. Estimates before the anniversary are not amounts currently due.")),
-        _number('24K gold price per gram for Nisab (${currency ?? '?'})',
-            d.goldPricePerGram24k, calc.updateGoldPrice,
-            positive: true, key: const ValueKey('nisab-price')),
-        Text(d.manualNisabPrice
-            ? l(context, "Manual Nisab price")
-            : l(context, "Live Nisab price")),
-        if (d.pricedAt != null)
-          Text(l(context, "Price/rate updated: {0}",
-              [DateFormat.yMd().add_Hm().format(d.pricedAt!)])),
-        TextButton.icon(
-            onPressed: currency == null || calc.pricesLoading
-                ? null
-                : () {
-                    d.manualNisabPrice = false;
-                    calc.fetchPrices(currency);
-                  },
-            icon: const Icon(Icons.refresh),
-            label: Text(calc.pricesLoading
-                ? l(context, "Fetching prices…")
-                : l(context, "Refresh live gold price"))),
+        ExpansionTile(
+          key: ValueKey('calculation-details-$_detailsRevision'),
+          initiallyExpanded: _showDetails,
+          onExpansionChanged: (expanded) => _showDetails = expanded,
+          tilePadding: EdgeInsets.zero,
+          title: Text(l(context, 'More details')),
+          subtitle: Text(l(context, 'Nisab, gold price and Hijri date')),
+          children: [
+            SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(l(context, "Show Hijri date")),
+                subtitle: Text(l(context, "Hawl always lasts one lunar year.")),
+                value: d.isHijriCalendar,
+                onChanged: (v) => setState(() => d.isHijriCalendar = v)),
+            Text(l(context, "Lunar anniversary: {0}",
+                [DateFormat.yMMMd().format(d.hawlEndDate)])),
+            const SizedBox(height: 12),
+            Text(l(context,
+                "Uses 85g pure gold Nisab and a 2.5% lunar-year rate. Includes cash and gold only, with no debt deductions. Confirm that wealth remained eligible throughout the Hawl. Estimates before the anniversary are not amounts currently due.")),
+            _number('24K gold price per gram for Nisab (${currency ?? '?'})',
+                d.goldPricePerGram24k, calc.updateGoldPrice,
+                positive: true, key: const ValueKey('nisab-price')),
+            Text(d.manualNisabPrice
+                ? l(context, "Manual Nisab price")
+                : l(context, "Live Nisab price")),
+            if (d.pricedAt != null)
+              Text(l(context, "Price/rate updated: {0}",
+                  [DateFormat.yMd().add_Hm().format(d.pricedAt!)])),
+            TextButton.icon(
+                onPressed: currency == null || calc.pricesLoading
+                    ? null
+                    : () {
+                        d.manualNisabPrice = false;
+                        calc.fetchPrices(currency);
+                      },
+                icon: const Icon(Icons.refresh),
+                label: Text(calc.pricesLoading
+                    ? l(context, "Fetching prices…")
+                    : l(context, "Refresh live gold price"))),
+          ],
+        ),
       ]),
       _number('Local cash (${currency ?? '?'})', d.cashLocal,
           (v) => d.cashLocal = v),
@@ -422,53 +454,62 @@ class _AssetFormScreenState extends State<AssetFormScreen> {
               ]),
           body: Form(
               key: _form,
-              child: ListView(padding: const EdgeInsets.all(20), children: [
-                if (widget.guided)
-                  LinearProgressIndicator(value: (_step + 1) / 4),
-                if (calc.error != null)
-                  Padding(
-                      padding: const EdgeInsets.all(8),
-                      child: Text(l(context, calc.error!),
-                          style: const TextStyle(color: Colors.red))),
-                ...List.generate(
-                    4,
-                    (i) => Offstage(
-                        offstage: widget.guided && _step != i,
-                        child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  Text(l(context, titles[i]),
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .titleLarge),
-                                  const SizedBox(height: 12),
-                                  sections[i],
-                                ])))),
-                if (widget.guided && _step > 0)
-                  TextButton(
-                      onPressed: () {
-                        FocusManager.instance.primaryFocus?.unfocus();
-                        setState(() => _step--);
-                      },
-                      child: Text(l(context, "Previous"))),
-                ElevatedButton(
-                    onPressed:
-                        _saving || calc.pricesLoading || _fetching.isNotEmpty
+              child: ListView(
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
+                  padding: EdgeInsets.fromLTRB(
+                      20, 12, 20, 24 + MediaQuery.paddingOf(context).bottom),
+                  children: [
+                    if (widget.guided)
+                      LinearProgressIndicator(value: (_step + 1) / 4),
+                    if (calc.error != null)
+                      Padding(
+                          padding: const EdgeInsets.all(8),
+                          child: Text(l(context, calc.error!),
+                              style: const TextStyle(color: Colors.red))),
+                    ...List.generate(
+                        4,
+                        (i) => Offstage(
+                            offstage: widget.guided && _step != i,
+                            child: Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 12),
+                                child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [
+                                      Text(l(context, titles[i]),
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .titleLarge),
+                                      const SizedBox(height: 12),
+                                      sections[i],
+                                    ])))),
+                    if (widget.guided && _step > 0)
+                      TextButton(
+                          onPressed: () {
+                            FocusManager.instance.primaryFocus?.unfocus();
+                            setState(() => _step--);
+                          },
+                          child: Text(l(context, "Previous"))),
+                    ElevatedButton(
+                        onPressed: _saving ||
+                                calc.pricesLoading ||
+                                _fetching.isNotEmpty
                             ? null
                             : () {
                                 if (widget.guided && _step < 3) {
                                   FocusManager.instance.primaryFocus?.unfocus();
+                                  if (_step == 0 && !_checkGoldPrice()) return;
                                   setState(() => _step++);
                                 } else {
                                   _results();
                                 }
                               },
-                    child: Text(widget.guided && _step < 3
-                        ? l(context, "Next")
-                        : l(context, "Calculate Zakat"))),
-              ])),
+                        child: Text(widget.guided && _step < 3
+                            ? l(context, "Next")
+                            : l(context, "Calculate Zakat"))),
+                  ])),
         ));
   }
 }
@@ -540,6 +581,9 @@ class _NumberInputState extends State<_NumberInput> {
         child: TextFormField(
           controller: _controller,
           focusNode: _focus,
+          textInputAction: TextInputAction.done,
+          onFieldSubmitted: (_) => _focus.unfocus(),
+          onTapOutside: (_) => _focus.unfocus(),
           decoration: InputDecoration(labelText: l(context, widget.label)),
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           validator: (text) {

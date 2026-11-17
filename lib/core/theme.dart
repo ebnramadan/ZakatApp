@@ -16,7 +16,7 @@ class AppTheme {
       fontFamilyFallback: const ['NotoSansArabic'],
       visualDensity: VisualDensity.standard,
       textTheme: const TextTheme(
-              bodyLarge: TextStyle(fontSize: 15, height: 1.4),
+              bodyLarge: TextStyle(fontSize: 16, height: 1.4),
               bodyMedium: TextStyle(fontSize: 14, height: 1.4),
               bodySmall: TextStyle(fontSize: 12, height: 1.35),
               titleMedium: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
@@ -55,7 +55,7 @@ class AppTheme {
               textStyle:
                   const TextStyle(fontSize: 14, fontWeight: FontWeight.w600))),
       navigationBarTheme: NavigationBarThemeData(
-          height: 64,
+          height: 56,
           backgroundColor: Colors.white,
           elevation: 0,
           indicatorColor: const Color(0xFFDDEEE6),

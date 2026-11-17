@@ -1,0 +1,13 @@
+{
+  "name": "zakat-report-delivery",
+  "private": true,
+  "main": "index.cjs",
+  "engines": {"node": "22"},
+  "dependencies": {
+    "firebase-admin": "^12.7.0",
+    "firebase-functions": "^6.6.0",
+    "exceljs": "^4.4.0",
+    "google-auth-library": "^9.15.1",
+    "nodemailer": "^10.6.0"
+  }
+}

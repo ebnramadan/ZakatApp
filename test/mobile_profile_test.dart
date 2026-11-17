@@ -64,8 +64,8 @@ void main() {
               home: const ProfileScreen())));
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
-      final retry = find
-          .text(language == 'ar' ? 'إعادة محاولة الإرسال' : 'Retry delivery');
+      final retry =
+          find.text(language == 'ar' ? 'جرّب الإرسال تاني' : 'Retry delivery');
       await tester.scrollUntilVisible(retry, 250);
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);

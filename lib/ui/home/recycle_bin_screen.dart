@@ -14,6 +14,7 @@ Future<void> moveToRecycleBin(BuildContext context, ZakatRecord record) async {
           .defaultRecord(context.read<AuthProvider>().profile?.defaultRecordId)
           ?.id ==
       record.id;
+  FocusManager.instance.primaryFocus?.unfocus();
   final yes = await showDialog<bool>(
       context: context,
       builder: (_) =>
@@ -128,71 +129,32 @@ class _RecycleBinScreenState extends State<RecycleBinScreen> {
   }
 }
 
-class _DeleteRecordDialog extends StatefulWidget {
+class _DeleteRecordDialog extends StatelessWidget {
   final ZakatRecord record;
   final bool isDefault;
   const _DeleteRecordDialog({required this.record, required this.isDefault});
   @override
-  State<_DeleteRecordDialog> createState() => _DeleteRecordDialogState();
-}
-
-class _DeleteRecordDialogState extends State<_DeleteRecordDialog> {
-  final confirmation = TextEditingController();
-  @override
-  void dispose() {
-    confirmation.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) => AlertDialog(
-          icon: const Icon(Icons.delete_outline, color: Color(0xFFB3261E)),
-          title: Text(widget.isDefault
-              ? l(context, "Delete your default record?")
-              : l(context, "Move this record to the recycle bin?")),
-          content: SizedBox(
-              width: 440,
-              child: SingleChildScrollView(
-                  child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                    if (widget.isDefault) ...[
-                      Text(l(context,
-                          "This is the record used by your dashboard and tracker. Another available record will become the default, or your dashboard will be empty.")),
-                      const SizedBox(height: 16)
-                    ],
-                    Text(l(
-                        context,
-                        "“{0}” and its payment history will be removed from your active totals. Linked monthly Zakat commitments cannot be paid while it is in the bin.\n\nYou can restore everything for 60 days. After that, the record and its linked payments are permanently deleted by automatic cleanup.",
-                        [widget.record.name])),
-                    if (widget.isDefault) ...[
-                      const SizedBox(height: 20),
-                      SelectableText(widget.record.name,
-                          style: const TextStyle(fontWeight: FontWeight.w700)),
-                      const SizedBox(height: 12),
-                      TextField(
-                          key: const ValueKey('default-delete-confirmation'),
-                          controller: confirmation,
-                          decoration: InputDecoration(
-                              labelText: l(
-                                  context, "Type the record name to confirm")),
-                          onChanged: (_) => setState(() {}))
-                    ],
-                  ]))),
-          actions: [
-            TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: Text(l(context, "Keep record"))),
-            FilledButton(
-                onPressed: widget.isDefault &&
-                        confirmation.text.trim() != widget.record.name.trim()
-                    ? null
-                    : () => Navigator.pop(context, true),
-                style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFFB3261E)),
-                child: Text(widget.isDefault
-                    ? l(context, "Delete default record")
-                    : l(context, "Move to recycle bin")))
-          ]);
+        scrollable: true,
+        icon: const Icon(Icons.delete_outline, color: Color(0xFFB3261E)),
+        title: Text(isDefault
+            ? l(context, 'Delete your default record?')
+            : l(context, 'Move this record to the recycle bin?')),
+        content: Text(l(
+            context,
+            isDefault
+                ? '“{0}” is your default record. Another available record will become the default. You can restore this record and its payments from the recycle bin for 60 days. Linked monthly Zakat payments are paused while it is deleted.'
+                : '“{0}” and its payments will move to the recycle bin. You can restore them for 60 days. Linked monthly Zakat payments are paused while it is deleted.',
+            [record.name])),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(l(context, 'Keep record'))),
+          FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: FilledButton.styleFrom(
+                  backgroundColor: const Color(0xFFB3261E)),
+              child: Text(l(context, 'Move to recycle bin'))),
+        ],
+      );
 }

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'dart:math' as math;
+import 'core/platform/browser_insets.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/intl.dart';
 import 'package:hijri/hijri_calendar.dart';
@@ -118,7 +120,26 @@ class ZakatApp extends StatelessWidget {
                           builder: (context, child) {
                             Intl.defaultLocale = auth.language;
                             HijriCalendar.setLocal(auth.language);
-                            return child ?? const SizedBox();
+                            final media = MediaQuery.of(context),
+                                safe = browserSafeInsets();
+                            final view = media.viewPadding;
+                            final combined = EdgeInsets.fromLTRB(
+                                math.max(view.left, safe.left),
+                                math.max(view.top, safe.top),
+                                math.max(view.right, safe.right),
+                                math.max(view.bottom, safe.bottom));
+                            return MediaQuery(
+                                data: media.copyWith(
+                                    viewPadding: combined,
+                                    padding: EdgeInsets.fromLTRB(
+                                        combined.left,
+                                        combined.top,
+                                        combined.right,
+                                        math.max(
+                                            0,
+                                            combined.bottom -
+                                                media.viewInsets.bottom))),
+                                child: child ?? const SizedBox());
                           },
                           home: const _AuthGate())),
                 )),
@@ -132,7 +153,12 @@ class _AuthGate extends StatelessWidget {
     final auth = context.watch<AuthProvider>();
     if (auth.user == null) {
       if (auth.isLoading) {
-        return const Scaffold(body: Center(child: CircularProgressIndicator()));
+        return const Scaffold(
+            body: Center(
+                child: SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(strokeWidth: 2))));
       }
       return const LoginScreen();
     }

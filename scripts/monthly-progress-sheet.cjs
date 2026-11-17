@@ -46,9 +46,10 @@ async function buildWorkbook({records=[],payments=[],plans=[],monthlyPayments=[]
 async function requestStatus(db, ref, id, status, completedAt) {
   await db.runTransaction(async tx=>{const fresh=(await tx.get(ref)).data();if(fresh?.sheetRequest?.id===id)tx.update(ref,{'sheetRequest.status':status,...(completedAt?{'sheetRequest.completedAt':completedAt}:{})});});
 }
-async function sendProgressSheets({db,auth,now=new Date(),dryRun=false,manualOnly=false,log=console.log,...senderOptions}) {
+async function sendProgressSheets({db,auth,now=new Date(),dryRun=false,manualOnly=false,userId,log=console.log,...senderOptions}) {
   let sender;
-  const users=await db.collection('users').where(manualOnly?'sheetRequest.status':'sharingEnabled','==',manualOnly?'queued':true).get();
+  const selected=userId?await db.collection('users').doc(userId).get():null;
+  const users=userId?{docs:selected.exists?[selected]:[]}:await db.collection('users').where(manualOnly?'sheetRequest.status':'sharingEnabled','==',manualOnly?'queued':true).get();
   let sent=0,failed=0,eligibleAccounts=0;
   for(const user of users.docs){let requestId;try{
     const profile=user.data();const request=profile.sheetRequest;requestId=request?.id;

@@ -228,17 +228,21 @@ class _HomeScreenState extends State<HomeScreen> {
                 Expanded(child: body),
               ])
             : body,
-        bottomNavigationBar: wide
+        bottomNavigationBar: wide || MediaQuery.viewInsetsOf(context).bottom > 0
             ? null
-            : NavigationBar(
-                selectedIndex: _tab,
-                onDestinationSelected: _selectTab,
-                destinations: List.generate(
-                    5,
-                    (i) => NavigationDestination(
-                        icon: navIcon(i),
-                        selectedIcon: Icon(selectedIcons[i]),
-                        label: mobileLabels[i]))),
+            : Padding(
+                padding: EdgeInsets.only(
+                    bottom:
+                        MediaQuery.viewPaddingOf(context).bottom == 0 ? 8 : 0),
+                child: NavigationBar(
+                    selectedIndex: _tab,
+                    onDestinationSelected: _selectTab,
+                    destinations: List.generate(
+                        5,
+                        (i) => NavigationDestination(
+                            icon: navIcon(i),
+                            selectedIcon: Icon(selectedIcons[i]),
+                            label: mobileLabels[i])))),
       );
     });
   }

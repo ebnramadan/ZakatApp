@@ -86,7 +86,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('العربية'));
     await tester.pumpAndSettle();
-    expect(find.text('اضبطه بما يناسبك.'), findsOneWidget);
+    expect(find.text('ظبّطه على راحتك.'), findsOneWidget);
     expect(find.text('عملتك'), findsOneWidget);
     expect(find.text('Your currency'), findsNothing);
     expect(Directionality.of(tester.element(find.byType(OnboardingScreen))),
@@ -115,6 +115,6 @@ void main() {
             builder: (context) =>
                 Text(l(context, 'Give {0} to {1}', ['EGP 500', 'Sarah'])))));
     await tester.pumpAndSettle();
-    expect(find.text('أعطِ EGP 500 إلى Sarah'), findsOneWidget);
+    expect(find.text('ادفع EGP 500 لـ Sarah'), findsOneWidget);
   });
 }

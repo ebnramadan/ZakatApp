@@ -51,6 +51,7 @@ class _AddPaymentSheetState extends State<AddPaymentSheet> {
   }
 
   Future<void> _pickDate() async {
+    FocusManager.instance.primaryFocus?.unfocus();
     final picked = await showDatePicker(
       context: context,
       initialDate: _date.isAfter(DateTime.now()) ? DateTime.now() : _date,
@@ -123,7 +124,9 @@ class _AddPaymentSheetState extends State<AddPaymentSheet> {
         left: 24,
         right: 24,
         top: 24,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+        bottom: MediaQuery.of(context).viewInsets.bottom +
+            MediaQuery.paddingOf(context).bottom +
+            24,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,

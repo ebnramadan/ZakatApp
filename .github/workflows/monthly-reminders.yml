@@ -11,7 +11,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: monthly-giving-emails
+  group: monthly-progress-sheets
   cancel-in-progress: false
 jobs:
   remind:

@@ -41,6 +41,7 @@ class FirestoreService {
       'monthlyPlans',
       'reminderDeliveries',
       'shareDeliveries',
+      'mailLocks',
       'zakatRecords'
     ]) {
       while (true) {
