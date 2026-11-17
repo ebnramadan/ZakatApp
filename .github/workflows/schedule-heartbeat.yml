@@ -1,0 +1,19 @@
+name: Verify scheduled workflow delivery
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  heartbeat:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - name: Record the actual trigger
+        env:
+          TRIGGER_EVENT: ${{ github.event_name }}
+        run: |
+          echo "Trigger event: $TRIGGER_EVENT"
+          date -u
+          echo "Schedule diagnostic only. No account data, credentials, or emails are used." >> "$GITHUB_STEP_SUMMARY"
