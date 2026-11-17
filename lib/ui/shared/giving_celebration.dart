@@ -3,10 +3,12 @@ import 'package:flutter/material.dart';
 import 'giving_artwork.dart';
 
 Future<void> showGivingCelebration(BuildContext context,
-        {bool planReady = false, bool sadaqah = false}) =>
-    showDialog<void>(
-        context: context,
-        builder: (_) => _Celebration(planReady: planReady, sadaqah: sadaqah));
+    {bool planReady = false, bool sadaqah = false}) {
+  FocusManager.instance.primaryFocus?.unfocus();
+  return showDialog<void>(
+      context: context,
+      builder: (_) => _Celebration(planReady: planReady, sadaqah: sadaqah));
+}
 
 class _Celebration extends StatefulWidget {
   final bool planReady, sadaqah;
