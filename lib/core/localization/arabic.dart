@@ -854,5 +854,19 @@ const Map<String, String> arabic = {
   "Location was not available. Your currency has not changed; you can choose it manually.":
       "الموقع مش متاح. ما غيّرناش عملتك؛ تقدر تختارها بنفسك.",
   "Currency changes only affect new records. Existing amounts are never converted.":
-      "تغيير العملة للسجلات الجديدة بس. المبالغ القديمة مش بتتحوّل."
+      "تغيير العملة للسجلات الجديدة بس. المبالغ القديمة مش بتتحوّل.",
+  "Home": "الرئيسية",
+  "My Zakat records": "سجلات زكاتي",
+  "A gentle nudge to give.": "تذكير لطيف بخطوة خير.",
+  "Optional. Enable reminders now, or later from Profile.":
+      "اختياري. شغّل التذكيرات دلوقتي، أو بعدين من حسابك.",
+  "Automatic delivery is still being verified.":
+      "لسه بنتأكد من الإرسال التلقائي.",
+  "Names can appear on your lock screen.": "الأسماء ممكن تظهر على شاشة القفل.",
+  "Notifications enabled on this device.": "الإشعارات اتفعّلت على الجهاز ده.",
+  "A clear Home screen focused on your current Zakat.":
+      "رئيسية بسيطة تركز على زكاتك الحالية.",
+  "Draft saved. Open records from Home and choose Set as default to update Home.":
+      "تم حفظ المسودة. اختار «تعيين كافتراضي» من السجلات لتحديث الرئيسية.",
+  "Records in Home": "السجلات في الرئيسية"
 };

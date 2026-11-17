@@ -102,7 +102,9 @@ void main() {
       expect(find.text('Zakat Tracker'), findsOneWidget);
       expect(tracker.selectedRecord!.totalWealth, 10000);
       expect(calc.draft, isNull);
-      await tester.tap(find.text('Records'));
+      await tester.tap(find.text('Home'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('View all records'));
       await tester.pumpAndSettle();
       await tester.ensureVisible(find.text('Open payment tracker'));
       await tester.pumpAndSettle();

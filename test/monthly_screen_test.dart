@@ -84,7 +84,7 @@ void main() {
           ChangeNotifierProvider.value(value: monthly)
         ],
         child: MaterialApp(
-            theme: AppTheme.light, home: const HomeScreen(initialTab: 3))));
+            theme: AppTheme.light, home: const HomeScreen(initialTab: 2))));
     await tester.pumpAndSettle();
     expect(find.text('Monthly Giving'), findsOneWidget);
     expect(find.text('Monthly'), findsOneWidget);
@@ -158,7 +158,7 @@ void main() {
           ChangeNotifierProvider.value(value: monthly),
         ],
         child: MaterialApp(
-            theme: AppTheme.light, home: const HomeScreen(initialTab: 3))));
+            theme: AppTheme.light, home: const HomeScreen(initialTab: 2))));
     await tester.pumpAndSettle();
     final past = DateTime(DateTime.now().year, DateTime.now().month - 1);
     await tester.tap(find.byTooltip('Previous month'));

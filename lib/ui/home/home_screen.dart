@@ -33,16 +33,27 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     setState(() => _tab = index);
   }
 
-  void openTracker() => _selectTab(2);
+  void openTracker() => _selectTab(1);
   void openMonthly() {
     setState(() => _monthlyFocus = null);
-    _selectTab(3);
+    _selectTab(2);
   }
 
   void _openCommitment(MonthlyPlan plan) {
     setState(() => _monthlyFocus = plan.recipient);
-    _selectTab(3);
+    _selectTab(2);
   }
+
+  void _showRecords() => Navigator.of(context).push(MaterialPageRoute(
+      builder: (routeContext) => Scaffold(
+            appBar: AppBar(title: Text(l(routeContext, 'Zakat records'))),
+            body: _RecordsTab(
+                onCreate: _create,
+                onOpen: (record) {
+                  Navigator.of(routeContext).pop();
+                  _open(record);
+                }),
+          )));
 
   void _create() => Navigator.of(context)
       .push(MaterialPageRoute(builder: (_) => const EntryModeScreen()));
@@ -151,8 +162,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             .length;
     final ar = auth.profile?.language == 'ar';
     final labels = [
-      ar ? 'الرئيسية' : 'Dashboard',
-      ar ? 'السجلات' : 'Records',
+      ar ? 'الرئيسية' : 'Home',
       ar ? 'المتابعة' : 'Tracker',
       auth.profile?.monthlyGivingLabel ?? 'Monthly Giving',
       ar ? 'الملف الشخصي' : 'Profile'
@@ -160,39 +170,39 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final mobileLabels = [
       labels[0],
       labels[1],
-      labels[2],
       ar ? 'شهريات' : 'Monthly',
       ar ? 'حسابي' : 'Profile'
     ];
     const selectedIcons = [
-      Icons.space_dashboard_rounded,
-      Icons.folder_rounded,
+      Icons.home_rounded,
       Icons.track_changes_rounded,
       Icons.calendar_month_rounded,
       Icons.person_rounded
     ];
     const icons = [
-      Icons.space_dashboard_outlined,
-      Icons.folder_open_outlined,
+      Icons.home_outlined,
       Icons.track_changes_outlined,
       Icons.calendar_month_outlined,
       Icons.person_outline
     ];
     final body = IndexedStack(index: _tab, children: [
       DashboardScreen(
-          onRecords: () => _selectTab(1),
+          onRecords: _showRecords,
           onMonthly: openMonthly,
           onCommitment: _openCommitment,
           onCreate: _create,
           onRecord: _open),
-      _RecordsTab(onCreate: _create, onOpen: _open),
-      TrackerScreen(
-          onOpenMonthly: openMonthly, onOpenRecords: () => _selectTab(1)),
-      MonthlyScreen(
-          key: ValueKey(_monthlyFocus), focusRecipient: _monthlyFocus),
+      HeroMode(
+          enabled: _tab == 1,
+          child: TrackerScreen(
+              onOpenMonthly: openMonthly, onOpenRecords: () => _selectTab(0))),
+      HeroMode(
+          enabled: _tab == 2,
+          child: MonthlyScreen(
+              key: ValueKey(_monthlyFocus), focusRecipient: _monthlyFocus)),
       const ProfileScreen(),
     ]);
-    Widget navIcon(int index) => index == 3
+    Widget navIcon(int index) => index == 2
         ? Badge(
             isLabelVisible: due > 0,
             label: Text('$due'),
@@ -242,7 +252,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                               unselectedLabelTextStyle:
                                   const TextStyle(color: Color(0xFFCBDFD5)),
                               destinations: List.generate(
-                                  5,
+                                  4,
                                   (i) => NavigationRailDestination(
                                       icon: navIcon(i),
                                       label: Text(l(context, labels[i])))))),
@@ -269,7 +279,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     selectedIndex: _tab,
                     onDestinationSelected: _selectTab,
                     destinations: List.generate(
-                        5,
+                        4,
                         (i) => NavigationDestination(
                             icon: navIcon(i),
                             selectedIcon: Icon(selectedIcons[i]),

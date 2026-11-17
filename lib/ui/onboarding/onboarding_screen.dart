@@ -5,10 +5,14 @@ import '../../core/providers/auth_provider.dart';
 import '../../core/constants.dart';
 import '../widgets/searchable_picker.dart';
 import '../widgets/location_currency_button.dart';
+import '../notifications/push_reminder_card.dart';
+import '../../core/services/push_service.dart';
 
 class OnboardingScreen extends StatefulWidget {
   final bool review;
-  const OnboardingScreen({super.key, this.review = false});
+  final PushService? notificationService;
+  const OnboardingScreen(
+      {super.key, this.review = false, this.notificationService});
   @override
   State<OnboardingScreen> createState() => _OnboardingScreenState();
 }
@@ -41,7 +45,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Future<void> _next() async {
-    if (step < 2) {
+    if (step < 3) {
       _go(step + 1);
       return;
     }
@@ -79,11 +83,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         child: Text(l(context, 'Zakat Tracker'),
                             style: Theme.of(context).textTheme.titleLarge)),
                     const SizedBox(width: 8),
-                    Text(l(context, '{0} of {1}', [step + 1, 3]),
+                    Text(l(context, '{0} of {1}', [step + 1, 4]),
                         style: Theme.of(context).textTheme.bodySmall),
                   ]),
                   const SizedBox(height: 12),
-                  LinearProgressIndicator(value: (step + 1) / 3, minHeight: 3),
+                  LinearProgressIndicator(value: (step + 1) / 4, minHeight: 3),
                 ])),
             Expanded(child: LayoutBuilder(builder: (context, constraints) {
               final gap = constraints.maxHeight < 430 ? 12.0 : 20.0;
@@ -104,7 +108,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                     [
                                       Icons.mosque_outlined,
                                       Icons.tune,
-                                      Icons.volunteer_activism_outlined
+                                      Icons.volunteer_activism_outlined,
+                                      Icons.notifications_outlined
                                     ][step],
                                     size: 32,
                                     color: kPrimaryGreen)),
@@ -117,7 +122,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                             [
                                               'Give for Allah, with intention.',
                                               'Make it feel like yours.',
-                                              'A simple rhythm for giving.'
+                                              'A simple rhythm for giving.',
+                                              'A gentle nudge to give.'
                                             ][step]),
                                         style: Theme.of(context)
                                             .textTheme
@@ -138,7 +144,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             icon: Icons.star_outline,
                             title: l(context, 'One default record'),
                             detail: l(context,
-                                'A clear dashboard focused on your current Zakat.')),
+                                'A clear Home screen focused on your current Zakat.')),
                       ],
                       if (step == 1) ...[
                         Text(l(context, 'Language / اللغة'),
@@ -219,6 +225,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                     color: kPrimaryGreen,
                                     fontWeight: FontWeight.w600)),
                       ],
+                      if (step == 3) ...[
+                        Text(
+                            l(context,
+                                'Optional. Enable reminders now, or later from Profile.'),
+                            style: Theme.of(context).textTheme.bodySmall),
+                        const SizedBox(height: 8),
+                        PushReminderCard(
+                            compact: true, service: widget.notificationService),
+                      ],
                     ]),
               );
             })),
@@ -243,7 +258,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           onPressed: busy ? null : _next,
                           child: Text(busy
                               ? l(context, 'Saving…')
-                              : step == 2
+                              : step == 3
                                   ? l(context, 'Start tracking')
                                   : l(context, 'Next')))),
                 ])),

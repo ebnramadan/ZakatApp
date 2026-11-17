@@ -12,6 +12,7 @@ import 'package:zakat_app/core/services/auth_service.dart';
 import 'package:zakat_app/core/services/firestore_service.dart';
 import 'package:zakat_app/core/theme.dart';
 import 'package:zakat_app/ui/onboarding/onboarding_screen.dart';
+import 'push_reminder_card_test.dart' show TestPushService;
 
 void main() {
   setUpAll(() async {
@@ -72,14 +73,16 @@ void main() {
                     theme: AppTheme.forLanguage(a.language),
                     home: a.profile == null
                         ? const SizedBox()
-                        : const OnboardingScreen()))));
+                        : OnboardingScreen(
+                            notificationService: TestPushService()
+                              ..schedulingConfirmed = false)))));
         await tester.pumpAndSettle();
         final next = find.byKey(const Key('onboarding-next'));
         final back = find.byKey(const Key('onboarding-back'));
         final firstFooter =
             tester.getRect(find.byKey(const Key('onboarding-footer')));
         expect(tester.widget<OutlinedButton>(back).onPressed, isNull);
-        for (var step = 0; step < 3; step++) {
+        for (var step = 0; step < 4; step++) {
           final scroll = tester.state<ScrollableState>(find
               .descendant(
                   of: find.byKey(const Key('onboarding-content')),
@@ -95,7 +98,7 @@ void main() {
           expect(tester.getRect(find.byKey(const Key('onboarding-footer'))),
               firstFooter);
           expect(tester.takeException(), isNull);
-          if (step < 2) {
+          if (step < 3) {
             await tester.tap(next);
             await tester.pumpAndSettle();
           }

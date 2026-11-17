@@ -99,7 +99,7 @@ class _AssetFormScreenState extends State<AssetFormScreen> {
         if (!saved && mounted) {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
               content: Text(l(context,
-                  "Draft saved. Choose Set as default in Records to update your dashboard."))));
+                  "Draft saved. Open records from Home and choose Set as default to update Home."))));
         }
       });
     }

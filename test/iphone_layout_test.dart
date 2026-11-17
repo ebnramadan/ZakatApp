@@ -52,19 +52,18 @@ void main() {
     final calc = CalculatorProvider(store: service),
         tracker = TrackerProvider(store: service),
         monthly = MonthlyProvider(store: MonthlyService(database: db));
-    await tester.pumpWidget(MultiProvider(
-        providers: [
-          ChangeNotifierProvider.value(value: auth),
-          ChangeNotifierProvider.value(value: calc),
-          ChangeNotifierProvider.value(value: tracker),
-          ChangeNotifierProvider.value(value: monthly)
-        ],
-        child: MaterialApp(
-            theme: AppTheme.light, home: const HomeScreen(initialTab: 1))));
+    await tester.pumpWidget(MultiProvider(providers: [
+      ChangeNotifierProvider.value(value: auth),
+      ChangeNotifierProvider.value(value: calc),
+      ChangeNotifierProvider.value(value: tracker),
+      ChangeNotifierProvider.value(value: monthly)
+    ], child: MaterialApp(theme: AppTheme.light, home: const HomeScreen())));
     await tester.pumpAndSettle();
     final tabLabel = find.descendant(
         of: find.byType(NavigationBar), matching: find.text('Profile'));
     expect(tester.getRect(tabLabel).bottom, lessThanOrEqualTo(852 - 34));
+    await tester.tap(find.text('View all records'));
+    await tester.pumpAndSettle();
     await tester.scrollUntilVisible(find.byType(TextField), 250,
         scrollable: find.byType(Scrollable).first);
     await tester.tap(find.byType(TextField).first);
@@ -72,7 +71,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(NavigationBar), findsNothing);
     unawaited(
-        moveToRecycleBin(tester.element(find.byType(HomeScreen)), record));
+        moveToRecycleBin(tester.element(find.byType(TextField).first), record));
     await tester.pumpAndSettle();
     expect(
         find.descendant(

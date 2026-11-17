@@ -13,6 +13,9 @@ import 'package:zakat_app/ui/notifications/push_reminder_card.dart';
 class TestPushService extends PushService {
   bool configFails = false, settingsFail = false;
   int testsShown = 0, registrations = 0;
+  bool schedulingConfirmed = true;
+  bool? lastShowNames;
+  Map<String, dynamic>? savedSettings;
   @override
   String get support => 'supported';
   @override
@@ -22,14 +25,15 @@ class TestPushService extends PushService {
     if (configFails) throw StateError('Simulated connection failure');
     return {
       'publicKey': 'B${'a' * 86}',
-      'scheduledAt': DateTime.now().millisecondsSinceEpoch
+      'scheduledAt':
+          schedulingConfirmed ? DateTime.now().millisecondsSinceEpoch : 0
     };
   }
 
   @override
   Future<Map<String, dynamic>?> settings(String uid) async {
     if (settingsFail) throw StateError('Simulated saved-settings failure');
-    return null;
+    return savedSettings;
   }
 
   @override
@@ -43,6 +47,7 @@ class TestPushService extends PushService {
       required bool zakat,
       required bool showNames}) async {
     registrations++;
+    lastShowNames = showNames;
   }
 }
 
@@ -114,5 +119,30 @@ void main() {
     expect(service.testsShown, 1);
     expect(service.registrations, 0);
     expect(tester.takeException(), isNull);
+  });
+  testWidgets('new notification setup includes recipient names by default',
+      (tester) async {
+    final service = TestPushService();
+    await mount(tester, service);
+    final names = find.widgetWithText(SwitchListTile, 'Show recipient names');
+    expect(tester.widget<SwitchListTile>(names).value, isTrue);
+    await tester
+        .ensureVisible(find.text('Enable notifications on this device'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byWidgetPredicate((w) => w is FilledButton));
+    await tester.pumpAndSettle();
+    expect(service.lastShowNames, isTrue);
+  });
+  testWidgets('a saved preference to hide names remains respected',
+      (tester) async {
+    final service = TestPushService()
+      ..savedSettings = {'monthly': true, 'zakat': true, 'showNames': false};
+    await mount(tester, service);
+    expect(
+        tester
+            .widget<SwitchListTile>(
+                find.widgetWithText(SwitchListTile, 'Show recipient names'))
+            .value,
+        isFalse);
   });
 }

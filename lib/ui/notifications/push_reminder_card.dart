@@ -6,7 +6,8 @@ import '../../core/services/push_service.dart';
 
 class PushReminderCard extends StatefulWidget {
   final PushService? service;
-  const PushReminderCard({super.key, this.service});
+  final bool compact;
+  const PushReminderCard({super.key, this.service, this.compact = false});
   @override
   State<PushReminderCard> createState() => _PushReminderCardState();
 }
@@ -19,7 +20,7 @@ class _PushReminderCardState extends State<PushReminderCard> {
       _enabled = false,
       _monthly = true,
       _zakat = true,
-      _names = false;
+      _names = true;
   String? _error, _loadError;
   bool _settingsFailed = false;
   @override
@@ -95,139 +96,145 @@ class _PushReminderCardState extends State<PushReminderCard> {
     final ready = scheduledAt is num &&
         DateTime.now().millisecondsSinceEpoch - scheduledAt <
             const Duration(hours: 3).inMilliseconds;
-    return Card(
-        child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(children: [
-                    const Icon(Icons.notifications_outlined, size: 22),
-                    const SizedBox(width: 10),
-                    Expanded(
-                        child: Text(l(context, 'Giving notifications'),
-                            style: Theme.of(context).textTheme.titleMedium)),
-                    IconButton(
-                        tooltip: l(context, 'Refresh notification status'),
-                        onPressed: _busy || _loading
-                            ? null
-                            : () {
-                                setState(() => _loading = true);
-                                _load();
-                              },
-                        icon: const Icon(Icons.refresh)),
-                  ]),
-                  const SizedBox(height: 10),
-                  Text(
-                      l(context,
-                          'Gentle reminders for monthly giving and Zakat, up to twice a week during daytime.'),
-                      style: Theme.of(context).textTheme.bodySmall),
-                  if (support == 'supported') ...[
-                    const SizedBox(height: 14),
-                    OutlinedButton.icon(
-                        key: const Key('test-notification'),
-                        onPressed: _busy ? null : _test,
-                        icon: const Icon(Icons.notifications_active_outlined),
-                        label: Text(l(context, 'Send test notification'))),
-                    const SizedBox(height: 6),
-                    Text(
-                        l(context,
-                            'Tests this device only. Enable reminders below for automatic notifications.'),
-                        style: Theme.of(context).textTheme.bodySmall),
-                  ],
-                  if (_loading)
-                    const Padding(
-                        padding: EdgeInsets.all(12),
-                        child: LinearProgressIndicator())
-                  else if (support == 'install')
-                    Padding(
-                        padding: const EdgeInsets.only(top: 12),
-                        child: Text(l(context,
-                            'On iPhone: open in Safari, tap Share → Add to Home Screen, then open the installed app to enable notifications.')))
-                  else if (support != 'supported')
-                    Padding(
-                        padding: const EdgeInsets.only(top: 12),
-                        child: Text(l(context,
-                            'Push notifications are not supported in this browser. In-app reminders are still available.')))
-                  else ...[
-                    if (_loadError != null || _error != null) ...[
-                      const SizedBox(height: 12),
-                      Text(l(context, _error ?? _loadError!),
-                          style: TextStyle(
-                              color: Theme.of(context).colorScheme.error)),
-                      if (_loadError != null)
-                        TextButton(
-                            onPressed: _busy
-                                ? null
-                                : () {
-                                    setState(() => _loading = true);
-                                    _load();
-                                  },
-                            child: Text(l(context, 'Retry'))),
-                    ],
-                    if (_config['publicKey'] == null && _loadError == null)
-                      Padding(
-                          padding: const EdgeInsets.only(top: 12),
-                          child: Text(l(context,
-                              'Notification delivery is being prepared. In-app reminders are available now.'))),
-                    if (_config['publicKey'] != null) ...[
-                      if (!ready)
-                        Padding(
-                            padding: const EdgeInsets.only(top: 12),
-                            child: Text(
-                                l(context,
-                                    'Automatic notification scheduling has not been confirmed yet. You can set up this device; reminders will start once scheduling is active.'),
-                                style: Theme.of(context).textTheme.bodySmall)),
-                      SwitchListTile(
-                          contentPadding: EdgeInsets.zero,
-                          title: Text(l(context, 'Monthly giving reminders')),
-                          value: _monthly,
-                          onChanged: _busy
-                              ? null
-                              : (v) => setState(() => _monthly = v)),
-                      SwitchListTile(
-                          contentPadding: EdgeInsets.zero,
-                          title: Text(l(context, 'Zakat reminders')),
-                          value: _zakat,
-                          onChanged:
-                              _busy ? null : (v) => setState(() => _zakat = v)),
-                      SwitchListTile(
-                          contentPadding: EdgeInsets.zero,
-                          title: Text(l(context, 'Show recipient names')),
-                          subtitle: Text(l(context,
-                              'Names may appear on your lock screen. Amounts are not included.')),
-                          value: _names,
-                          onChanged:
-                              _busy ? null : (v) => setState(() => _names = v)),
-                      FilledButton.icon(
-                          onPressed:
-                              _busy || _settingsFailed || (!_monthly && !_zakat)
-                                  ? null
-                                  : _save,
-                          icon: const Icon(Icons.notifications_active_outlined),
-                          label: Text(_busy
-                              ? l(context, 'Saving…')
-                              : _enabled
-                                  ? l(context, 'Save notification preferences')
-                                  : l(context,
-                                      'Enable notifications on this device'))),
-                      if (_enabled)
-                        Wrap(spacing: 8, children: [
-                          TextButton(
-                              onPressed: _busy
-                                  ? null
-                                  : () => _perform(() async {
-                                        await _service.disable(context
-                                            .read<AuthProvider>()
-                                            .user!
-                                            .uid);
-                                        _enabled = false;
-                                      }),
-                              child:
-                                  Text(l(context, 'Turn off on this device'))),
-                        ]),
-                    ],
-                  ],
-                ])));
+    final content = Padding(
+        padding: EdgeInsets.all(widget.compact ? 0 : 16),
+        child:
+            Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          if (!widget.compact)
+            Row(children: [
+              const Icon(Icons.notifications_outlined, size: 22),
+              const SizedBox(width: 10),
+              Expanded(
+                  child: Text(l(context, 'Giving notifications'),
+                      style: Theme.of(context).textTheme.titleMedium)),
+              IconButton(
+                  tooltip: l(context, 'Refresh notification status'),
+                  onPressed: _busy || _loading
+                      ? null
+                      : () {
+                          setState(() => _loading = true);
+                          _load();
+                        },
+                  icon: const Icon(Icons.refresh)),
+            ]),
+          if (!widget.compact) const SizedBox(height: 10),
+          if (!widget.compact)
+            Text(
+                l(context,
+                    'Gentle reminders for monthly giving and Zakat, up to twice a week during daytime.'),
+                style: Theme.of(context).textTheme.bodySmall),
+          if (support == 'supported' && !widget.compact) ...[
+            const SizedBox(height: 14),
+            OutlinedButton.icon(
+                key: const Key('test-notification'),
+                onPressed: _busy ? null : _test,
+                icon: const Icon(Icons.notifications_active_outlined),
+                label: Text(l(context, 'Send test notification'))),
+            const SizedBox(height: 6),
+            Text(
+                l(context,
+                    'Tests this device only. Enable reminders below for automatic notifications.'),
+                style: Theme.of(context).textTheme.bodySmall),
+          ],
+          if (_loading)
+            const Padding(
+                padding: EdgeInsets.all(12), child: LinearProgressIndicator())
+          else if (support == 'install')
+            Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Text(l(context,
+                    'On iPhone: open in Safari, tap Share → Add to Home Screen, then open the installed app to enable notifications.')))
+          else if (support != 'supported')
+            Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Text(l(context,
+                    'Push notifications are not supported in this browser. In-app reminders are still available.')))
+          else ...[
+            if (_loadError != null || _error != null) ...[
+              const SizedBox(height: 12),
+              Text(l(context, _error ?? _loadError!),
+                  style: TextStyle(color: Theme.of(context).colorScheme.error)),
+              if (_loadError != null)
+                TextButton(
+                    onPressed: _busy
+                        ? null
+                        : () {
+                            setState(() => _loading = true);
+                            _load();
+                          },
+                    child: Text(l(context, 'Retry'))),
+            ],
+            if (_config['publicKey'] == null && _loadError == null)
+              Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Text(l(context,
+                      'Notification delivery is being prepared. In-app reminders are available now.'))),
+            if (_config['publicKey'] != null) ...[
+              if (!ready)
+                Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: Text(
+                        l(
+                            context,
+                            widget.compact
+                                ? 'Automatic delivery is still being verified.'
+                                : 'Automatic notification scheduling has not been confirmed yet. You can set up this device; reminders will start once scheduling is active.'),
+                        style: Theme.of(context).textTheme.bodySmall)),
+              SwitchListTile(
+                  dense: widget.compact,
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(l(context, 'Monthly giving reminders')),
+                  value: _monthly,
+                  onChanged:
+                      _busy ? null : (v) => setState(() => _monthly = v)),
+              SwitchListTile(
+                  dense: widget.compact,
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(l(context, 'Zakat reminders')),
+                  value: _zakat,
+                  onChanged: _busy ? null : (v) => setState(() => _zakat = v)),
+              SwitchListTile(
+                  dense: widget.compact,
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(l(context, 'Show recipient names')),
+                  subtitle: Text(l(
+                      context,
+                      widget.compact
+                          ? 'Names can appear on your lock screen.'
+                          : 'Names may appear on your lock screen. Amounts are not included.')),
+                  value: _names,
+                  onChanged: _busy ? null : (v) => setState(() => _names = v)),
+              FilledButton.icon(
+                  onPressed: _busy || _settingsFailed || (!_monthly && !_zakat)
+                      ? null
+                      : _save,
+                  icon: const Icon(Icons.notifications_active_outlined),
+                  label: Text(_busy
+                      ? l(context, 'Saving…')
+                      : _enabled
+                          ? l(context, 'Save notification preferences')
+                          : l(context, 'Enable notifications on this device'))),
+              if (_enabled && widget.compact)
+                Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(
+                        l(context, 'Notifications enabled on this device.'),
+                        style: Theme.of(context).textTheme.bodySmall)),
+              if (_enabled && !widget.compact)
+                Wrap(spacing: 8, children: [
+                  TextButton(
+                      onPressed: _busy
+                          ? null
+                          : () => _perform(() async {
+                                await _service.disable(
+                                    context.read<AuthProvider>().user!.uid);
+                                _enabled = false;
+                              }),
+                      child: Text(l(context, 'Turn off on this device'))),
+                ]),
+            ],
+          ],
+        ]));
+    return widget.compact ? content : Card(child: content);
   }
 }

@@ -90,7 +90,7 @@ class _TrackerScreenState extends State<TrackerScreen> {
                     moveToRecycleBin(context, tracker.selectedRecord!)),
           IconButton(
               icon: const Icon(Icons.folder_open_outlined),
-              tooltip: l(context, "View all records"),
+              tooltip: l(context, "Records in Home"),
               onPressed: widget.onOpenRecords),
         ],
       ),

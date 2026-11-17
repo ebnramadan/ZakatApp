@@ -186,9 +186,9 @@ class _AuthGate extends StatelessWidget {
     final target = Uri.base.queryParameters['open'];
     return HomeScreen(
         initialTab: target == 'monthly'
-            ? 3
+            ? 2
             : target == 'tracker'
-                ? 2
+                ? 1
                 : 0);
   }
 }

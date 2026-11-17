@@ -52,7 +52,9 @@ void main() {
     await tester.tap(find.text('Tracker'));
     await tester.pumpAndSettle();
     expect(tracker.selectedRecord!.id, 'b');
-    await tester.tap(find.text('Records'));
+    await tester.tap(find.text('Home'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('View all records'));
     await tester.pumpAndSettle();
     await tester.scrollUntilVisible(find.text('Set as default'), 300,
         scrollable: find.byType(Scrollable).first);
@@ -60,7 +62,9 @@ void main() {
     await tester.tap(find.text('Set as default'));
     await tester.pumpAndSettle();
     expect(auth.profile!.defaultRecordId, 'a');
-    await tester.tap(find.text('Dashboard'));
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Home'));
     await tester.pumpAndSettle();
     expect(find.text('USD 250.00'), findsWidgets);
     expect(find.text('EGP 150.00'), findsNothing);
