@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import '../platform/push_platform.dart' as platform;
@@ -50,6 +51,9 @@ class PushService {
         'createdAt': old.data()?['createdAt'] ?? now,
         'updatedAt': now
       }).timeout(const Duration(seconds: 10));
+      if (FirebaseAuth.instance.currentUser?.uid != uid) {
+        throw StateError('The signed-in account changed.');
+      }
       final confirmed = await platform.syncPushSession(uid, preferences: {
         'enabled': true,
         'monthly': monthly,
@@ -60,7 +64,9 @@ class PushService {
         throw StateError('The notification session was not confirmed.');
       }
     } catch (_) {
-      await platform.syncPushSession(uid, preferences: {'enabled': false});
+      if (FirebaseAuth.instance.currentUser?.uid == uid) {
+        await platform.syncPushSession(uid, preferences: {'enabled': false});
+      }
       rethrow;
     }
   }
@@ -87,7 +93,15 @@ class PushService {
     } catch (_) {}
   }
 
-  static Future<void> syncSession(String? uid) => platform.syncPushSession(uid);
+  static Future<void> syncSession(String? uid) async {
+    final confirmed = await platform.syncPushSession(uid);
+    if (!confirmed) {
+      try {
+        await platform.unsubscribePush();
+      } catch (_) {}
+    }
+  }
+
   Future<void> showTest(String title, String body) =>
       platform.showPushTest(title, body);
 }

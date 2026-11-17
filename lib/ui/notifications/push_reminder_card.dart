@@ -84,7 +84,16 @@ class _PushReminderCardState extends State<PushReminderCard> {
                     const SizedBox(width: 10),
                     Expanded(
                         child: Text(l(context, 'Giving notifications'),
-                            style: Theme.of(context).textTheme.titleMedium))
+                            style: Theme.of(context).textTheme.titleMedium)),
+                    IconButton(
+                        tooltip: l(context, 'Refresh notification status'),
+                        onPressed: _busy || _loading
+                            ? null
+                            : () {
+                                setState(() => _loading = true);
+                                _load();
+                              },
+                        icon: const Icon(Icons.refresh)),
                   ]),
                   const SizedBox(height: 10),
                   Text(

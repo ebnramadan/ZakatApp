@@ -1,6 +1,7 @@
 /* Separate scope from Flutter's asset-cache worker. No Firebase billing or SDK required. */
 'use strict';
 const DB = 'ztracker-push-session';
+let sessionQueue = Promise.resolve();
 function stateStore(mode, action) {
   return new Promise((resolve, reject) => {
     const open = indexedDB.open(DB, 1);
@@ -19,7 +20,7 @@ self.addEventListener('install', event => event.waitUntil(self.skipWaiting()));
 self.addEventListener('activate', event => event.waitUntil(self.clients.claim()));
 self.addEventListener('message', event => {
   if (event.data?.type !== 'push-session') return;
-  event.waitUntil((async () => {
+  sessionQueue = sessionQueue.catch(() => {}).then(async () => {
     const old = await stateStore('readonly', s => s.get('session'));
     const next = old?.uid === event.data.uid ? {...old, ...event.data} : {enabled: false, ...event.data};
     await stateStore('readwrite', s => s.put(next, 'session'));
@@ -27,7 +28,8 @@ self.addEventListener('message', event => {
       for (const notification of await self.registration.getNotifications()) notification.close();
     }
     event.ports[0]?.postMessage({ok: true});
-  })());
+  });
+  event.waitUntil(sessionQueue);
 });
 self.addEventListener('push', event => event.waitUntil((async () => {
   const state = await stateStore('readonly', s => s.get('session'));

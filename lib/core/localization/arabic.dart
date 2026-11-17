@@ -839,5 +839,7 @@ const Map<String, String> arabic = {
   "Notifications are blocked. Allow them in your browser or iPhone notification settings.":
       "الإشعارات مقفولة. اسمح بيها من إعدادات المتصفح أو إشعارات الآيفون.",
   "Could not update notifications. Check your connection and retry.":
-      "ما قدرناش نحدّث الإشعارات. اتأكد من الاتصال وجرّب تاني."
+      "ما قدرناش نحدّث الإشعارات. اتأكد من الاتصال وجرّب تاني.",
+  "Monthly giving and Zakat reminders": "تذكيرات الشهريات والزكاة",
+  "Refresh notification status": "تحديث حالة الإشعارات"
 };

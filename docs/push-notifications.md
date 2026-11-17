@@ -6,7 +6,7 @@ Profile offers opt-in per device, separate monthly/Zakat preferences, optional r
 
 ## Frequency and eligibility
 
-`.github/workflows/push-reminders.yml` checks hourly at minute 17. One combined digest is allowed per device every four days, during 09:00–20:00 in its saved timezone (at most two per rolling week). Checks may run late on GitHub; there is no exact-minute guarantee. Monthly reminders include only active, started, unpaid commitments whose reminder day has arrived, clamped to month-end. Linked Zakat records must be submitted, active and in the same currency.
+`.github/workflows/push-reminders.yml` checks every 15 minutes. One combined digest is allowed per device every four days, during 09:00–20:00 in its saved timezone (at most two per rolling week). Checks may run late on GitHub; there is no exact-minute guarantee. Monthly reminders include only active, started, unpaid commitments whose reminder day has arrived, clamped to month-end. Linked Zakat records must be submitted, active and in the same currency.
 
 Zakat uses the selected default record (or the same submitted/newest fallback as the app), actual linked payments and the next Umm al-Qura lunar-year anniversary. Below-Nisab, draft, fully paid and recycled records do not produce Zakat reminders. The week before Hawl completion uses preparation wording; due records use respectful giving-for-Allah wording. No reminder marks anything paid or transfers money.
 

@@ -175,7 +175,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     isScrollControlled: true,
                     builder: (_) => const MonthlySettings())),
           ])),
-          const PushReminderCard(),
+          Card(
+              child: ListTile(
+                  leading: const Icon(Icons.notifications_outlined),
+                  title: Text(l(context, 'Giving notifications')),
+                  subtitle:
+                      Text(l(context, 'Monthly giving and Zakat reminders')),
+                  trailing: const Icon(Icons.chevron_right, size: 20),
+                  onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                      builder: (_) => Scaffold(
+                          appBar: AppBar(
+                              title: Text(l(context, 'Giving notifications'))),
+                          body: ListView(
+                              padding: const EdgeInsets.all(16),
+                              children: const [PushReminderCard()])))))),
           _groupLabel(context, 'Progress sharing'),
           const SharingSettingsCard(),
           _groupLabel(context, 'Account'),
