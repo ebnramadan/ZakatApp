@@ -109,7 +109,7 @@ class _AddPaymentSheetState extends State<AddPaymentSheet> {
   @override
   Widget build(BuildContext context) {
     final tracker = context.watch<TrackerProvider>();
-    final currency = tracker.selectedRecord?.currency ?? 'UNKNOWN';
+    final currency = tracker.selectedRecord?.currency;
     final dateFmt = DateFormat('d MMMM yyyy');
 
     return Padding(
@@ -146,7 +146,8 @@ class _AddPaymentSheetState extends State<AddPaymentSheet> {
             ],
             decoration: InputDecoration(
               labelText: 'Amount',
-              prefixText: '${currencySymbol(currency)} ',
+              prefixText:
+                  currency == null ? null : '${currencySymbol(currency)} ',
               prefixStyle: const TextStyle(
                   color: kPrimaryGreen, fontWeight: FontWeight.bold),
             ),
