@@ -7,6 +7,10 @@ import '../../core/providers/auth_provider.dart';
 import 'account_security_card.dart';
 import '../monthly/monthly_screen.dart';
 import '../home/recycle_bin_screen.dart';
+import '../widgets/searchable_picker.dart';
+import 'account_reset_card.dart';
+import '../onboarding/onboarding_screen.dart';
+import 'sharing_settings_card.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -148,6 +152,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   onTap: () => Navigator.of(context).push(MaterialPageRoute(
                       builder: (_) => const RecycleBinScreen())))),
           const SizedBox(height: 12),
+          const SharingSettingsCard(),
+          Card(
+              child: ListTile(
+                  leading: const Icon(Icons.explore_outlined),
+                  title: const Text('Getting started'),
+                  subtitle: const Text('Review the welcome guide'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                      builder: (_) => const OnboardingScreen(review: true))))),
+          const AccountResetCard(),
+          const SizedBox(height: 12),
           const Text(
               'Changing your default currency affects new records and recipients only. Existing amounts keep their original currency.',
               style:
@@ -272,18 +287,11 @@ class _CurrencySelector extends StatelessWidget {
                 fontWeight: FontWeight.w600,
                 color: Colors.black54)),
         const SizedBox(height: 8),
-        DropdownButtonFormField<String>(
-          value: selected,
-          isExpanded: true,
-          decoration: const InputDecoration(),
-          items: kCurrencies.entries
-              .map((e) => DropdownMenuItem(
-                  value: e.key, child: Text('${e.key} — ${e.value}')))
-              .toList(),
-          onChanged: (v) {
-            if (v != null) onChanged(v);
-          },
-        ),
+        SearchablePicker<String>(
+            label: 'Default currency',
+            value: selected,
+            options: currencyOptions,
+            onChanged: onChanged),
       ],
     );
   }

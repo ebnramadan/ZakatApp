@@ -6,6 +6,7 @@ import '../../core/providers/auth_provider.dart';
 import '../../core/providers/calculator_provider.dart';
 import '../../core/providers/tracker_provider.dart';
 import '../home/home_screen.dart';
+import '../shared/giving_celebration.dart';
 
 class ResultsScreen extends StatelessWidget {
   const ResultsScreen({super.key});
@@ -98,6 +99,11 @@ class ResultsScreen extends StatelessWidget {
                   : () async {
                       final saved = await calc.submitDraft(auth.user!.uid);
                       if (context.mounted && saved != null) {
+                        await auth.updateProfileFields(
+                            defaultRecordId: saved.id);
+                        if (!context.mounted) return;
+                        await showGivingCelebration(context, planReady: true);
+                        if (!context.mounted) return;
                         context
                             .read<TrackerProvider>()
                             .selectRecord(auth.user!.uid, saved);
@@ -119,7 +125,7 @@ class ResultsScreen extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             const Text(
-              'Once submitted, this record will be locked and saved permanently.',
+              'Submitting locks the calculation. You can still move the record to the recycle bin later.',
               style: TextStyle(color: Colors.grey, fontSize: 12),
               textAlign: TextAlign.center,
             ),

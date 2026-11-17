@@ -5,7 +5,9 @@ import 'package:intl/intl.dart';
 import '../../core/constants.dart';
 import '../../core/models/zakat_record.dart';
 import '../../core/providers/calculator_provider.dart';
+import '../../core/providers/auth_provider.dart';
 import 'results_screen.dart';
+import '../widgets/searchable_picker.dart';
 
 /// Both entry modes edit the same model and use the same validation engine.
 class AssetFormScreen extends StatefulWidget {
@@ -85,6 +87,18 @@ class _AssetFormScreenState extends State<AssetFormScreen> {
     setState(() => _saving = true);
     final ok = await calc.saveDraft();
     if (!mounted) return ok;
+    if (ok && calc.draft != null) {
+      context
+          .read<AuthProvider>()
+          .updateProfileFields(defaultRecordId: calc.draft!.id)
+          .then((saved) {
+        if (!saved && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+              content: Text(
+                  'Draft saved. Choose Set as default in Records to update your dashboard.')));
+        }
+      });
+    }
     setState(() => _saving = false);
     ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(ok ? 'Draft saved' : calc.error!)));
@@ -152,18 +166,51 @@ class _AssetFormScreenState extends State<AssetFormScreen> {
         if (currency == null)
           const Text(
               'This older draft has no saved currency. Choose its original currency before continuing.'),
-        DropdownButtonFormField<String>(
+        SearchablePicker<String>(
+            label: 'Record currency',
             value: currency,
-            isExpanded: true,
-            decoration: const InputDecoration(labelText: 'Record currency'),
-            items: kCurrencies.keys
-                .map((c) => DropdownMenuItem(value: c, child: Text(c)))
-                .toList(),
-            onChanged: currency != null
-                ? null
-                : (v) {
-                    setState(() => d.currency = v);
-                  }),
+            options: currencyOptions,
+            helperText:
+                'Amounts stay in the selected currency; they are not converted.',
+            onChanged: (v) async {
+              if (v == currency) return;
+              if (d.cashLocal > 0 ||
+                  d.foreignCash.isNotEmpty ||
+                  d.goldEntries.isNotEmpty) {
+                final yes = await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                            title: const Text('Change record currency?'),
+                            content: const Text(
+                                'Existing amounts are not converted. Gold prices and exchange rates will refresh; check all amounts before calculating.'),
+                            actions: [
+                              TextButton(
+                                  onPressed: () => Navigator.pop(ctx, false),
+                                  child: const Text('Cancel')),
+                              TextButton(
+                                  onPressed: () => Navigator.pop(ctx, true),
+                                  child: const Text('Change currency'))
+                            ]));
+                if (yes != true || !mounted) return;
+              }
+              setState(() {
+                d.currency = v;
+                d.manualNisabPrice = false;
+                d.goldPricePerGram24k = 0;
+                for (final e in d.goldEntries) {
+                  e.pricePerGram24k = 0;
+                  e.isManualPrice = false;
+                }
+                for (final e in d.foreignCash) {
+                  e.exchangeRate = 0;
+                  e.isManualRate = false;
+                }
+              });
+              calc.fetchPrices(v);
+              for (final e in d.foreignCash) {
+                _rate(e);
+              }
+            }),
         SwitchListTile(
             contentPadding: EdgeInsets.zero,
             title: const Text('Show Hijri date'),
@@ -230,15 +277,11 @@ class _AssetFormScreenState extends State<AssetFormScreen> {
                             }),
                         icon: const Icon(Icons.close))
                   ]),
-                  DropdownButtonFormField<String>(
+                  SearchablePicker<String>(
+                      label: 'Foreign currency',
                       value: entry.currency,
-                      isExpanded: true,
-                      items: kCurrencies.keys
-                          .map(
-                              (c) => DropdownMenuItem(value: c, child: Text(c)))
-                          .toList(),
+                      options: currencyOptions,
                       onChanged: (v) {
-                        if (v == null) return;
                         setState(() {
                           entry.currency = v;
                           entry.exchangeRate = 0;
@@ -289,13 +332,14 @@ class _AssetFormScreenState extends State<AssetFormScreen> {
                             setState(() => d.goldEntries.remove(entry)),
                         icon: const Icon(Icons.close))
                   ]),
-                  DropdownButtonFormField<int>(
-                      value: entry.carat,
-                      items: kGoldPurity.keys
+                  SegmentedButton<int>(
+                      segments: kGoldPurity.keys
                           .map((c) =>
-                              DropdownMenuItem(value: c, child: Text('${c}K')))
+                              ButtonSegment(value: c, label: Text('${c}K')))
                           .toList(),
-                      onChanged: (v) => setState(() => entry.carat = v!)),
+                      selected: {entry.carat},
+                      onSelectionChanged: (v) =>
+                          setState(() => entry.carat = v.single)),
                   _number(
                       'Weight (grams)', entry.grams, (v) => entry.grams = v),
                   _number('24K price per gram (${currency ?? '?'})',
@@ -305,6 +349,23 @@ class _AssetFormScreenState extends State<AssetFormScreen> {
                   },
                       positive: entry.grams > 0,
                       key: const ValueKey('gold-price')),
+                  if (entry.pricePerGram24k.isFinite &&
+                      entry.grams.isFinite) ...[
+                    const SizedBox(height: 12),
+                    Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: Text(
+                            '${entry.carat}K price: ${currency ?? '?'} ${(entry.pricePerGram24k * entry.purity).toStringAsFixed(2)} / g',
+                            key: const ValueKey('effective-gold-price'),
+                            style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                                color: kPrimaryGreen))),
+                    Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: Text(
+                            'Gold value: ${currency ?? '?'} ${entry.localValue.toStringAsFixed(2)}',
+                            key: const ValueKey('gold-live-value'))),
+                  ],
                   TextButton(
                       onPressed: () => setState(() {
                             entry.pricePerGram24k = d.goldPricePerGram24k;
@@ -338,7 +399,7 @@ class _AssetFormScreenState extends State<AssetFormScreen> {
                 TextButton(
                     onPressed: _saving ? null : _saveDraft,
                     child: const Text('Save draft',
-                        style: TextStyle(color: Colors.white))),
+                        style: TextStyle(color: kPrimaryGreen))),
               ]),
           body: Form(
               key: _form,
@@ -368,7 +429,10 @@ class _AssetFormScreenState extends State<AssetFormScreen> {
                                 ])))),
                 if (widget.guided && _step > 0)
                   TextButton(
-                      onPressed: () => setState(() => _step--),
+                      onPressed: () {
+                        FocusManager.instance.primaryFocus?.unfocus();
+                        setState(() => _step--);
+                      },
                       child: const Text('Previous')),
                 ElevatedButton(
                     onPressed:
@@ -376,6 +440,7 @@ class _AssetFormScreenState extends State<AssetFormScreen> {
                             ? null
                             : () {
                                 if (widget.guided && _step < 3) {
+                                  FocusManager.instance.primaryFocus?.unfocus();
                                   setState(() => _step++);
                                 } else {
                                   _results();

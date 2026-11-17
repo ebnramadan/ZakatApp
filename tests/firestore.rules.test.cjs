@@ -12,7 +12,7 @@ const record = (submitted = false) => ({
 });
 const payment = () => ({ userId: 'alice', zakatRecordId: 'r', amount: 10, name: 'Payment', recipient: 'Charity', date: 1700000000000, createdAt: 1700000000000 });
 before(async () => {
-  env = await initializeTestEnvironment({projectId: 'demo-zakat-app', firestore: {rules: readFileSync('firestore.rules', 'utf8')}});
+  env = await initializeTestEnvironment({projectId: 'demo-zakat-rules', firestore: {rules: readFileSync('firestore.rules', 'utf8')}});
 });
 after(async () => { if (env) await env.cleanup(); });
 beforeEach(async () => { await env.clearFirestore(); });
@@ -147,4 +147,24 @@ test('monthly receipts and ledger cannot be created or undone while the parent r
  const accepted=writeBatch(db);accepted.set(rec,receipt());accepted.set(pay,ledger());await assertSucceeds(accepted.commit());
  const again=Date.now();await updateDoc(r,{deletedAt:again,purgeAt:again+60*86400000});
  const undo=writeBatch(db);undo.delete(rec);undo.delete(pay);await assertFails(undo.commit());
+});
+
+test('sharing preferences validate consent, email count and monthly date',async()=>{
+ const profile=doc(alice(),'users/alice'),base={displayName:'Alice',email:'alice@example.com',currency:'EGP'};
+ await assertSucceeds(setDoc(profile,{...base,sharingEnabled:true,shareDay:31,shareRecipients:['trusted@example.com']}));
+ for(const patch of [{shareDay:32},{shareRecipients:[]},{shareRecipients:['not-an-email']},{shareRecipients:['bad space@example.com']},{shareRecipients:['bad\n@example.com']},{shareRecipients:Array(6).fill('a@example.com')}])await assertFails(updateDoc(profile,patch));
+ await assertFails(updateDoc(profile,{resetInProgress:true}));
+});
+test('app reset hard deletes require the exact verified email, its own UID, a fresh sign-in, and a reset flag',async()=>{
+ const at=Math.floor(Date.now()/1000),email='ebnramadan@gmail.com';
+ await env.withSecurityRulesDisabled(async ctx=>{const db=ctx.firestore();await setDoc(doc(db,'users/tester'),{displayName:'Tester',email,currency:'USD'});await setDoc(doc(db,'users/tester/zakatRecords/r'),{...record(true),userId:'tester'});await setDoc(doc(db,'users/tester/payments/p'),{...payment(),userId:'tester'});});
+ const fresh=env.authenticatedContext('tester',{email,email_verified:true,auth_time:at}).firestore();
+ const stale=env.authenticatedContext('tester',{email,email_verified:true,auth_time:at-600}).firestore();
+ const profile=doc(fresh,'users/tester'),r=doc(fresh,'users/tester/zakatRecords/r');
+ await assertFails(deleteDoc(r));await assertFails(updateDoc(doc(stale,'users/tester'),{resetInProgress:true}));
+ await assertSucceeds(updateDoc(profile,{resetInProgress:true,sharingEnabled:false,monthlyEmailReminders:false}));
+ await assertFails(deleteDoc(doc(stale,'users/tester/zakatRecords/r')));
+ await assertFails(deleteDoc(doc(alice(),'users/tester/zakatRecords/r')));
+ await assertSucceeds(deleteDoc(r));await assertSucceeds(deleteDoc(doc(fresh,'users/tester/payments/p')));
+ await assertSucceeds(setDoc(profile,{displayName:'Tester',email,currency:'USD',onboardingCompleted:false,resetInProgress:false}));
 });

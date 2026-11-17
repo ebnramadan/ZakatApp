@@ -1,3 +1,5 @@
+import '../shared/giving_celebration.dart';
+import '../widgets/searchable_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -9,7 +11,8 @@ import '../../core/providers/calculator_provider.dart';
 import '../../core/providers/monthly_provider.dart';
 
 class MonthlyScreen extends StatefulWidget {
-  const MonthlyScreen({super.key});
+  final String? focusRecipient;
+  const MonthlyScreen({super.key, this.focusRecipient});
   @override
   State<MonthlyScreen> createState() => _MonthlyScreenState();
 }
@@ -17,8 +20,22 @@ class MonthlyScreen extends StatefulWidget {
 class _MonthlyScreenState extends State<MonthlyScreen> {
   DateTime _month = DateTime(DateTime.now().year, DateTime.now().month);
   String _query = '';
+  late final TextEditingController _search;
   bool _followingCurrent = true;
   bool _showPaused = false;
+  @override
+  void initState() {
+    super.initState();
+    _query = widget.focusRecipient ?? '';
+    _search = TextEditingController(text: _query);
+  }
+
+  @override
+  void dispose() {
+    _search.dispose();
+    super.dispose();
+  }
+
   void _shift(int by) => setState(() {
         _followingCurrent = false;
         _month = DateTime(_month.year, _month.month + by);
@@ -180,8 +197,18 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
                               setState(() => _showPaused = value)),
                     ]),
                     const SizedBox(height: 12),
+                    if (_query.isNotEmpty)
+                      Align(
+                          alignment: AlignmentDirectional.centerStart,
+                          child: InputChip(
+                              label: Text('Showing: $_query'),
+                              onDeleted: () {
+                                _search.clear();
+                                setState(() => _query = '');
+                              })),
                     if (all.isNotEmpty)
                       TextField(
+                          controller: _search,
                           decoration: const InputDecoration(
                               labelText: 'Find a recipient',
                               prefixIcon: Icon(Icons.search)),
@@ -395,6 +422,12 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
                                                       !context.mounted) return;
                                                   final ok = await monthly
                                                       .markPaid(plan, key);
+                                                  if (ok && context.mounted) {
+                                                    await showGivingCelebration(
+                                                        context,
+                                                        sadaqah: plan.kind ==
+                                                            'sadaqah');
+                                                  }
                                                   if (context.mounted) {
                                                     ScaffoldMessenger.of(
                                                             context)
@@ -548,19 +581,14 @@ class _MonthlyPlanDialogState extends State<MonthlyPlanDialog> {
                                     : null;
                               }),
                           const SizedBox(height: 14),
-                          DropdownButtonFormField<String>(
+                          SearchablePicker<String>(
+                              label: 'Currency',
                               value: _currency,
-                              isExpanded: true,
-                              decoration:
-                                  const InputDecoration(labelText: 'Currency'),
-                              items: kCurrencies.keys
-                                  .map((c) => DropdownMenuItem(
-                                      value: c, child: Text(c)))
-                                  .toList(),
+                              options: currencyOptions,
                               onChanged: monthly.busy
                                   ? null
                                   : (v) => setState(() {
-                                        _currency = v!;
+                                        _currency = v;
                                         _record = '';
                                       })),
                           const SizedBox(height: 14),
@@ -581,20 +609,15 @@ class _MonthlyPlanDialogState extends State<MonthlyPlanDialog> {
                                   : (v) => setState(() => _kind = v!)),
                           if (_kind == 'zakat') ...[
                             const SizedBox(height: 14),
-                            DropdownButtonFormField<String>(
+                            SearchablePicker<String>(
+                                label: 'Zakat record to reduce',
                                 value: selected,
-                                isExpanded: true,
-                                decoration: const InputDecoration(
-                                    labelText: 'Zakat record to reduce'),
-                                items: records
-                                    .map((r) => DropdownMenuItem(
-                                        value: r.id,
-                                        child: Text(r.name,
-                                            overflow: TextOverflow.ellipsis)))
+                                options: records
+                                    .map((r) => PickerOption(r.id, r.name))
                                     .toList(),
                                 onChanged: monthly.busy
                                     ? null
-                                    : (v) => setState(() => _record = v!),
+                                    : (v) => setState(() => _record = v),
                                 validator: (v) => _kind == 'zakat' && v == null
                                     ? 'Choose a submitted record in the same currency'
                                     : null),
@@ -605,17 +628,14 @@ class _MonthlyPlanDialogState extends State<MonthlyPlanDialog> {
                                       'Create and submit a Zakat calculation in this currency first. You can also choose Sadaqah for now.')),
                           ],
                           const SizedBox(height: 14),
-                          DropdownButtonFormField<int>(
+                          SearchablePicker<int>(
+                              label: 'Remind me each month on day',
                               value: _day,
-                              decoration: const InputDecoration(
-                                  labelText: 'Remind me each month on day'),
-                              items: List.generate(
-                                  31,
-                                  (i) => DropdownMenuItem(
-                                      value: i + 1, child: Text('${i + 1}'))),
+                              options: List.generate(
+                                  31, (i) => PickerOption(i + 1, '${i + 1}')),
                               onChanged: monthly.busy
                                   ? null
-                                  : (v) => setState(() => _day = v!)),
+                                  : (v) => setState(() => _day = v)),
                           const SizedBox(height: 8),
                           const Text(
                               'If a month is shorter, the reminder falls on its last day.',

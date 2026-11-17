@@ -4,6 +4,31 @@ service cloud.firestore {
     function owner(uid) {
       return request.auth != null && request.auth.uid == uid && request.auth.token.email_verified == true;
     }
+    function canReset(uid) {
+      return owner(uid) && request.auth.token.email == 'ebnramadan@gmail.com'
+        && request.auth.token.get('auth_time', 0) > request.time.toMillis() / 1000 - 300;
+    }
+    function profileResetting(uid) {
+      return exists(/databases/$(database)/documents/users/$(uid))
+        && get(/databases/$(database)/documents/users/$(uid)).data.get('resetInProgress', false) == true;
+    }
+    function resetting(uid) { return canReset(uid) && profileResetting(uid); }
+    function shareRecipient(d, i) {
+      let recipients = d.get('shareRecipients', []);
+      return recipients.size() <= i || (recipients[i] is string && recipients[i].size() <= 254
+        && recipients[i].matches('^[^\\s@<>]+@[^\\s@<>]+[.][^\\s@<>]+$'));
+    }
+    function profileOptions(uid) {
+      let d = request.resource.data;
+      return d.get('defaultRecordId', '') is string && d.get('defaultRecordId', '').size() <= 200
+        && d.get('onboardingCompleted', true) is bool && d.get('resetInProgress', false) is bool
+        && (!d.get('resetInProgress', false) || canReset(uid))
+        && d.get('sharingEnabled', false) is bool && d.get('shareDay', 1) is int
+        && d.get('shareDay', 1) >= 1 && d.get('shareDay', 1) <= 31
+        && d.get('shareRecipients', []) is list && d.get('shareRecipients', []).size() <= 5
+        && (!d.get('sharingEnabled', false) || d.get('shareRecipients', []).size() > 0)
+        && shareRecipient(d, 0) && shareRecipient(d, 1) && shareRecipient(d, 2) && shareRecipient(d, 3) && shareRecipient(d, 4);
+    }
     function nonnegative(value) { return value is number && value >= 0 && value < 1000000000000000000; }
     function activeRecord(uid, id) {
       return get(/databases/$(database)/documents/users/$(uid)/zakatRecords/$(id)).data.get('deletedAt', null) == null;
@@ -97,7 +122,7 @@ service cloud.firestore {
     }
     match /users/{uid} {
       allow read: if owner(uid);
-      allow create, update: if owner(uid) && request.resource.data.displayName is string
+      allow create, update: if owner(uid) && profileOptions(uid) && request.resource.data.displayName is string
         && request.resource.data.email == request.auth.token.email
         && request.resource.data.currency is string && request.resource.data.currency.matches('^[A-Z]{3}$')
         && request.resource.data.get('language', 'en') in ['en', 'ar']
@@ -106,46 +131,52 @@ service cloud.firestore {
       allow delete: if owner(uid);
       match /zakatRecords/{id} {
         allow read: if owner(uid);
-        allow create: if owner(uid) && validRecord(uid) && request.resource.data.get('deletedAt', null) == null && request.resource.data.get('purgeAt', null) == null;
-        allow update: if owner(uid) && (recycleOnly() || restoreOnly() || (
+        allow create: if owner(uid) && !profileResetting(uid) && validRecord(uid) && request.resource.data.get('deletedAt', null) == null && request.resource.data.get('purgeAt', null) == null;
+        allow update: if owner(uid) && !profileResetting(uid) && (recycleOnly() || restoreOnly() || (
           !resource.data.isSubmitted && resource.data.get('deletedAt', null) == null
           && request.resource.data.get('deletedAt', null) == null && request.resource.data.get('purgeAt', null) == null
           && validRecord(uid) && request.resource.data.userId == resource.data.userId
           && request.resource.data.createdAt == resource.data.createdAt));
-        allow delete: if false;
+        allow delete: if resetting(uid);
       }
       match /monthlyPlans/{id} {
         allow read: if owner(uid);
-        allow create: if owner(uid) && validPlan(uid);
-        allow update: if owner(uid) && validPlan(uid) && request.resource.data.createdAt == resource.data.createdAt;
+        allow create: if owner(uid) && !profileResetting(uid) && validPlan(uid);
+        allow update: if owner(uid) && !profileResetting(uid) && validPlan(uid) && request.resource.data.createdAt == resource.data.createdAt;
         // Archive plans so payment history always has its original recipient reference.
-        allow delete: if false;
+        allow delete: if resetting(uid);
       }
       match /monthlyPayments/{id} {
         allow read: if owner(uid);
-        allow create: if owner(uid) && validReceipt(uid, id);
-        allow update: if owner(uid) && validReceipt(uid, id)
+        allow create: if owner(uid) && !profileResetting(uid) && validReceipt(uid, id);
+        allow update: if owner(uid) && !profileResetting(uid) && validReceipt(uid, id)
           && request.resource.data.planId == resource.data.planId && request.resource.data.month == resource.data.month
           && request.resource.data.createdAt == resource.data.createdAt;
-        allow delete: if owner(uid) && (resource.data.kind != 'zakat' || activeRecord(uid, resource.data.zakatRecordId)) && (resource.data.kind != 'zakat'
-          || !existsAfter(/databases/$(database)/documents/users/$(uid)/payments/$("monthly_" + id)));
+        allow delete: if resetting(uid) || (owner(uid) && !profileResetting(uid) && (resource.data.kind != 'zakat' || activeRecord(uid, resource.data.zakatRecordId)) && (resource.data.kind != 'zakat'
+          || !existsAfter(/databases/$(database)/documents/users/$(uid)/payments/$("monthly_" + id))));
       }
       match /reminderDeliveries/{id} {
         allow read: if owner(uid);
-        allow write: if false;
+        allow create, update: if false;
+        allow delete: if resetting(uid);
+      }
+      match /shareDeliveries/{id} {
+        allow read: if owner(uid);
+        allow create, update: if false;
+        allow delete: if resetting(uid);
       }
       match /payments/{id} {
         allow read: if owner(uid);
-        allow create: if owner(uid) && validPayment(uid)
+        allow create: if owner(uid) && !profileResetting(uid) && validPayment(uid)
           && (request.resource.data.get('source', 'manual') == 'monthly'
             ? monthlyLedgerMatches(uid, id, request.resource.data)
             : request.resource.data.get('source', 'manual') == 'manual' && !id.matches('^monthly_.*') && !('monthlyPaymentId' in request.resource.data));
-        allow update: if owner(uid) && validPayment(uid) && request.resource.data.createdAt == resource.data.createdAt
+        allow update: if owner(uid) && !profileResetting(uid) && validPayment(uid) && request.resource.data.createdAt == resource.data.createdAt
           && (resource.data.get('source', 'manual') == 'monthly'
             ? request.resource.data.source == 'monthly' && monthlyLedgerMatches(uid, id, request.resource.data)
             : request.resource.data.get('source', 'manual') == 'manual' && request.resource.data.zakatRecordId == resource.data.zakatRecordId && !('monthlyPaymentId' in request.resource.data));
-        allow delete: if owner(uid) && activeRecord(uid, resource.data.zakatRecordId) && (resource.data.get('source', 'manual') != 'monthly'
-          || !existsAfter(/databases/$(database)/documents/users/$(uid)/monthlyPayments/$(resource.data.monthlyPaymentId)));
+        allow delete: if resetting(uid) || (owner(uid) && !profileResetting(uid) && activeRecord(uid, resource.data.zakatRecordId) && (resource.data.get('source', 'manual') != 'monthly'
+          || !existsAfter(/databases/$(database)/documents/users/$(uid)/monthlyPayments/$(resource.data.monthlyPaymentId))));
       }
     }
   }

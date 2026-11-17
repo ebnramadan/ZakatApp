@@ -13,6 +13,8 @@ import 'core/providers/monthly_provider.dart';
 import 'ui/auth/login_screen.dart';
 import 'ui/auth/verify_email_screen.dart';
 import 'ui/home/home_screen.dart';
+import 'ui/onboarding/onboarding_screen.dart';
+import 'ui/auth/account_reset_card.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -66,7 +68,8 @@ class ZakatApp extends StatelessWidget {
         child: Consumer<AuthProvider>(
             builder: (context, auth, _) => KeyedSubtree(
                   // Disposes all account data and navigation when the Firebase UID changes.
-                  key: ValueKey('${auth.user?.uid}:${auth.isVerified}'),
+                  key: ValueKey(
+                      '${auth.user?.uid}:${auth.isVerified}:${auth.dataRevision}'),
                   child: MultiProvider(
                       providers: [
                         ChangeNotifierProvider(
@@ -122,6 +125,13 @@ class _AuthGate extends StatelessWidget {
                       ],
                     )));
     }
+    if (auth.profile!.resetInProgress) {
+      return Scaffold(
+          appBar: AppBar(title: const Text('Finish resetting your app')),
+          body: const SingleChildScrollView(
+              padding: EdgeInsets.all(24), child: AccountResetCard()));
+    }
+    if (!auth.profile!.onboardingCompleted) return const OnboardingScreen();
     return const HomeScreen();
   }
 }

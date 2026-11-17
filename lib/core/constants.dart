@@ -67,7 +67,7 @@ String currencySymbol(String code) {
     'QAR': 'QR',
     'BHD': 'BD',
     'OMR': 'OMR',
-    'EGP': 'E£',
+    'EGP': 'EGP',
     'INR': '₹',
     'PKR': '₨',
     'TRY': '₺',

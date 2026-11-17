@@ -3,17 +3,18 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../core/constants.dart';
 import '../../core/models/payment.dart';
-import '../../core/models/zakat_record.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/providers/calculator_provider.dart';
 import '../../core/providers/tracker_provider.dart';
 import 'add_payment_sheet.dart';
 import '../calculator/entry_mode_screen.dart';
+import '../calculator/one_pager_screen.dart';
 import '../home/recycle_bin_screen.dart';
 
 class TrackerScreen extends StatefulWidget {
   final VoidCallback? onOpenMonthly;
-  const TrackerScreen({super.key, this.onOpenMonthly});
+  final VoidCallback? onOpenRecords;
+  const TrackerScreen({super.key, this.onOpenMonthly, this.onOpenRecords});
 
   @override
   State<TrackerScreen> createState() => _TrackerScreenState();
@@ -41,13 +42,11 @@ class _TrackerScreenState extends State<TrackerScreen> {
     final auth = context.read<AuthProvider>();
     final calc = context.read<CalculatorProvider>();
     final tracker = context.read<TrackerProvider>();
-    final submitted = calc.records.where((r) => r.isSubmitted).toList();
-    if (tracker.selectedRecord != null &&
-        !submitted.any((r) => r.id == tracker.selectedRecord!.id)) {
-      tracker.clearSelection();
-    }
-    if (submitted.isNotEmpty && tracker.selectedRecord == null) {
-      tracker.selectRecord(auth.user!.uid, submitted.first);
+    final record = calc.defaultRecord(auth.profile?.defaultRecordId);
+    if (record == null || !record.isSubmitted) {
+      if (tracker.selectedRecord != null) tracker.clearSelection();
+    } else if (tracker.selectedRecord?.id != record.id) {
+      tracker.selectRecord(auth.user!.uid, record);
     }
   }
 
@@ -68,9 +67,10 @@ class _TrackerScreenState extends State<TrackerScreen> {
     final tracker = context.watch<TrackerProvider>();
     final currency = tracker.selectedRecord?.currency;
     final submitted = calc.records.where((r) => r.isSubmitted).toList();
-    if ((tracker.selectedRecord == null && submitted.isNotEmpty) ||
-        (tracker.selectedRecord != null &&
-            !submitted.any((r) => r.id == tracker.selectedRecord!.id))) {
+    final current = calc
+        .defaultRecord(context.watch<AuthProvider>().profile?.defaultRecordId);
+    if ((current?.isSubmitted == true ? current?.id : null) !=
+        tracker.selectedRecord?.id) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _autoSelect();
       });
@@ -87,22 +87,27 @@ class _TrackerScreenState extends State<TrackerScreen> {
                 icon: const Icon(Icons.delete_outline),
                 onPressed: () =>
                     moveToRecycleBin(context, tracker.selectedRecord!)),
-          if (submitted.length > 1)
-            IconButton(
-              icon: const Icon(Icons.swap_vert),
-              tooltip: 'Switch record',
-              onPressed: () =>
-                  _showRecordPicker(context, submitted, auth.user!.uid),
-            ),
+          IconButton(
+              icon: const Icon(Icons.folder_open_outlined),
+              tooltip: 'View all records',
+              onPressed: widget.onOpenRecords),
         ],
       ),
       body: calc.recordsLoading && tracker.selectedRecord == null
           ? const Center(child: CircularProgressIndicator())
           : tracker.selectedRecord == null
-              ? _EmptyState(onSetup: () {
-                  Navigator.of(context).push(MaterialPageRoute(
-                      builder: (_) => const EntryModeScreen()));
-                })
+              ? _EmptyState(
+                  draftName: current?.name,
+                  onSetup: () {
+                    if (current != null && !current.isSubmitted) {
+                      calc.resumeRecord(current);
+                      Navigator.of(context).push(MaterialPageRoute(
+                          builder: (_) => const OnePagerScreen()));
+                    } else {
+                      Navigator.of(context).push(MaterialPageRoute(
+                          builder: (_) => const EntryModeScreen()));
+                    }
+                  })
               : Column(
                   children: [
                     if (tracker.error != null)
@@ -149,34 +154,6 @@ class _TrackerScreenState extends State<TrackerScreen> {
             )
           : null,
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-    );
-  }
-
-  void _showRecordPicker(
-      BuildContext ctx, List<ZakatRecord> records, String uid) {
-    final tracker = ctx.read<TrackerProvider>();
-    showModalBottomSheet(
-      context: ctx,
-      builder: (_) => ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          const Text('Select Zakat Record',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 12),
-          ...records.map((r) => ListTile(
-                title: Text(r.name),
-                subtitle:
-                    Text(DateFormat('d MMM yyyy').format(r.hawlStartDate)),
-                trailing: tracker.selectedRecord?.id == r.id
-                    ? const Icon(Icons.check, color: kPrimaryGreen)
-                    : null,
-                onTap: () {
-                  tracker.selectRecord(uid, r);
-                  Navigator.of(ctx).pop();
-                },
-              )),
-        ],
-      ),
     );
   }
 
@@ -503,7 +480,8 @@ class _PaymentList extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 class _EmptyState extends StatelessWidget {
   final VoidCallback onSetup;
-  const _EmptyState({required this.onSetup});
+  final String? draftName;
+  const _EmptyState({required this.onSetup, this.draftName});
 
   @override
   Widget build(BuildContext context) {
@@ -515,21 +493,28 @@ class _EmptyState extends StatelessWidget {
           children: [
             const Icon(Icons.calculate_outlined, size: 64, color: Colors.grey),
             const SizedBox(height: 16),
-            const Text('No Zakat record yet',
-                style: TextStyle(
+            Text(
+                draftName == null
+                    ? 'No Zakat record yet'
+                    : 'Finalize your default record',
+                style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: Colors.grey)),
             const SizedBox(height: 8),
-            const Text(
-              'Complete a Zakat calculation first to start tracking payments.',
-              style: TextStyle(color: Colors.grey),
+            Text(
+              draftName == null
+                  ? 'Complete a Zakat calculation first to start tracking payments.'
+                  : '$draftName is a draft. Submit it before tracking payments.',
+              style: const TextStyle(color: Colors.grey),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: onSetup,
-              child: const Text('Go to Calculator'),
+              child: Text(draftName == null
+                  ? 'Start a calculation'
+                  : 'Finish this calculation'),
             ),
           ],
         ),
