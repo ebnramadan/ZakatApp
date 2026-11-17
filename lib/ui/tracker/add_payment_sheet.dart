@@ -1,3 +1,4 @@
+import '../../core/localization/strings.dart';
 import '../shared/giving_celebration.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -61,14 +62,14 @@ class _AddPaymentSheetState extends State<AddPaymentSheet> {
 
   Future<void> _save() async {
     if (widget.existing?.isMonthly == true) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Manage this payment in شهريات.')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(l(context, "Manage this payment in شهريات."))));
       return;
     }
-    final amount = double.tryParse(_amountCtrl.text);
+    final amount = parseLocalizedNumber(_amountCtrl.text);
     if (amount == null || !amount.isFinite || amount <= 0) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Enter a valid amount')));
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l(context, "Enter a valid amount"))));
       return;
     }
     setState(() => _saving = true);
@@ -107,7 +108,7 @@ class _AddPaymentSheetState extends State<AddPaymentSheet> {
       Navigator.of(context).pop();
     } else {
       ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(tracker.error!)));
+          .showSnackBar(SnackBar(content: Text(l(context, tracker.error!))));
     }
   }
 
@@ -130,7 +131,10 @@ class _AddPaymentSheetState extends State<AddPaymentSheet> {
         children: [
           Row(
             children: [
-              Text(_isEdit ? 'Edit Payment' : 'Add Payment',
+              Text(
+                  _isEdit
+                      ? l(context, "Edit Payment")
+                      : l(context, "Add Payment"),
                   style: const TextStyle(
                       fontSize: 18, fontWeight: FontWeight.bold)),
               const Spacer(),
@@ -147,10 +151,14 @@ class _AddPaymentSheetState extends State<AddPaymentSheet> {
             autofocus: !_isEdit,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             inputFormatters: [
-              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))
+              TextInputFormatter.withFunction((oldValue, newValue) =>
+                  RegExp(r'^\d*\.?\d*$')
+                          .hasMatch(normalizeNumber(newValue.text))
+                      ? newValue
+                      : oldValue)
             ],
             decoration: InputDecoration(
-              labelText: 'Amount',
+              labelText: l(context, "Amount"),
               prefixText:
                   currency == null ? null : '${currencySymbol(currency)} ',
               prefixStyle: const TextStyle(
@@ -161,15 +169,15 @@ class _AddPaymentSheetState extends State<AddPaymentSheet> {
 
           TextField(
               controller: _nameCtrl,
-              decoration:
-                  const InputDecoration(labelText: 'Payment name (optional)')),
+              decoration: InputDecoration(
+                  labelText: l(context, "Payment name (optional)"))),
           if (tracker.payeeNames.isNotEmpty)
             Wrap(
                 spacing: 6,
                 children: tracker.payeeNames
                     .take(5)
                     .map((name) => ActionChip(
-                        label: Text(name),
+                        label: Text(l(context, name)),
                         onPressed: () => _nameCtrl.text = name))
                     .toList()),
           const SizedBox(height: 12),
@@ -178,11 +186,11 @@ class _AddPaymentSheetState extends State<AddPaymentSheet> {
           InkWell(
             onTap: _pickDate,
             child: InputDecorator(
-              decoration: const InputDecoration(
-                labelText: 'Date',
-                prefixIcon: Icon(Icons.calendar_today, size: 18),
+              decoration: InputDecoration(
+                labelText: l(context, "Date"),
+                prefixIcon: const Icon(Icons.calendar_today, size: 18),
               ),
-              child: Text(dateFmt.format(_date)),
+              child: Text(l(context, dateFmt.format(_date))),
             ),
           ),
           const SizedBox(height: 12),
@@ -191,7 +199,7 @@ class _AddPaymentSheetState extends State<AddPaymentSheet> {
           TextField(
             controller: _recipientCtrl,
             decoration:
-                const InputDecoration(labelText: 'Recipient (optional)'),
+                InputDecoration(labelText: l(context, "Recipient (optional)")),
           ),
           const SizedBox(height: 20),
 
@@ -203,7 +211,9 @@ class _AddPaymentSheetState extends State<AddPaymentSheet> {
                     width: 20,
                     child: CircularProgressIndicator(
                         color: Colors.white, strokeWidth: 2))
-                : Text(_isEdit ? 'Save Changes' : 'Add Payment'),
+                : Text(_isEdit
+                    ? l(context, "Save Changes")
+                    : l(context, "Add Payment")),
           ),
         ],
       ),

@@ -51,5 +51,14 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter.ttf
+    - family: NotoSansArabic
+      fonts:
+        - asset: assets/fonts/NotoSansArabic.ttf
   assets:
     - assets/brand/icon.png
+    - assets/fonts/Inter-OFL.txt
+    - assets/fonts/NotoSansArabic-OFL.txt

@@ -12,9 +12,13 @@ function duePlans(plans, payments, deliveries, now) {
   return plans.filter(p => p.active === true && p.startMonth <= month &&
     p.reminderDay >= 1 && p.reminderDay <= 31 && dueDate(p, now) <= now.getUTCDate() && !paid.has(p.id) && !sent.has(p.id));
 }
-function composeMessage(plans, now, appUrl) {
+function composeMessage(plans, now, appUrl, language='en') {
   const month = monthKey(now);
   const lines = plans.map(p => { const digits = new Intl.NumberFormat('en', {style:'currency',currency:p.currency}).resolvedOptions().maximumFractionDigits; return `• ${p.recipient}: ${p.currency} ${Number(p.amount).toFixed(digits)} (${p.kind === 'zakat' ? 'Zakat' : 'Sadaqah'})`; });
+  if(language==='ar')return {
+    subject:`تذكير بالعطاء الشهري · ${month}`,
+    text:`تذكير لطيف بعطائك الشهري:\n\n${plans.map(p=>`• ${p.recipient}: ${p.currency} ${Number(p.amount).toFixed(new Intl.NumberFormat('en',{style:'currency',currency:p.currency}).resolvedOptions().maximumFractionDigits)} (${p.kind==='zakat'?'زكاة':'صدقة'})`).join('\n')}\n\nافتح متتبع الزكاة لتسجيل ما دفعته بالفعل:\n${appUrl}\n\nهذا تذكير وليس تحويلًا ماليًا، ولا تُسجّل أي دفعة تلقائيًا. لإيقاف هذه الرسائل، عطّل تذكيرات البريد من إعدادات الشهريات.`
+  };
   return {
     subject: `Your monthly giving reminder · ${month}`,
     text: `A gentle reminder for your monthly giving:\n\n${lines.join('\n')}\n\nOpen Zakat Tracker to mark payments you have already made:\n${appUrl}\n\nThis reminder does not transfer money or count anything as paid. If you already gave, record it in شهريات.\n\nTo stop these emails, turn off email reminders in شهريات → Settings.`,
@@ -77,7 +81,7 @@ async function sendReminders({db, auth, fetchImpl = fetch, now = new Date(), api
       due = allowed;
       if (!due.length) continue;
       if (dryRun) { log(`Would send one digest for ${due.length} due commitments (account identity omitted).`); continue; }
-      const message = composeMessage(due, now, appUrl);
+      const message = composeMessage(due, now, appUrl, userDoc.data().language);
       const digest = crypto.createHash('sha256').update(`${userDoc.id}:${month}:${due.map(p => p.id).sort().join(',')}`).digest('hex');
       const providerId = await sender.send(account.email,message,`monthly-${digest}`);
       const batch = db.batch();

@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uuid/uuid.dart';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/user_profile.dart';
@@ -18,6 +20,26 @@ class AuthProvider extends ChangeNotifier {
   bool _busy = false;
   bool _resetting = false;
   int dataRevision = 0;
+  String _deviceLanguage = 'en';
+  String get language => _profile?.language ?? _deviceLanguage;
+  Future<void> _loadDeviceLanguage() async {
+    try {
+      final p = await SharedPreferences.getInstance();
+      _deviceLanguage = p.getString('language') == 'ar' ? 'ar' : 'en';
+      await _auth.setLanguage(_deviceLanguage);
+      _notify();
+    } catch (_) {}
+  }
+
+  Future<void> _saveDeviceLanguage(String value) async {
+    _deviceLanguage = value;
+    try {
+      await _auth.setLanguage(value);
+      final p = await SharedPreferences.getInstance();
+      await p.setString('language', value);
+    } catch (_) {}
+  }
+
   bool get canResetAccount =>
       isVerified && _user?.email == 'ebnramadan@gmail.com';
   String? _error;
@@ -44,6 +66,7 @@ class AuthProvider extends ChangeNotifier {
   AuthProvider({AuthService? auth, FirestoreService? store})
       : _auth = auth ?? AuthService(),
         _fs = store ?? FirestoreService() {
+    _loadDeviceLanguage();
     _subscription =
         _auth.authStateChanges.listen(_onAuthStateChanged, onError: (Object e) {
       _error = 'Authentication connection failed. Retry signing in.';
@@ -65,6 +88,7 @@ class AuthProvider extends ChangeNotifier {
         final profile = await _loadOrCreateProfile(user);
         if (_disposed || generation != _generation) return;
         _profile = profile;
+        _saveDeviceLanguage(profile.language);
       }
     } catch (_) {
       if (_disposed || generation != _generation) return;
@@ -84,6 +108,7 @@ class AuthProvider extends ChangeNotifier {
         uid: user.uid,
         displayName: user.displayName ?? user.email?.split('@').first ?? 'User',
         email: user.email ?? '',
+        language: _deviceLanguage,
         photoUrl: user.photoURL,
       );
       await _fs.saveProfile(profile);
@@ -203,6 +228,25 @@ class AuthProvider extends ChangeNotifier {
         }
       });
 
+  Stream<Map<String, dynamic>?> get sheetRequestStream =>
+      _user == null ? const Stream.empty() : _fs.sheetRequestStream(_user!.uid);
+  Future<bool> sendProgressSheetNow() async {
+    if (_user == null ||
+        !isVerified ||
+        _profile == null ||
+        _profile!.shareRecipients.isEmpty) return false;
+    try {
+      await _fs.requestProgressSheet(
+          _user!.uid, const Uuid().v4(), _profile!.shareRecipients);
+      return true;
+    } catch (_) {
+      _error =
+          'Could not queue the sheet. Check your recipients, connection, and try again in one minute.';
+      _notify();
+      return false;
+    }
+  }
+
   Future<bool> updateProfileFields(
       {String? displayName,
       String? currency,
@@ -230,6 +274,7 @@ class AuthProvider extends ChangeNotifier {
       if (monthlyEmailReminders != null)
         'monthlyEmailReminders': monthlyEmailReminders,
     };
+    if (language != null) _deviceLanguage = language;
     final revision = ++_preferenceRevision;
     for (final field in fields.keys) {
       _fieldRevision[field] = revision;
@@ -240,9 +285,11 @@ class AuthProvider extends ChangeNotifier {
     _notify();
     try {
       await _fs.updateProfileFields(current.uid, fields);
+      if (language != null) _saveDeviceLanguage(language);
       return !_disposed && _user?.uid == current.uid;
     } catch (_) {
       if (_disposed || _user?.uid != current.uid) return false;
+      if (language != null) _deviceLanguage = current.language;
       final rollback = _profile!.toMap();
       for (final field in fields.keys) {
         if (_fieldRevision[field] == revision) {

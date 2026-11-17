@@ -1,3 +1,4 @@
+import '../../core/localization/strings.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../core/constants.dart';
@@ -25,7 +26,7 @@ class AmountField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label,
+        Text(l(context, label),
             style: const TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
@@ -36,11 +37,14 @@ class AmountField extends StatelessWidget {
           readOnly: readOnly,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           inputFormatters: [
-            FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+            TextInputFormatter.withFunction((oldValue, newValue) =>
+                RegExp(r'^\d*\.?\d*$').hasMatch(normalizeNumber(newValue.text))
+                    ? newValue
+                    : oldValue),
           ],
           onChanged: onChanged,
           decoration: InputDecoration(
-            hintText: hint ?? '0.00',
+            hintText: l(context, hint ?? '0.00'),
             prefixText: '${currencySymbol(currency)} ',
             prefixStyle: const TextStyle(
                 color: kPrimaryGreen, fontWeight: FontWeight.bold),

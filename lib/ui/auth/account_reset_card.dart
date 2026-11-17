@@ -1,3 +1,4 @@
+import '../../core/localization/strings.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/providers/auth_provider.dart';
@@ -15,15 +16,15 @@ class AccountResetCard extends StatelessWidget {
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(
                   auth.profile?.resetInProgress == true
-                      ? 'Finish interrupted reset'
-                      : 'Testing: reset your app',
+                      ? l(context, "Finish interrupted reset")
+                      : l(context, "Testing: reset your app"),
                   style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
                       color: Color(0xFFB3261E))),
               const SizedBox(height: 8),
-              const Text(
-                  'Only available for ebnramadan@gmail.com. This permanently clears all app data and restarts onboarding. Your Google/email sign-in account is kept.'),
+              Text(l(context,
+                  "Only available for ebnramadan@gmail.com. This permanently clears all app data and restarts onboarding. Your Google/email sign-in account is kept.")),
               const SizedBox(height: 16),
               OutlinedButton.icon(
                   onPressed: auth.busy
@@ -33,7 +34,7 @@ class AccountResetCard extends StatelessWidget {
                           barrierDismissible: false,
                           builder: (_) => const _ResetDialog()),
                   icon: const Icon(Icons.restart_alt),
-                  label: const Text('Reset app data')),
+                  label: Text(l(context, "Reset app data"))),
             ])));
   }
 }
@@ -58,17 +59,17 @@ class _ResetDialogState extends State<_ResetDialog> {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
     return AlertDialog(
-        title: const Text('Permanently reset your app?'),
+        title: Text(l(context, "Permanently reset your app?")),
         content: SingleChildScrollView(
             child: Column(mainAxisSize: MainAxisSize.min, children: [
-          const Text(
-              'All records (including the recycle bin), payments, monthly recipients, settings and delivery history will be deleted. Sharing will stop. This cannot be undone. Previously emailed sheets cannot be recalled.'),
+          Text(l(context,
+              "All records (including the recycle bin), payments, monthly recipients, settings and delivery history will be deleted. Sharing will stop. This cannot be undone. Previously emailed sheets cannot be recalled.")),
           const SizedBox(height: 16),
           TextField(
               controller: confirm,
               enabled: !busy,
-              decoration:
-                  const InputDecoration(labelText: 'Type RESET to confirm'),
+              decoration: InputDecoration(
+                  labelText: l(context, "Type RESET to confirm")),
               onChanged: (_) => setState(() {})),
           if (auth.hasPassword) ...[
             const SizedBox(height: 12),
@@ -77,15 +78,16 @@ class _ResetDialogState extends State<_ResetDialog> {
                 enabled: !busy,
                 obscureText: true,
                 decoration:
-                    const InputDecoration(labelText: 'Current password'))
+                    InputDecoration(labelText: l(context, "Current password")))
           ],
           if (auth.error != null)
-            Text(auth.error!, style: const TextStyle(color: Colors.red)),
+            Text(l(context, auth.error!),
+                style: const TextStyle(color: Colors.red)),
         ])),
         actions: [
           TextButton(
               onPressed: busy ? null : () => Navigator.pop(context),
-              child: const Text('Cancel')),
+              child: Text(l(context, "Cancel"))),
           FilledButton(
               style: FilledButton.styleFrom(
                   backgroundColor: const Color(0xFFB3261E)),
@@ -103,10 +105,10 @@ class _ResetDialogState extends State<_ResetDialog> {
                       }
                     },
               child: Text(busy
-                  ? 'Resetting…'
+                  ? l(context, "Resetting…")
                   : auth.hasPassword
-                      ? 'Reset permanently'
-                      : 'Confirm with Google & reset'))
+                      ? l(context, "Reset permanently")
+                      : l(context, "Confirm with Google & reset")))
         ]);
   }
 }

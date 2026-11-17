@@ -11,7 +11,7 @@ Currencies can be searched by ISO code or currency name. Long record/day selecto
 The gold input remains a pure 24K reference price. Changing carat or grams immediately updates the effective per-gram rate and gold value. Purity is applied once, in the shared calculation model. Changing record currency warns when amounts exist, does not convert amounts, and clears/refetches gold and foreign-exchange quotes.
 
 ## Onboarding and celebrations
-New account profiles start a three-step welcome flow with currency and navigation-language choices. Existing profiles without the onboarding flag are treated as already onboarded. Profile's Getting started can review it again. Reset restarts onboarding.
+New account profiles start a three-step welcome flow with currency and whole-app language choices. Existing profiles without the onboarding flag are treated as already onboarded. Profile's Getting started can review it again. Reset restarts onboarding.
 
 A short crescent/star animation and original duʿā appear after successful calculation submission or recorded giving. The calculation message says the plan is ready; it never claims Zakat has been paid. Payment messages are for confirmed actual giving. Animations are finite and honor reduced-motion settings. Editing/undo does not celebrate.
 
@@ -28,3 +28,9 @@ Only the verified Firebase identity ebnramadan@gmail.com can reset its own UID, 
 The reset first disables sharing/reminders and locks normal financial writes, deletes all current app collections (including bin and delivery history) in bounded batches, then replaces preferences with a fresh profile. Firebase Auth, Google linking and password credentials remain intact. Provider/navigation data is disposed through a reset revision key. An interrupted reset is resumable from a dedicated recovery page after another fresh sign-in. Other accounts' data is untouched. This is intentionally permanent app-data removal, not recycle-bin deletion or deletion of the sign-in account.
 
 The daily sharing and cleanup workflows need to remain enabled; GitHub may disable schedules in inactive public repositories. Operators should monitor run history.
+
+## Manual reports and localization
+
+Profile → Progress sharing → Send now queues a report independently of the monthly schedule or sharing toggle. Recipients must first be saved. The requested-progress-sheets workflow processes requests every five minutes (GitHub scheduling can be delayed), using the existing SMTP secrets. The UI shows queued, accepted, or failed status. A request snapshots recipients, rechecks current consent, expires after 24 hours, and has separate delivery receipts from scheduled reports. Client requests are rate limited and cannot forge completion. Dry runs do not send or change status. No SMTP connection is opened for an empty queue.
+
+Arabic preferences apply immediately, including onboarding, forms, date formatting, emails, and right-to-left Excel workbooks. Currency codes and personal names remain unchanged. Translation source is assets/translations/ar.json; regenerate the Dart catalog with python3 scripts/generate-localizations.py.

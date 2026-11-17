@@ -1,3 +1,4 @@
+import '../../core/localization/strings.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/providers/auth_provider.dart';
@@ -34,8 +35,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       Image.asset('assets/brand/icon.png',
                           width: 48, height: 48),
                       const SizedBox(width: 12),
-                      const Text('Zakat Tracker',
-                          style: TextStyle(
+                      Text(l(context, "Zakat Tracker"),
+                          style: const TextStyle(
                               fontSize: 20, fontWeight: FontWeight.w700)),
                       const Spacer(),
                       Text('${step + 1} / 3')
@@ -54,73 +55,84 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         color: kPrimaryGreen),
                     const SizedBox(height: 24),
                     Text(
-                        [
-                          'Your giving, with intention.',
-                          'Make it feel like yours.',
-                          'A simple rhythm for giving.'
-                        ][step],
+                        l(
+                            context,
+                            [
+                              'Your giving, with intention.',
+                              'Make it feel like yours.',
+                              'A simple rhythm for giving.'
+                            ][step]),
                         style: Theme.of(context)
                             .textTheme
                             .headlineMedium
                             ?.copyWith(fontWeight: FontWeight.w700)),
                     const SizedBox(height: 16),
                     if (step == 0) ...[
-                      const Text(
-                          'Calculate your Zakat, keep track of what you give, and build a regular habit of Sadaqah.'),
+                      Text(l(context,
+                          "Calculate your Zakat, keep track of what you give, and build a regular habit of Sadaqah.")),
                       const SizedBox(height: 24),
-                      const ListTile(
-                          leading: Icon(Icons.lock_outline),
-                          title: Text('Private to your account'),
-                          subtitle: Text(
-                              'Your financial data is shared only when you enable sharing.')),
-                      const ListTile(
-                          leading: Icon(Icons.star_outline),
-                          title: Text('One default record'),
-                          subtitle: Text(
-                              'A clear dashboard focused on your current Zakat.')),
+                      ListTile(
+                          leading: const Icon(Icons.lock_outline),
+                          title: Text(l(context, "Private to your account")),
+                          subtitle: Text(l(context,
+                              "Your financial data is shared only when you enable sharing."))),
+                      ListTile(
+                          leading: const Icon(Icons.star_outline),
+                          title: Text(l(context, "One default record")),
+                          subtitle: Text(l(context,
+                              "A clear dashboard focused on your current Zakat."))),
                     ],
                     if (step == 1) ...[
                       SearchablePicker<String>(
-                          label: 'Your currency',
+                          label: l(context, "Your currency"),
                           value: currency,
                           options: currencyOptions,
                           onChanged: (v) => setState(() => currency = v)),
                       const SizedBox(height: 20),
                       SegmentedButton<String>(
-                          segments: const [
-                            ButtonSegment(value: 'en', label: Text('English')),
-                            ButtonSegment(value: 'ar', label: Text('العربية'))
+                          segments: [
+                            ButtonSegment(
+                                value: 'en',
+                                label: Text(l(context, "English"))),
+                            const ButtonSegment(
+                                value: 'ar', label: Text('العربية'))
                           ],
                           selected: {
                             language
                           },
-                          onSelectionChanged: (v) =>
-                              setState(() => language = v.single)),
+                          onSelectionChanged: (v) {
+                            setState(() => language = v.single);
+                            context
+                                .read<AuthProvider>()
+                                .updateProfileFields(language: v.single);
+                          }),
                       const SizedBox(height: 12),
-                      const Text(
-                          'Language changes navigation labels. Currency changes apply to new records; existing amounts are never converted.',
-                          style: TextStyle(fontSize: 13)),
+                      Text(
+                          l(context,
+                              "Your language applies throughout the app. Currency changes apply to new records; existing amounts are never converted."),
+                          style: const TextStyle(fontSize: 13)),
                     ],
                     if (step == 2) ...[
-                      const ListTile(
-                          leading: Icon(Icons.calculate_outlined),
-                          title: Text('1. Calculate'),
-                          subtitle: Text(
-                              'Use a guided form and review your results.')),
-                      const ListTile(
-                          leading: Icon(Icons.check_circle_outline),
-                          title: Text('2. Record your giving'),
-                          subtitle: Text(
-                              'Only mark payments after you have given the money.')),
-                      const ListTile(
-                          leading: Icon(Icons.calendar_month_outlined),
-                          title: Text('3. Keep a monthly habit'),
-                          subtitle: Text(
-                              'Plan regular Sadaqah or payments toward Zakat.')),
+                      ListTile(
+                          leading: const Icon(Icons.calculate_outlined),
+                          title: Text(l(context, "1. Calculate")),
+                          subtitle: Text(l(context,
+                              "Use a guided form and review your results."))),
+                      ListTile(
+                          leading: const Icon(Icons.check_circle_outline),
+                          title: Text(l(context, "2. Record your giving")),
+                          subtitle: Text(l(context,
+                              "Only mark payments after you have given the money."))),
+                      ListTile(
+                          leading: const Icon(Icons.calendar_month_outlined),
+                          title: Text(l(context, "3. Keep a monthly habit")),
+                          subtitle: Text(l(context,
+                              "Plan regular Sadaqah or payments toward Zakat."))),
                       const SizedBox(height: 12),
-                      const Text(
-                          'May Allah accept your good intentions and bless what you give.',
-                          style: TextStyle(
+                      Text(
+                          l(context,
+                              "May Allah accept your good intentions and bless what you give."),
+                          style: const TextStyle(
                               color: kPrimaryGreen,
                               fontWeight: FontWeight.w600)),
                     ],
@@ -145,17 +157,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                   Navigator.pop(context);
                                 } else if (!ok) {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text(auth.error!)));
+                                      SnackBar(
+                                          content:
+                                              Text(l(context, auth.error!))));
                                 }
                               },
                         child: Text(busy
-                            ? 'Saving…'
+                            ? l(context, "Saving…")
                             : step == 2
-                                ? 'Start tracking'
-                                : 'Continue')),
+                                ? l(context, "Start tracking")
+                                : l(context, "Continue"))),
                     if (step > 0)
                       TextButton(
                           onPressed: busy ? null : () => setState(() => step--),
-                          child: const Text('Back')),
+                          child: Text(l(context, "Back"))),
                   ])))));
 }

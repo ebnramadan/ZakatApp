@@ -1,4 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:intl/intl.dart';
+import 'package:hijri/hijri_calendar.dart';
+import 'core/localization/strings.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart' show FirebaseAuth;
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -18,6 +24,7 @@ import 'ui/auth/account_reset_card.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await initializeDateFormatting('ar');
   try {
     const emulatorMode = bool.fromEnvironment('USE_FIREBASE_EMULATORS');
     if (emulatorMode && !kDebugMode) {
@@ -41,22 +48,38 @@ void main() async {
     }
     runApp(const ZakatApp());
   } catch (_) {
+    String language = 'en';
+    try {
+      language =
+          (await SharedPreferences.getInstance()).getString('language') ?? 'en';
+    } catch (_) {}
     runApp(MaterialApp(
+        locale: Locale(language),
+        supportedLocales: const [Locale('en'), Locale('ar')],
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate
+        ],
         theme: AppTheme.light,
-        home: const Scaffold(
-            body: Center(
-          child: Padding(
-              padding: EdgeInsets.all(24),
-              child: Column(mainAxisSize: MainAxisSize.min, children: [
-                Icon(Icons.cloud_off_outlined, size: 48),
-                SizedBox(height: 16),
-                Text(
-                    'Zakat Tracker couldn’t connect. Check your connection and try again.',
-                    textAlign: TextAlign.center),
-                SizedBox(height: 16),
-                TextButton(onPressed: main, child: Text('Try again'))
-              ])),
-        ))));
+        home: Builder(
+            builder: (context) => Scaffold(
+                body: Center(
+                    child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child:
+                            Column(mainAxisSize: MainAxisSize.min, children: [
+                          const Icon(Icons.cloud_off_outlined, size: 48),
+                          const SizedBox(height: 16),
+                          Text(
+                              l(context,
+                                  'Zakat Tracker couldn’t connect. Check your connection and try again.'),
+                              textAlign: TextAlign.center),
+                          const SizedBox(height: 16),
+                          TextButton(
+                              onPressed: main,
+                              child: Text(l(context, 'Try again'))),
+                        ])))))));
   }
 }
 
@@ -80,16 +103,23 @@ class ZakatApp extends StatelessWidget {
                             create: (_) => MonthlyProvider()),
                       ],
                       child: MaterialApp(
-                          title: 'Zakat Tracker',
+                          title: auth.language == 'ar'
+                              ? 'متتبع الزكاة'
+                              : 'Zakat Tracker',
+                          locale: Locale(auth.language),
+                          supportedLocales: const [Locale('en'), Locale('ar')],
+                          localizationsDelegates: const [
+                            GlobalMaterialLocalizations.delegate,
+                            GlobalWidgetsLocalizations.delegate,
+                            GlobalCupertinoLocalizations.delegate
+                          ],
                           debugShowCheckedModeBanner: false,
                           theme: AppTheme.light,
-                          builder: (context, child) => ColoredBox(
-                              color: const Color(0xFFF4F6F5),
-                              child: Center(
-                                  child: ConstrainedBox(
-                                      constraints:
-                                          const BoxConstraints(maxWidth: 1440),
-                                      child: child ?? const SizedBox()))),
+                          builder: (context, child) {
+                            Intl.defaultLocale = auth.language;
+                            HijriCalendar.setLocal(auth.language);
+                            return child ?? const SizedBox();
+                          },
                           home: const _AuthGate())),
                 )),
       );
@@ -115,19 +145,19 @@ class _AuthGate extends StatelessWidget {
                   : Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(auth.error ?? 'Profile unavailable'),
+                        Text(l(context, auth.error ?? 'Profile unavailable')),
                         TextButton(
                             onPressed: auth.retryProfile,
-                            child: const Text('Retry')),
+                            child: Text(l(context, 'Retry'))),
                         TextButton(
                             onPressed: auth.signOut,
-                            child: const Text('Sign out')),
+                            child: Text(l(context, 'Sign out'))),
                       ],
                     )));
     }
     if (auth.profile!.resetInProgress) {
       return Scaffold(
-          appBar: AppBar(title: const Text('Finish resetting your app')),
+          appBar: AppBar(title: Text(l(context, 'Finish resetting your app'))),
           body: const SingleChildScrollView(
               padding: EdgeInsets.all(24), child: AccountResetCard()));
     }

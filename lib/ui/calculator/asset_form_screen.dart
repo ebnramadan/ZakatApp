@@ -1,3 +1,4 @@
+import '../../core/localization/strings.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:hijri/hijri_calendar.dart';
@@ -70,9 +71,9 @@ class _AssetFormScreenState extends State<AssetFormScreen> {
       calc.draft!.pricedAt = DateTime.now();
     } catch (_) {
       if (mounted && _requests[entry] == token) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text(
-                'Rate unavailable. Enter a verified manual rate or retry.')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(l(context,
+                "Rate unavailable. Enter a verified manual rate or retry."))));
       }
     } finally {
       if (mounted && _requests[entry] == token) {
@@ -93,15 +94,16 @@ class _AssetFormScreenState extends State<AssetFormScreen> {
           .updateProfileFields(defaultRecordId: calc.draft!.id)
           .then((saved) {
         if (!saved && mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-              content: Text(
-                  'Draft saved. Choose Set as default in Records to update your dashboard.')));
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text(l(context,
+                  "Draft saved. Choose Set as default in Records to update your dashboard."))));
         }
       });
     }
     setState(() => _saving = false);
-    ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(ok ? 'Draft saved' : calc.error!)));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content:
+            Text(ok ? l(context, "Draft saved") : l(context, calc.error!))));
     return ok;
   }
 
@@ -110,19 +112,19 @@ class _AssetFormScreenState extends State<AssetFormScreen> {
     final answer = await showDialog<String>(
         context: context,
         builder: (ctx) => AlertDialog(
-              title: const Text('Leave calculation?'),
-              content: const Text(
-                  'Save your draft to continue later, or leave without saving your latest changes.'),
+              title: Text(l(context, "Leave calculation?")),
+              content: Text(l(context,
+                  "Save your draft to continue later, or leave without saving your latest changes.")),
               actions: [
                 TextButton(
                     onPressed: () => Navigator.pop(ctx, 'cancel'),
-                    child: const Text('Keep editing')),
+                    child: Text(l(context, "Keep editing"))),
                 TextButton(
                     onPressed: () => Navigator.pop(ctx, 'leave'),
-                    child: const Text('Leave')),
+                    child: Text(l(context, "Leave"))),
                 TextButton(
                     onPressed: () => Navigator.pop(ctx, 'save'),
-                    child: const Text('Save draft')),
+                    child: Text(l(context, "Save draft"))),
               ],
             ));
     if (answer == 'save') return _saveDraft();
@@ -132,9 +134,9 @@ class _AssetFormScreenState extends State<AssetFormScreen> {
   void _results() {
     final calc = context.read<CalculatorProvider>();
     if (!_form.currentState!.validate()) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text(
-              'Check the inputs in all sections, including the gold price and exchange rates.')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(l(context,
+              "Check the inputs in all sections, including the gold price and exchange rates."))));
       return;
     }
     if (calc.computeResults()) {
@@ -142,7 +144,8 @@ class _AssetFormScreenState extends State<AssetFormScreen> {
           context, MaterialPageRoute(builder: (_) => const ResultsScreen()));
     } else {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(calc.error ?? 'Check the calculation inputs.')));
+          content:
+              Text(l(context, calc.error ?? 'Check the calculation inputs.'))));
     }
   }
 
@@ -151,27 +154,28 @@ class _AssetFormScreenState extends State<AssetFormScreen> {
     final calc = context.watch<CalculatorProvider>();
     final d = calc.draft;
     if (d == null) {
-      return const Scaffold(body: Center(child: Text('No active draft')));
+      return Scaffold(body: Center(child: Text(l(context, "No active draft"))));
     }
     final currency = d.currency;
     final sections = <Widget>[
       Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         TextFormField(
             initialValue: d.name,
-            decoration: const InputDecoration(labelText: 'Record name'),
-            validator: (v) =>
-                v == null || v.trim().isEmpty ? 'Enter a name' : null,
+            decoration: InputDecoration(labelText: l(context, "Record name")),
+            validator: (v) => v == null || v.trim().isEmpty
+                ? l(context, "Enter a name")
+                : null,
             onChanged: (v) => d.name = v.trim()),
         const SizedBox(height: 12),
         if (currency == null)
-          const Text(
-              'This older draft has no saved currency. Choose its original currency before continuing.'),
+          Text(l(context,
+              "This older draft has no saved currency. Choose its original currency before continuing.")),
         SearchablePicker<String>(
-            label: 'Record currency',
+            label: l(context, "Record currency"),
             value: currency,
             options: currencyOptions,
-            helperText:
-                'Amounts stay in the selected currency; they are not converted.',
+            helperText: l(context,
+                "Amounts stay in the selected currency; they are not converted."),
             onChanged: (v) async {
               if (v == currency) return;
               if (d.cashLocal > 0 ||
@@ -180,16 +184,16 @@ class _AssetFormScreenState extends State<AssetFormScreen> {
                 final yes = await showDialog<bool>(
                     context: context,
                     builder: (ctx) => AlertDialog(
-                            title: const Text('Change record currency?'),
-                            content: const Text(
-                                'Existing amounts are not converted. Gold prices and exchange rates will refresh; check all amounts before calculating.'),
+                            title: Text(l(context, "Change record currency?")),
+                            content: Text(l(context,
+                                "Existing amounts are not converted. Gold prices and exchange rates will refresh; check all amounts before calculating.")),
                             actions: [
                               TextButton(
                                   onPressed: () => Navigator.pop(ctx, false),
-                                  child: const Text('Cancel')),
+                                  child: Text(l(context, "Cancel"))),
                               TextButton(
                                   onPressed: () => Navigator.pop(ctx, true),
-                                  child: const Text('Change currency'))
+                                  child: Text(l(context, "Change currency")))
                             ]));
                 if (yes != true || !mounted) return;
               }
@@ -213,17 +217,19 @@ class _AssetFormScreenState extends State<AssetFormScreen> {
             }),
         SwitchListTile(
             contentPadding: EdgeInsets.zero,
-            title: const Text('Show Hijri date'),
-            subtitle: const Text('Hawl always lasts one lunar year.'),
+            title: Text(l(context, "Show Hijri date")),
+            subtitle: Text(l(context, "Hawl always lasts one lunar year.")),
             value: d.isHijriCalendar,
             onChanged: (v) => setState(() => d.isHijriCalendar = v)),
         ListTile(
             contentPadding: EdgeInsets.zero,
-            title: const Text('Hawl start'),
+            title: Text(l(context, "Hawl start")),
             subtitle: Text(d.isHijriCalendar
-                ? HijriCalendar.fromDate(d.hawlStartDate)
-                    .toFormat('dd MMMM yyyy')
-                : DateFormat.yMMMd().format(d.hawlStartDate)),
+                ? l(
+                    context,
+                    HijriCalendar.fromDate(d.hawlStartDate)
+                        .toFormat('dd MMMM yyyy'))
+                : l(context, DateFormat.yMMMd().format(d.hawlStartDate))),
             trailing: const Icon(Icons.calendar_today),
             onTap: () async {
               final selected = await showDatePicker(
@@ -235,17 +241,20 @@ class _AssetFormScreenState extends State<AssetFormScreen> {
                 setState(() => d.hawlStartDate = selected);
               }
             }),
-        Text('Lunar anniversary: ${DateFormat.yMMMd().format(d.hawlEndDate)}'),
+        Text(l(context, "Lunar anniversary: {0}",
+            [DateFormat.yMMMd().format(d.hawlEndDate)])),
         const SizedBox(height: 12),
-        const Text(
-            'Uses 85g pure gold Nisab and a 2.5% lunar-year rate. Includes cash and gold only, with no debt deductions. Confirm that wealth remained eligible throughout the Hawl. Estimates before the anniversary are not amounts currently due.'),
+        Text(l(context,
+            "Uses 85g pure gold Nisab and a 2.5% lunar-year rate. Includes cash and gold only, with no debt deductions. Confirm that wealth remained eligible throughout the Hawl. Estimates before the anniversary are not amounts currently due.")),
         _number('24K gold price per gram for Nisab (${currency ?? '?'})',
             d.goldPricePerGram24k, calc.updateGoldPrice,
             positive: true, key: const ValueKey('nisab-price')),
-        Text(d.manualNisabPrice ? 'Manual Nisab price' : 'Live Nisab price'),
+        Text(d.manualNisabPrice
+            ? l(context, "Manual Nisab price")
+            : l(context, "Live Nisab price")),
         if (d.pricedAt != null)
-          Text(
-              'Price/rate updated: ${DateFormat.yMd().add_Hm().format(d.pricedAt!)}'),
+          Text(l(context, "Price/rate updated: {0}",
+              [DateFormat.yMd().add_Hm().format(d.pricedAt!)])),
         TextButton.icon(
             onPressed: currency == null || calc.pricesLoading
                 ? null
@@ -255,8 +264,8 @@ class _AssetFormScreenState extends State<AssetFormScreen> {
                   },
             icon: const Icon(Icons.refresh),
             label: Text(calc.pricesLoading
-                ? 'Fetching prices…'
-                : 'Refresh live gold price')),
+                ? l(context, "Fetching prices…")
+                : l(context, "Refresh live gold price"))),
       ]),
       _number('Local cash (${currency ?? '?'})', d.cashLocal,
           (v) => d.cashLocal = v),
@@ -267,7 +276,7 @@ class _AssetFormScreenState extends State<AssetFormScreen> {
                 padding: const EdgeInsets.all(12),
                 child: Column(children: [
                   Row(children: [
-                    const Text('Foreign cash'),
+                    Text(l(context, "Foreign cash")),
                     const Spacer(),
                     IconButton(
                         onPressed: () => setState(() {
@@ -278,7 +287,7 @@ class _AssetFormScreenState extends State<AssetFormScreen> {
                         icon: const Icon(Icons.close))
                   ]),
                   SearchablePicker<String>(
-                      label: 'Foreign currency',
+                      label: l(context, "Foreign currency"),
                       value: entry.currency,
                       options: currencyOptions,
                       onChanged: (v) {
@@ -303,8 +312,8 @@ class _AssetFormScreenState extends State<AssetFormScreen> {
                           ? null
                           : () => _rate(entry),
                       child: Text(_fetching.contains(entry)
-                          ? 'Fetching…'
-                          : 'Refresh exchange rate')),
+                          ? l(context, "Fetching…")
+                          : l(context, "Refresh exchange rate"))),
                 ])))),
         OutlinedButton.icon(
             onPressed: currency == null
@@ -316,7 +325,7 @@ class _AssetFormScreenState extends State<AssetFormScreen> {
                     _rate(entry);
                   },
             icon: const Icon(Icons.add),
-            label: const Text('Add currency')),
+            label: Text(l(context, "Add currency"))),
       ]),
       Column(children: [
         ...d.goldEntries.map((entry) => Card(
@@ -325,7 +334,7 @@ class _AssetFormScreenState extends State<AssetFormScreen> {
                 padding: const EdgeInsets.all(12),
                 child: Column(children: [
                   Row(children: [
-                    const Text('Gold'),
+                    Text(l(context, "Gold")),
                     const Spacer(),
                     IconButton(
                         onPressed: () =>
@@ -334,8 +343,8 @@ class _AssetFormScreenState extends State<AssetFormScreen> {
                   ]),
                   SegmentedButton<int>(
                       segments: kGoldPurity.keys
-                          .map((c) =>
-                              ButtonSegment(value: c, label: Text('${c}K')))
+                          .map((c) => ButtonSegment(
+                              value: c, label: Text(l(context, "{0}K", [c]))))
                           .toList(),
                       selected: {entry.carat},
                       onSelectionChanged: (v) =>
@@ -355,7 +364,12 @@ class _AssetFormScreenState extends State<AssetFormScreen> {
                     Align(
                         alignment: AlignmentDirectional.centerStart,
                         child: Text(
-                            '${entry.carat}K price: ${currency ?? '?'} ${(entry.pricePerGram24k * entry.purity).toStringAsFixed(2)} / g',
+                            l(context, "{0}K price: {1} {2} / g", [
+                              entry.carat,
+                              currency ?? '?',
+                              (entry.pricePerGram24k * entry.purity)
+                                  .toStringAsFixed(2)
+                            ]),
                             key: const ValueKey('effective-gold-price'),
                             style: const TextStyle(
                                 fontWeight: FontWeight.w700,
@@ -363,7 +377,10 @@ class _AssetFormScreenState extends State<AssetFormScreen> {
                     Align(
                         alignment: AlignmentDirectional.centerStart,
                         child: Text(
-                            'Gold value: ${currency ?? '?'} ${entry.localValue.toStringAsFixed(2)}',
+                            l(context, "Gold value: {0} {1}", [
+                              currency ?? '?',
+                              entry.localValue.toStringAsFixed(2)
+                            ]),
                             key: const ValueKey('gold-live-value'))),
                   ],
                   TextButton(
@@ -371,13 +388,13 @@ class _AssetFormScreenState extends State<AssetFormScreen> {
                             entry.pricePerGram24k = d.goldPricePerGram24k;
                             entry.isManualPrice = false;
                           }),
-                      child: const Text('Use Nisab gold price')),
+                      child: Text(l(context, "Use Nisab gold price"))),
                 ])))),
         OutlinedButton.icon(
             onPressed: () => setState(() => d.goldEntries.add(
                 GoldEntry(grams: 0, pricePerGram24k: d.goldPricePerGram24k))),
             icon: const Icon(Icons.add),
-            label: const Text('Add gold')),
+            label: Text(l(context, "Add gold"))),
       ]),
     ];
     const titles = ['Setup', 'Local cash', 'Foreign cash', 'Gold'];
@@ -394,12 +411,14 @@ class _AssetFormScreenState extends State<AssetFormScreen> {
         },
         child: Scaffold(
           appBar: AppBar(
-              title: Text(widget.guided ? titles[_step] : 'Zakat Calculator'),
+              title: Text(widget.guided
+                  ? l(context, titles[_step])
+                  : l(context, "Zakat Calculator")),
               actions: [
                 TextButton(
                     onPressed: _saving ? null : _saveDraft,
-                    child: const Text('Save draft',
-                        style: TextStyle(color: kPrimaryGreen))),
+                    child: Text(l(context, "Save draft"),
+                        style: const TextStyle(color: kPrimaryGreen))),
               ]),
           body: Form(
               key: _form,
@@ -409,7 +428,7 @@ class _AssetFormScreenState extends State<AssetFormScreen> {
                 if (calc.error != null)
                   Padding(
                       padding: const EdgeInsets.all(8),
-                      child: Text(calc.error!,
+                      child: Text(l(context, calc.error!),
                           style: const TextStyle(color: Colors.red))),
                 ...List.generate(
                     4,
@@ -420,7 +439,7 @@ class _AssetFormScreenState extends State<AssetFormScreen> {
                             child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
-                                  Text(titles[i],
+                                  Text(l(context, titles[i]),
                                       style: Theme.of(context)
                                           .textTheme
                                           .titleLarge),
@@ -433,7 +452,7 @@ class _AssetFormScreenState extends State<AssetFormScreen> {
                         FocusManager.instance.primaryFocus?.unfocus();
                         setState(() => _step--);
                       },
-                      child: const Text('Previous')),
+                      child: Text(l(context, "Previous"))),
                 ElevatedButton(
                     onPressed:
                         _saving || calc.pricesLoading || _fetching.isNotEmpty
@@ -447,8 +466,8 @@ class _AssetFormScreenState extends State<AssetFormScreen> {
                                 }
                               },
                     child: Text(widget.guided && _step < 3
-                        ? 'Next'
-                        : 'Calculate Zakat')),
+                        ? l(context, "Next")
+                        : l(context, "Calculate Zakat"))),
               ])),
         ));
   }
@@ -490,7 +509,7 @@ class _NumberInputState extends State<_NumberInput> {
 
   void _sync() {
     if (widget.value.isFinite &&
-        double.tryParse(_controller.text.trim().isEmpty
+        parseLocalizedNumber(_controller.text.trim().isEmpty
                 ? '0'
                 : _controller.text.trim()) !=
             widget.value) {
@@ -521,22 +540,23 @@ class _NumberInputState extends State<_NumberInput> {
         child: TextFormField(
           controller: _controller,
           focusNode: _focus,
-          decoration: InputDecoration(labelText: widget.label),
+          decoration: InputDecoration(labelText: l(context, widget.label)),
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           validator: (text) {
             final number =
-                double.tryParse(text!.trim().isEmpty ? '0' : text.trim());
+                parseLocalizedNumber(text!.trim().isEmpty ? '0' : text.trim());
             return number == null ||
                     !number.isFinite ||
                     number < 0 ||
                     (widget.positive && number == 0)
-                ? 'Enter a valid ${widget.positive ? 'positive ' : ''}number'
+                ? l(context, "Enter a valid {0}number",
+                    [widget.positive ? l(context, "positive ") : ''])
                 : null;
           },
           onChanged: (text) {
             _typing = true;
             widget.onChanged(
-                double.tryParse(text.trim().isEmpty ? '0' : text.trim()) ??
+                parseLocalizedNumber(text.trim().isEmpty ? '0' : text.trim()) ??
                     double.nan);
           },
         ),

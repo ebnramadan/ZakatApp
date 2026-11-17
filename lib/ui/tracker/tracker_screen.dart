@@ -1,3 +1,4 @@
+import '../../core/localization/strings.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -78,18 +79,18 @@ class _TrackerScreenState extends State<TrackerScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Zakat Tracker'),
+        title: Text(l(context, "Zakat Tracker")),
         actions: [
           if (tracker.selectedRecord != null &&
               submitted.any((r) => r.id == tracker.selectedRecord!.id))
             IconButton(
-                tooltip: 'Move record to recycle bin',
+                tooltip: l(context, "Move record to recycle bin"),
                 icon: const Icon(Icons.delete_outline),
                 onPressed: () =>
                     moveToRecycleBin(context, tracker.selectedRecord!)),
           IconButton(
               icon: const Icon(Icons.folder_open_outlined),
-              tooltip: 'View all records',
+              tooltip: l(context, "View all records"),
               onPressed: widget.onOpenRecords),
         ],
       ),
@@ -113,13 +114,14 @@ class _TrackerScreenState extends State<TrackerScreen> {
                     if (tracker.error != null)
                       TextButton(
                           onPressed: tracker.reload,
-                          child: Text('${tracker.error!} Tap to retry.',
+                          child: Text(
+                              l(context, "{0} Tap to retry.", [tracker.error!]),
                               style: const TextStyle(color: Colors.red))),
                     if (tracker.selectedRecord!.currency == null)
-                      const Padding(
-                          padding: EdgeInsets.all(12),
-                          child: Text(
-                              'This older record has no saved currency. Amounts are shown without a currency; adding payments is disabled.')),
+                      Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Text(l(context,
+                              "This older record has no saved currency. Amounts are shown without a currency; adding payments is disabled."))),
                     _Header(tracker: tracker, currency: currency),
                     const Divider(height: 1),
                     _SearchBar(
@@ -162,16 +164,17 @@ class _TrackerScreenState extends State<TrackerScreen> {
     final confirmed = await showDialog<bool>(
       context: ctx,
       builder: (_) => AlertDialog(
-        title: const Text('Delete Payment'),
-        content: Text('Delete "${p.name}"? This cannot be undone.'),
+        title: Text(l(context, "Delete Payment")),
+        content: Text(
+            l(context, "Delete \"{0}\"? This cannot be undone.", [p.name])),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel')),
+              child: Text(l(context, "Cancel"))),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Delete'),
+            child: Text(l(context, "Delete")),
           ),
         ],
       ),
@@ -226,8 +229,8 @@ class _Header extends StatelessWidget {
                 ),
                 child: Text(
                   r.hawlComplete
-                      ? 'Hawl complete'
-                      : '${r.daysLeftInHawl} days left',
+                      ? l(context, "Hawl complete")
+                      : l(context, "{0} days left", [r.daysLeftInHawl]),
                   style: const TextStyle(color: Colors.white, fontSize: 12),
                 ),
               ),
@@ -238,12 +241,16 @@ class _Header extends StatelessWidget {
             spacing: 24,
             runSpacing: 16,
             children: [
-              _StatColumn(label: 'Paid', value: fmt.format(tracker.totalPaid)),
               _StatColumn(
-                  label: r.hawlComplete ? 'Due' : 'Estimate',
+                  label: l(context, "Paid"),
+                  value: fmt.format(tracker.totalPaid)),
+              _StatColumn(
+                  label: r.hawlComplete
+                      ? l(context, "Due")
+                      : l(context, "Estimate"),
                   value: fmt.format(tracker.totalDue)),
               _StatColumn(
-                  label: 'Remaining',
+                  label: l(context, "Remaining"),
                   value: fmt.format(tracker.remaining),
                   highlight: tracker.remaining == 0),
             ],
@@ -260,7 +267,7 @@ class _Header extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            '${(pct * 100).toStringAsFixed(0)}% paid',
+            l(context, "{0}% paid", [(pct * 100).toStringAsFixed(0)]),
             style: const TextStyle(color: Colors.white70, fontSize: 11),
           ),
         ],
@@ -282,11 +289,11 @@ class _StatColumn extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label,
+        Text(l(context, label),
             style: const TextStyle(color: Colors.white60, fontSize: 11)),
         const SizedBox(height: 2),
         Text(
-          value,
+          l(context, value),
           style: TextStyle(
               color: highlight ? kGold : Colors.white,
               fontSize: 14,
@@ -314,7 +321,7 @@ class _SearchBar extends StatelessWidget {
         controller: controller,
         onChanged: onChanged,
         decoration: InputDecoration(
-          hintText: 'Search payments...',
+          hintText: l(context, "Search payments..."),
           prefixIcon: const Icon(Icons.search, size: 20),
           suffixIcon: controller.text.isNotEmpty
               ? IconButton(
@@ -368,13 +375,16 @@ class _PaymentList extends StatelessWidget {
                 size: 48,
                 color: Colors.grey),
             const SizedBox(height: 12),
-            Text(searching ? 'No matching payments' : 'No payments yet',
+            Text(
+                searching
+                    ? l(context, "No matching payments")
+                    : l(context, "No payments yet"),
                 style: const TextStyle(color: Colors.grey)),
             const SizedBox(height: 4),
             Text(
                 searching
-                    ? 'Try a different name or recipient.'
-                    : 'Tap + to record a payment',
+                    ? l(context, "Try a different name or recipient.")
+                    : l(context, "Tap + to record a payment"),
                 style: const TextStyle(color: Colors.grey, fontSize: 12)),
           ],
         ),
@@ -424,19 +434,27 @@ class _PaymentList extends StatelessWidget {
                   p.isMonthly
                       ? p.recipient
                       : p.name.isEmpty
-                          ? 'Payment'
+                          ? l(context, "Payment")
                           : p.name,
                   style: const TextStyle(fontWeight: FontWeight.w600)),
               subtitle: Text(
                 p.isMonthly
-                    ? '$monthlyLabel\nPaid ${dateFmt.format(p.date)} · Managed in ${context.watch<AuthProvider>().profile?.monthlyGivingLabel ?? 'Monthly Giving'}'
+                    ? l(context, "{0}\nPaid {1} · Managed in {2}", [
+                        monthlyLabel,
+                        dateFmt.format(p.date),
+                        context
+                                .watch<AuthProvider>()
+                                .profile
+                                ?.monthlyGivingLabel ??
+                            'Monthly Giving'
+                      ])
                     : '${dateFmt.format(p.date)}${p.recipient.isNotEmpty ? ' · ${p.recipient}' : ''}',
                 style: const TextStyle(fontSize: 12),
               ),
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(fmt.format(p.amount),
+                  Text(l(context, fmt.format(p.amount)),
                       style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           color: kPrimaryGreen,
@@ -444,8 +462,13 @@ class _PaymentList extends StatelessWidget {
                   const SizedBox(width: 4),
                   if (p.isMonthly)
                     IconButton(
-                        tooltip:
-                            'Manage in ${context.watch<AuthProvider>().profile?.monthlyGivingLabel ?? 'Monthly Giving'}',
+                        tooltip: l(context, "Manage in {0}", [
+                          context
+                                  .watch<AuthProvider>()
+                                  .profile
+                                  ?.monthlyGivingLabel ??
+                              'Monthly Giving'
+                        ]),
                         onPressed: onOpenMonthly,
                         icon:
                             const Icon(Icons.calendar_month_outlined, size: 20))
@@ -457,12 +480,13 @@ class _PaymentList extends StatelessWidget {
                         if (v == 'edit') onEdit(p);
                         if (v == 'delete') onDelete(p);
                       },
-                      itemBuilder: (_) => const [
-                        PopupMenuItem(value: 'edit', child: Text('Edit')),
+                      itemBuilder: (_) => [
+                        PopupMenuItem(
+                            value: 'edit', child: Text(l(context, "Edit"))),
                         PopupMenuItem(
                             value: 'delete',
-                            child: Text('Delete',
-                                style: TextStyle(color: Colors.red))),
+                            child: Text(l(context, "Delete"),
+                                style: const TextStyle(color: Colors.red))),
                       ],
                     ),
                 ],
@@ -495,8 +519,8 @@ class _EmptyState extends StatelessWidget {
             const SizedBox(height: 16),
             Text(
                 draftName == null
-                    ? 'No Zakat record yet'
-                    : 'Finalize your default record',
+                    ? l(context, "No Zakat record yet")
+                    : l(context, "Finalize your default record"),
                 style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -504,8 +528,12 @@ class _EmptyState extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               draftName == null
-                  ? 'Complete a Zakat calculation first to start tracking payments.'
-                  : '$draftName is a draft. Submit it before tracking payments.',
+                  ? l(context,
+                      "Complete a Zakat calculation first to start tracking payments.")
+                  : l(
+                      context,
+                      "{0} is a draft. Submit it before tracking payments.",
+                      [draftName]),
               style: const TextStyle(color: Colors.grey),
               textAlign: TextAlign.center,
             ),
@@ -513,8 +541,8 @@ class _EmptyState extends StatelessWidget {
             ElevatedButton(
               onPressed: onSetup,
               child: Text(draftName == null
-                  ? 'Start a calculation'
-                  : 'Finish this calculation'),
+                  ? l(context, "Start a calculation")
+                  : l(context, "Finish this calculation")),
             ),
           ],
         ),

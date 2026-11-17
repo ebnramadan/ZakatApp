@@ -1,3 +1,4 @@
+import '../../core/localization/strings.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -19,7 +20,7 @@ class ResultsScreen extends StatelessWidget {
     final d = calc.draft;
 
     if (d == null) {
-      return const Scaffold(body: Center(child: Text('No record found')));
+      return Scaffold(body: Center(child: Text(l(context, "No record found"))));
     }
 
     final fmt = NumberFormat.currency(
@@ -28,7 +29,7 @@ class ResultsScreen extends StatelessWidget {
         decimalDigits: currencyDecimals(currency));
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Zakat Summary')),
+      appBar: AppBar(title: Text(l(context, "Zakat Summary"))),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
@@ -38,7 +39,7 @@ class ResultsScreen extends StatelessWidget {
 
           // Asset breakdown
           _Card(
-            title: 'Asset Breakdown',
+            title: l(context, "Asset Breakdown"),
             children: [
               _Row('Cash ($currency)', fmt.format(d.cashLocal)),
               ...d.foreignCash.map((e) => _Row(
@@ -62,7 +63,7 @@ class ResultsScreen extends StatelessWidget {
 
           // Nisab & Zakat
           _Card(
-            title: 'Zakat Calculation',
+            title: l(context, "Zakat Calculation"),
             children: [
               _Row('Nisab Threshold (85g gold)', fmt.format(d.nisabThreshold)),
               _Row('Nisab Met?', d.nisabMet ? 'Yes ✓' : 'No ✗',
@@ -79,15 +80,15 @@ class ResultsScreen extends StatelessWidget {
 
           const SizedBox(height: 24),
           if (!d.hawlComplete)
-            const Text(
-                'Your lunar Hawl has not completed. This estimate is not currently due. Payments recorded now are advance payments.'),
-          const Text(
-              'This calculation assumes your wealth remained eligible throughout the Hawl. Cash and gold only; no debt deductions.'),
+            Text(l(context,
+                "Your lunar Hawl has not completed. This estimate is not currently due. Payments recorded now are advance payments.")),
+          Text(l(context,
+              "This calculation assumes your wealth remained eligible throughout the Hawl. Cash and gold only; no debt deductions.")),
 
           if (calc.error != null)
             Padding(
               padding: const EdgeInsets.only(bottom: 12),
-              child: Text(calc.error!,
+              child: Text(l(context, calc.error!),
                   style: const TextStyle(color: Colors.red),
                   textAlign: TextAlign.center),
             ),
@@ -121,12 +122,13 @@ class ResultsScreen extends StatelessWidget {
                       width: 20,
                       child: CircularProgressIndicator(
                           color: Colors.white, strokeWidth: 2))
-                  : const Text('Confirm & Submit'),
+                  : Text(l(context, "Confirm & Submit")),
             ),
             const SizedBox(height: 10),
-            const Text(
-              'Submitting locks the calculation. You can still move the record to the recycle bin later.',
-              style: TextStyle(color: Colors.grey, fontSize: 12),
+            Text(
+              l(context,
+                  "Submitting locks the calculation. You can still move the record to the recycle bin later."),
+              style: const TextStyle(color: Colors.grey, fontSize: 12),
               textAlign: TextAlign.center,
             ),
           ] else
@@ -137,13 +139,13 @@ class ResultsScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(color: Colors.green.shade200),
               ),
-              child: const Row(
+              child: Row(
                 children: [
-                  Icon(Icons.lock, color: Colors.green),
-                  SizedBox(width: 10),
+                  const Icon(Icons.lock, color: Colors.green),
+                  const SizedBox(width: 10),
                   Expanded(
-                    child: Text('Submitted and locked.',
-                        style: TextStyle(
+                    child: Text(l(context, "Submitted and locked."),
+                        style: const TextStyle(
                             color: Colors.green, fontWeight: FontWeight.w600)),
                   ),
                 ],
@@ -179,7 +181,9 @@ class _NisabBanner extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  met ? 'Nisab Threshold Met' : 'Below Nisab Threshold',
+                  met
+                      ? l(context, "Nisab Threshold Met")
+                      : l(context, "Below Nisab Threshold"),
                   style: const TextStyle(
                       color: Colors.white,
                       fontSize: 16,
@@ -187,10 +191,13 @@ class _NisabBanner extends StatelessWidget {
                 ),
                 Text(
                   met
-                      ? (matured
-                          ? 'Zakat is due on your wealth.'
-                          : 'Nisab met; Hawl is not yet complete.')
-                      : 'Your wealth is below Nisab. Zakat is not obligatory this year.',
+                      ? l(
+                          context,
+                          (matured
+                              ? 'Zakat is due on your wealth.'
+                              : 'Nisab met; Hawl is not yet complete.'))
+                      : l(context,
+                          "Your wealth is below Nisab. Zakat is not obligatory this year."),
                   style: const TextStyle(color: Colors.white70, fontSize: 13),
                 ),
               ],
@@ -216,7 +223,7 @@ class _Card extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title,
+            Text(l(context, title),
                 style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
@@ -251,19 +258,19 @@ class _Row extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label,
+                Text(l(context, label),
                     style: TextStyle(
                         fontSize: 13,
                         fontWeight: bold ? FontWeight.bold : FontWeight.normal,
                         color: Colors.black87)),
                 if (sub != null)
-                  Text(sub!,
+                  Text(l(context, sub!),
                       style: const TextStyle(fontSize: 11, color: Colors.grey)),
               ],
             ),
           ),
           Text(
-            value,
+            l(context, value),
             style: TextStyle(
                 fontSize: 13,
                 fontWeight: bold ? FontWeight.bold : FontWeight.w500,

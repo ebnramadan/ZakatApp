@@ -12,6 +12,8 @@ class AppTheme {
     );
     return ThemeData(
       useMaterial3: true,
+      fontFamily: 'Inter',
+      fontFamilyFallback: const ['NotoSansArabic'],
       visualDensity: VisualDensity.standard,
       textTheme: const TextTheme(
               bodyLarge: TextStyle(fontSize: 16, height: 1.6),

@@ -1,0 +1,54 @@
+name: Requested progress sheet delivery
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Check queued manual reports without sending sheets'
+        type: boolean
+        default: true
+permissions:
+  contents: read
+concurrency:
+  group: monthly-progress-sheets
+  cancel-in-progress: false
+jobs:
+  remind:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Check email configuration
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          REMINDER_FROM: ${{ secrets.REMINDER_FROM }}
+          REMINDER_SMTP_USER: ${{ secrets.REMINDER_SMTP_USER }}
+          REMINDER_SMTP_APP_PASSWORD: ${{ secrets.REMINDER_SMTP_APP_PASSWORD }}
+        run: |
+          if { [ -z "$RESEND_API_KEY" ] || [ -z "$REMINDER_FROM" ]; } && { [ -z "$REMINDER_SMTP_USER" ] || [ -z "$REMINDER_SMTP_APP_PASSWORD" ]; }; then
+            echo '::error::Configure Resend sender secrets or Gmail SMTP app-password secrets before enabling report delivery.'
+            exit 1
+          fi
+      - run: npm ci
+      - uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_ZAKAT_APP_36C58 }}
+          project_id: zakat-app-36c58
+      - name: Send requested progress sheets
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          REMINDER_FROM: ${{ secrets.REMINDER_FROM }}
+          REMINDER_SMTP_USER: ${{ secrets.REMINDER_SMTP_USER }}
+          REMINDER_SMTP_APP_PASSWORD: ${{ secrets.REMINDER_SMTP_APP_PASSWORD }}
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+        run: |
+          if [ "$DRY_RUN" = "true" ]; then
+            node scripts/monthly-progress-sheet.cjs --requests --dry-run
+          else
+            node scripts/monthly-progress-sheet.cjs --requests
+          fi

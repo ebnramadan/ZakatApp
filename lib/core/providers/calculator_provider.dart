@@ -120,7 +120,8 @@ class CalculatorProvider extends ChangeNotifier {
   Future<double> getExchangeRate(String foreign, String local) =>
       _prices.exchangeRate(foreign, local);
 
-  void startNewRecord(String userId, String currency) {
+  void startNewRecord(String userId, String currency,
+      {String language = 'en'}) {
     _priceRequest++;
     _goldPricePerGram = 0;
     _error = null;
@@ -129,7 +130,7 @@ class CalculatorProvider extends ChangeNotifier {
         id: const Uuid().v4(),
         userId: userId,
         currency: currency,
-        name: 'Zakat ${now.year}',
+        name: language == 'ar' ? 'زكاة ${now.year}' : 'Zakat ${now.year}',
         hawlStartDate: DateTime(now.year, now.month, now.day),
         foreignCash: [],
         goldEntries: [],

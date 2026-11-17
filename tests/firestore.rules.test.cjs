@@ -168,3 +168,14 @@ test('app reset hard deletes require the exact verified email, its own UID, a fr
  await assertSucceeds(deleteDoc(r));await assertSucceeds(deleteDoc(doc(fresh,'users/tester/payments/p')));
  await assertSucceeds(setDoc(profile,{displayName:'Tester',email,currency:'USD',onboardingCompleted:false,resetInProgress:false}));
 });
+test('manual sheet requests require saved recipients, server time, rate limits, and cannot forge sent status',async()=>{
+ const db=alice(),profile=doc(db,'users/alice'),at=Date.now();
+ await setDoc(profile,{displayName:'Alice',email:'alice@example.com',currency:'EGP',shareRecipients:['trusted@example.com'],sharingEnabled:false});
+ const request={id:'manual-request-123456',status:'queued',requestedAt:at,recipients:['trusted@example.com']};
+ await assertFails(updateDoc(profile,{sheetRequest:{...request,status:'sent'}}));
+ await assertFails(updateDoc(profile,{sheetRequest:{...request,recipients:['not-saved@example.com']}}));
+ await assertSucceeds(updateDoc(profile,{sheetRequest:request}));
+ await assertFails(updateDoc(profile,{sheetRequest:{...request,id:'different-request-123'}}));
+ await env.withSecurityRulesDisabled(async ctx=>updateDoc(doc(ctx.firestore(),'users/alice'),{'sheetRequest.status':'sent'}));
+ await assertFails(updateDoc(profile,{sheetRequest:{...request,id:'different-request-123'}}));
+});
