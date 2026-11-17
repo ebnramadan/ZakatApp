@@ -103,7 +103,7 @@ class ResultsScreen extends StatelessWidget {
                             .selectRecord(auth.user!.uid, saved);
                         Navigator.of(context).pushAndRemoveUntil(
                           MaterialPageRoute(
-                              builder: (_) => const HomeScreen(initialTab: 1)),
+                              builder: (_) => const HomeScreen(initialTab: 2)),
                           (_) => false,
                         );
                       }

@@ -22,12 +22,12 @@ test('message separates Zakat/Sadaqah, does not combine currencies, and offers a
 });
 
 const {sendReminders}=require('../scripts/monthly-reminders.cjs');
-function memoryStore({plans=[],payments=[],deliveries=[]}={}) {
+function memoryStore({plans=[],payments=[],deliveries=[],records={}}={}) {
  const state={plans,payments,deliveries,ready:false};
  const snapshot=items=>({docs:items.map(d=>({id:d.id,data:()=>d}))});
  const base={collection(name){
    const rows=()=>name==='monthlyPlans'?state.plans:name==='monthlyPayments'?state.payments:state.deliveries;
-   return {get:async()=>snapshot(rows()),where:(field,op,value)=>({get:async()=>snapshot(rows().filter(r=>r[field]===value))}),doc:id=>({name,id})};
+   return {get:async()=>snapshot(rows()),where:(field,op,value)=>({get:async()=>snapshot(rows().filter(r=>r[field]===value))}),doc:id=>({name,id,get:async()=>({exists:records[id]!=null,data:()=>records[id]})})};
  }};
  const db={
   collection:()=>({where:()=>({get:async()=>snapshot([{id:'u',monthlyEmailReminders:true,email:'untrusted-profile@example.com'}])}),doc:()=>base}),
@@ -67,4 +67,14 @@ test('Gmail transport uses the dedicated sender and only the verified recipient'
  assert.equal(delivered.from,'sender@gmail.com');
  assert.equal(delivered.to,'verified@example.com');
  assert.equal(state.deliveries[0].status,'sent');
+});
+
+test('Zakat email reminders skip recycled and missing records and resume after restoration',async()=>{
+ const records={r:{isSubmitted:true,currency:'USD',deletedAt:123}};
+ const {db}=memoryStore({plans:[plan('p',{kind:'zakat',zakatRecordId:'r'})],records});
+ let sent=0;
+ const options={db,auth:{getUser:async()=>({email:'verified@example.com',emailVerified:true})},now,apiKey:'key',from:'sender@example.com',appUrl:'https://zakat-tracker.web.app',log:()=>{},fetchImpl:async()=>{sent++;return {ok:true,json:async()=>({id:'accepted'})};}};
+ await sendReminders(options);assert.equal(sent,0);
+ delete records.r.deletedAt;
+ await sendReminders(options);assert.equal(sent,1);
 });

@@ -1,0 +1,39 @@
+name: Recycle bin automatic cleanup
+on:
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Check expired records without deleting data'
+        type: boolean
+        default: true
+permissions:
+  contents: read
+concurrency:
+  group: recycle-bin-cleanup
+  cancel-in-progress: false
+jobs:
+  cleanup:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_ZAKAT_APP_36C58 }}
+          project_id: zakat-app-36c58
+      - name: Remove records whose 60-day restore window has ended
+        env:
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+        run: |
+          if [ "$DRY_RUN" = 'true' ]; then
+            node scripts/purge-recycle-bin.cjs
+          else
+            node scripts/purge-recycle-bin.cjs --apply
+          fi

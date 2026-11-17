@@ -15,12 +15,11 @@ class EntryModeScreen extends StatelessWidget {
       appBar: AppBar(title: const Text('New Zakat Calculation')),
       body: Padding(
         padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+        child: ListView(
           children: [
             const SizedBox(height: 24),
             const Text(
-              'How would you like to enter your assets?',
+              'Let’s calculate your Zakat.',
               style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -29,7 +28,7 @@ class EntryModeScreen extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             const Text(
-              'Both modes use the same calculation.',
+              'Choose a pace that works for you. Both use the same calculation.',
               style: TextStyle(color: Colors.grey),
               textAlign: TextAlign.center,
             ),

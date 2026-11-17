@@ -52,6 +52,16 @@ class TrackerProvider extends ChangeNotifier {
     _notify();
   }
 
+  void clearSelection() {
+    _selection++;
+    _sub?.cancel();
+    _selectedRecord = null;
+    _payments = [];
+    _payeeNames = [];
+    _error = null;
+    _notify();
+  }
+
   void reload() {
     final record = _selectedRecord;
     if (record == null) return;

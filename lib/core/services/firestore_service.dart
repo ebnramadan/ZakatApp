@@ -51,6 +51,10 @@ class FirestoreService {
     final ref = _records(record.userId).doc(record.id);
     return _db.runTransaction((transaction) async {
       final previous = await transaction.get(ref);
+      if (previous.data()?['deletedAt'] != null) {
+        throw const FormatException(
+            'Restore this record from the recycle bin first.');
+      }
       if (previous.exists && previous.data()?['isSubmitted'] == true) {
         return ZakatRecord.fromMap(previous.id, previous.data()!);
       }
@@ -59,8 +63,39 @@ class FirestoreService {
     });
   }
 
-  Future<void> deleteRecord(String uid, String recordId) =>
-      _records(uid).doc(recordId).delete();
+  Future<void> recycleRecord(String uid, String id) async {
+    final ref = _records(uid).doc(id);
+    await _db.runTransaction((tx) async {
+      final doc = await tx.get(ref);
+      if (!doc.exists) throw const FormatException('Record no longer exists.');
+      if (doc.data()?['deletedAt'] != null) return;
+      final now = DateTime.now();
+      tx.update(ref, {
+        'deletedAt': now.millisecondsSinceEpoch,
+        'purgeAt': now.add(const Duration(days: 60)).millisecondsSinceEpoch
+      });
+    });
+  }
+
+  Future<void> restoreRecord(String uid, String id) async {
+    final ref = _records(uid).doc(id);
+    await _db.runTransaction((tx) async {
+      final doc = await tx.get(ref);
+      if (!doc.exists) throw const FormatException('Record no longer exists.');
+      final data = doc.data()!;
+      if (data['deletedAt'] == null) return;
+      if (data['purgeAt'] is! int ||
+          DateTime.now().millisecondsSinceEpoch >= data['purgeAt']) {
+        throw const FormatException('The 60-day restore window has ended.');
+      }
+      tx.update(ref,
+          {'deletedAt': FieldValue.delete(), 'purgeAt': FieldValue.delete()});
+    });
+  }
+
+  Stream<List<Payment>> allPaymentsStream(String uid) => _payments(uid)
+      .snapshots()
+      .map((s) => s.docs.map((d) => Payment.fromMap(d.id, d.data())).toList());
 
   // ─── Payments ──────────────────────────────────────────────────────────────
 

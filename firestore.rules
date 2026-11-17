@@ -5,6 +5,25 @@ service cloud.firestore {
       return request.auth != null && request.auth.uid == uid && request.auth.token.email_verified == true;
     }
     function nonnegative(value) { return value is number && value >= 0 && value < 1000000000000000000; }
+    function activeRecord(uid, id) {
+      return get(/databases/$(database)/documents/users/$(uid)/zakatRecords/$(id)).data.get('deletedAt', null) == null;
+    }
+    function recycleOnly() {
+      let d = request.resource.data;
+      return resource.data.get('deletedAt', null) == null
+        && d.diff(resource.data).affectedKeys().hasOnly(['deletedAt', 'purgeAt'])
+        && d.deletedAt is int && d.purgeAt is int
+        && d.deletedAt <= request.time.toMillis() + 300000
+        && d.deletedAt >= request.time.toMillis() - 300000
+        && d.purgeAt == d.deletedAt + 5184000000;
+    }
+    function restoreOnly() {
+      return resource.data.get('deletedAt', null) is int
+        && resource.data.purgeAt > request.time.toMillis()
+        && request.resource.data.get('deletedAt', null) == null
+        && request.resource.data.get('purgeAt', null) == null
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['deletedAt', 'purgeAt']);
+    }
     function validRecord(uid) {
       let d = request.resource.data;
       return d.userId == uid && d.name is string && d.name.size() > 0 && d.name.size() <= 200
@@ -20,7 +39,7 @@ service cloud.firestore {
     }
     function linkedRecord(uid, recordId, currency) {
       let r = get(/databases/$(database)/documents/users/$(uid)/zakatRecords/$(recordId));
-      return r.data.isSubmitted == true && r.data.currency == currency;
+      return r.data.isSubmitted == true && r.data.currency == currency && r.data.get('deletedAt', null) == null;
     }
     function validPayment(uid) {
       let d = request.resource.data;
@@ -29,7 +48,7 @@ service cloud.firestore {
         && d.amount is number && d.amount > 0 && d.amount < 1000000000000000000
         && d.name is string && d.recipient is string && d.date is int
         && d.date <= request.time.toMillis() && d.createdAt is int
-        && r.data.isSubmitted == true && r.data.currency is string;
+        && r.data.isSubmitted == true && r.data.currency is string && r.data.get('deletedAt', null) == null;
     }
     function monthlyLedgerMatches(uid, id, data) {
       let receipt = getAfter(/databases/$(database)/documents/users/$(uid)/monthlyPayments/$(data.monthlyPaymentId));
@@ -87,11 +106,13 @@ service cloud.firestore {
       allow delete: if owner(uid);
       match /zakatRecords/{id} {
         allow read: if owner(uid);
-        allow create: if owner(uid) && validRecord(uid);
-        allow update: if owner(uid) && !resource.data.isSubmitted && validRecord(uid)
-          && request.resource.data.userId == resource.data.userId
-          && request.resource.data.createdAt == resource.data.createdAt;
-        allow delete: if owner(uid) && !resource.data.isSubmitted;
+        allow create: if owner(uid) && validRecord(uid) && request.resource.data.get('deletedAt', null) == null && request.resource.data.get('purgeAt', null) == null;
+        allow update: if owner(uid) && (recycleOnly() || restoreOnly() || (
+          !resource.data.isSubmitted && resource.data.get('deletedAt', null) == null
+          && request.resource.data.get('deletedAt', null) == null && request.resource.data.get('purgeAt', null) == null
+          && validRecord(uid) && request.resource.data.userId == resource.data.userId
+          && request.resource.data.createdAt == resource.data.createdAt));
+        allow delete: if false;
       }
       match /monthlyPlans/{id} {
         allow read: if owner(uid);
@@ -106,7 +127,7 @@ service cloud.firestore {
         allow update: if owner(uid) && validReceipt(uid, id)
           && request.resource.data.planId == resource.data.planId && request.resource.data.month == resource.data.month
           && request.resource.data.createdAt == resource.data.createdAt;
-        allow delete: if owner(uid) && (resource.data.kind != 'zakat'
+        allow delete: if owner(uid) && (resource.data.kind != 'zakat' || activeRecord(uid, resource.data.zakatRecordId)) && (resource.data.kind != 'zakat'
           || !existsAfter(/databases/$(database)/documents/users/$(uid)/payments/$("monthly_" + id)));
       }
       match /reminderDeliveries/{id} {
@@ -123,7 +144,7 @@ service cloud.firestore {
           && (resource.data.get('source', 'manual') == 'monthly'
             ? request.resource.data.source == 'monthly' && monthlyLedgerMatches(uid, id, request.resource.data)
             : request.resource.data.get('source', 'manual') == 'manual' && request.resource.data.zakatRecordId == resource.data.zakatRecordId && !('monthlyPaymentId' in request.resource.data));
-        allow delete: if owner(uid) && (resource.data.get('source', 'manual') != 'monthly'
+        allow delete: if owner(uid) && activeRecord(uid, resource.data.zakatRecordId) && (resource.data.get('source', 'manual') != 'monthly'
           || !existsAfter(/databases/$(database)/documents/users/$(uid)/monthlyPayments/$(resource.data.monthlyPaymentId)));
       }
     }

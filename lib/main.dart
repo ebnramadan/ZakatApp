@@ -81,11 +81,11 @@ class ZakatApp extends StatelessWidget {
                           debugShowCheckedModeBanner: false,
                           theme: AppTheme.light,
                           builder: (context, child) => ColoredBox(
-                              color: const Color(0xFFEDEFE9),
+                              color: const Color(0xFFF4F6F5),
                               child: Center(
                                   child: ConstrainedBox(
                                       constraints:
-                                          const BoxConstraints(maxWidth: 1080),
+                                          const BoxConstraints(maxWidth: 1440),
                                       child: child ?? const SizedBox()))),
                           home: const _AuthGate())),
                 )),

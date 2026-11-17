@@ -84,7 +84,7 @@ void main() {
           ChangeNotifierProvider.value(value: monthly)
         ],
         child: MaterialApp(
-            theme: AppTheme.light, home: const HomeScreen(initialTab: 2))));
+            theme: AppTheme.light, home: const HomeScreen(initialTab: 3))));
     await tester.pumpAndSettle();
     expect(find.text('Monthly Giving'), findsNWidgets(2));
     expect(await auth.updateProfileFields(language: 'ar'), isTrue);

@@ -18,6 +18,7 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
   DateTime _month = DateTime(DateTime.now().year, DateTime.now().month);
   String _query = '';
   bool _followingCurrent = true;
+  bool _showPaused = false;
   void _shift(int by) => setState(() {
         _followingCurrent = false;
         _month = DateTime(_month.year, _month.month + by);
@@ -66,12 +67,15 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
     final nowKey = monthKey(DateTime.now());
     final all = monthly.plans
         .where((p) =>
-            (p.active && p.startMonth.compareTo(key) <= 0) ||
+            ((p.active || _showPaused) && p.startMonth.compareTo(key) <= 0) ||
             monthly.paid(p.id, key) != null)
         .toList();
     final shown = all
         .where((p) => p.recipient.toLowerCase().contains(_query.toLowerCase()))
         .toList();
+    final calc = context.watch<CalculatorProvider>();
+    bool available(String kind, String id) =>
+        kind != 'zakat' || calc.isRecordActive(id);
     final paid = monthly.forMonth(key);
     final currencies = {
       ...all.map((p) => p.currency),
@@ -150,6 +154,7 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
                       final outstanding = all
                           .where((p) =>
                               p.currency == currency &&
+                              available(p.kind, p.zakatRecordId) &&
                               monthly.paid(p.id, key) == null)
                           .fold(0.0, (s, p) => s + p.amount);
                       final fmt = NumberFormat.currency(
@@ -167,6 +172,14 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
                               ])));
                     }),
                     const SizedBox(height: 14),
+                    Wrap(spacing: 8, children: [
+                      FilterChip(
+                          label: const Text('Include paused recipients'),
+                          selected: _showPaused,
+                          onSelected: (value) =>
+                              setState(() => _showPaused = value)),
+                    ]),
+                    const SizedBox(height: 12),
                     if (all.isNotEmpty)
                       TextField(
                           decoration: const InputDecoration(
@@ -203,6 +216,8 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
                     ...shown.map((plan) {
                       final receipt = monthly.paid(plan.id, key);
                       final isPaid = receipt != null;
+                      final blocked = !available(receipt?.kind ?? plan.kind,
+                          receipt?.zakatRecordId ?? plan.zakatRecordId);
                       final kind = receipt?.kind ?? plan.kind;
                       final amount = receipt?.amount ?? plan.amount;
                       final due = plan.dueDate(key);
@@ -298,7 +313,7 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
                                                     const PopupMenuItem(
                                                         value: 'edit',
                                                         child: Text(
-                                                            'Edit future months')),
+                                                            'Edit commitment')),
                                                     if (plan.active)
                                                       const PopupMenuItem(
                                                           value: 'pause',
@@ -331,9 +346,14 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
                                                     ? Colors.deepOrange.shade800
                                                     : Colors.black54)),
                                     const SizedBox(height: 14),
+                                    if (blocked)
+                                      const Padding(
+                                          padding: EdgeInsets.only(bottom: 12),
+                                          child: Text(
+                                              'Linked Zakat record is unavailable. Restore it from the recycle bin or edit this commitment to select another record.')),
                                     if (isPaid)
                                       TextButton.icon(
-                                          onPressed: monthly.busy
+                                          onPressed: monthly.busy || blocked
                                               ? null
                                               : () => _undo(receipt),
                                           icon:
@@ -342,6 +362,7 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
                                     else
                                       OutlinedButton.icon(
                                           onPressed: monthly.busy ||
+                                                  blocked ||
                                                   key.compareTo(nowKey) > 0
                                               ? null
                                               : () async {

@@ -6,26 +6,46 @@ import '../../core/models/zakat_record.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/providers/calculator_provider.dart';
 import '../../core/providers/tracker_provider.dart';
+import '../../core/providers/monthly_provider.dart';
 import '../auth/profile_screen.dart';
 import '../calculator/entry_mode_screen.dart';
 import '../calculator/one_pager_screen.dart';
 import '../tracker/tracker_screen.dart';
 import '../monthly/monthly_screen.dart';
-import '../../core/providers/monthly_provider.dart';
+import '../dashboard/dashboard_screen.dart';
+import '../shared/app_components.dart';
+import 'recycle_bin_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final int initialTab;
   const HomeScreen({super.key, this.initialTab = 0});
-
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
   late int _tab;
+  void _selectTab(int index) {
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    setState(() => _tab = index);
+  }
 
-  void openTracker() => setState(() => _tab = 1);
-  void openMonthly() => setState(() => _tab = 2);
+  void openTracker() => _selectTab(2);
+  void openMonthly() => _selectTab(3);
+  void _create() => Navigator.of(context)
+      .push(MaterialPageRoute(builder: (_) => const EntryModeScreen()));
+  void _open(ZakatRecord r) {
+    if (r.isSubmitted) {
+      context
+          .read<TrackerProvider>()
+          .selectRecord(context.read<AuthProvider>().user!.uid, r);
+      openTracker();
+    } else {
+      context.read<CalculatorProvider>().resumeRecord(r);
+      Navigator.of(context)
+          .push(MaterialPageRoute(builder: (_) => const OnePagerScreen()));
+    }
+  }
 
   @override
   void initState() {
@@ -33,268 +53,283 @@ class _HomeScreenState extends State<HomeScreen> {
     _tab = widget.initialTab;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      final auth = context.read<AuthProvider>();
-      if (auth.user != null) {
-        context.read<CalculatorProvider>().loadRecords(auth.user!.uid);
-        context.read<MonthlyProvider>().load(auth.user!.uid);
+      final uid = context.read<AuthProvider>().user?.uid;
+      if (uid != null) {
+        context.read<CalculatorProvider>().loadRecords(uid);
+        context.read<MonthlyProvider>().load(uid);
       }
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final monthly = context.watch<MonthlyProvider>();
-    final due = monthly.loading ? 0 : monthly.dueCount(DateTime.now());
-    return Scaffold(
-      body: IndexedStack(
-        index: _tab,
-        children: [
-          const _RecordsTab(),
-          TrackerScreen(onOpenMonthly: openMonthly),
-          const MonthlyScreen(),
-          const ProfileScreen(),
-        ],
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        currentIndex: _tab,
-        onTap: (i) => setState(() => _tab = i),
-        items: [
-          const BottomNavigationBarItem(
-              icon: Icon(Icons.calculate_outlined), label: 'Calculator'),
-          const BottomNavigationBarItem(
-              icon: Icon(Icons.track_changes_outlined), label: 'Tracker'),
-          BottomNavigationBarItem(
-              icon: Badge(
-                  isLabelVisible: due > 0,
-                  label: Text('$due'),
-                  child: const Icon(Icons.calendar_month_outlined)),
-              label:
-                  context.watch<AuthProvider>().profile?.monthlyGivingLabel ??
-                      'Monthly Giving'),
-          const BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline), label: 'Profile'),
-        ],
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Records tab: list of Zakat records + new calculation button
-// ─────────────────────────────────────────────────────────────────────────────
-class _RecordsTab extends StatelessWidget {
-  const _RecordsTab();
-
-  @override
-  Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
     final calc = context.watch<CalculatorProvider>();
-    final currency = auth.profile?.currency ?? 'USD';
-    final due = context.watch<MonthlyProvider>().dueCount(DateTime.now());
+    final monthly = context.watch<MonthlyProvider>();
+    final now = DateTime.now();
+    final due = monthly.loading
+        ? 0
+        : monthly.plans
+            .where((p) =>
+                p.active &&
+                (p.kind != 'zakat' || calc.isRecordActive(p.zakatRecordId)) &&
+                p.startMonth.compareTo(
+                        '${now.year}-${now.month.toString().padLeft(2, '0')}') <=
+                    0 &&
+                !p
+                    .dueDate(
+                        '${now.year}-${now.month.toString().padLeft(2, '0')}')
+                    .isAfter(now) &&
+                monthly.paid(p.id,
+                        '${now.year}-${now.month.toString().padLeft(2, '0')}') ==
+                    null)
+            .length;
+    final ar = auth.profile?.language == 'ar';
+    final labels = [
+      ar ? 'الرئيسية' : 'Dashboard',
+      ar ? 'السجلات' : 'Records',
+      ar ? 'المتابعة' : 'Tracker',
+      auth.profile?.monthlyGivingLabel ?? 'Monthly Giving',
+      ar ? 'الملف الشخصي' : 'Profile'
+    ];
+    const icons = [
+      Icons.space_dashboard_outlined,
+      Icons.folder_open_outlined,
+      Icons.track_changes_outlined,
+      Icons.calendar_month_outlined,
+      Icons.person_outline
+    ];
+    final body = IndexedStack(index: _tab, children: [
+      DashboardScreen(
+          onRecords: () => _selectTab(1),
+          onMonthly: openMonthly,
+          onCreate: _create,
+          onRecord: _open),
+      _RecordsTab(onCreate: _create, onOpen: _open),
+      TrackerScreen(onOpenMonthly: openMonthly),
+      const MonthlyScreen(),
+      const ProfileScreen(),
+    ]);
+    Widget navIcon(int index) => index == 3
+        ? Badge(
+            isLabelVisible: due > 0,
+            label: Text('$due'),
+            child: Icon(icons[index]))
+        : Icon(icons[index]);
+    return LayoutBuilder(builder: (context, constraints) {
+      final wide = constraints.maxWidth >= 900;
+      return Scaffold(
+        body: wide
+            ? Row(children: [
+                Container(
+                    width: 208,
+                    decoration: const BoxDecoration(
+                        color: Colors.white,
+                        border: Border(
+                            right: BorderSide(color: Color(0xFFDDE5E1)))),
+                    child: SafeArea(
+                        child: Column(children: [
+                      Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 28, 20, 24),
+                          child: Row(children: [
+                            Image.asset('assets/brand/icon.png',
+                                width: 36, height: 36),
+                            const SizedBox(width: 10),
+                            const Expanded(
+                                child: Text('Zakat Tracker',
+                                    style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w700)))
+                          ])),
+                      Expanded(
+                          child: NavigationRail(
+                              extended: true,
+                              minExtendedWidth: 207,
+                              selectedIndex: _tab,
+                              onDestinationSelected: (i) =>
+                                  setState(() => _tab = i),
+                              backgroundColor: Colors.white,
+                              destinations: List.generate(
+                                  5,
+                                  (i) => NavigationRailDestination(
+                                      icon: navIcon(i),
+                                      label: Text(labels[i]))))),
+                      const Padding(
+                          padding: EdgeInsets.all(24),
+                          child: Text(
+                              'Give with intention.\nTrack with clarity.',
+                              style: TextStyle(
+                                  color: Color(0xFF52655F),
+                                  fontSize: 12,
+                                  height: 1.7))),
+                    ]))),
+                Expanded(child: body),
+              ])
+            : body,
+        bottomNavigationBar: wide
+            ? null
+            : NavigationBar(
+                selectedIndex: _tab,
+                onDestinationSelected: _selectTab,
+                destinations: List.generate(
+                    5,
+                    (i) => NavigationDestination(
+                        icon: navIcon(i), label: labels[i]))),
+      );
+    });
+  }
+}
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Zakat Tracker')),
-      body: calc.recordsLoading
-          ? const Center(child: CircularProgressIndicator())
-          : calc.error != null
-              ? Center(
-                  child: Column(mainAxisSize: MainAxisSize.min, children: [
-                  Text(calc.error!, textAlign: TextAlign.center),
+class _RecordsTab extends StatefulWidget {
+  final VoidCallback onCreate;
+  final ValueChanged<ZakatRecord> onOpen;
+  const _RecordsTab({required this.onCreate, required this.onOpen});
+  @override
+  State<_RecordsTab> createState() => _RecordsTabState();
+}
+
+class _RecordsTabState extends State<_RecordsTab> {
+  String _query = '';
+  String _filter = 'All';
+  @override
+  Widget build(BuildContext context) {
+    final calc = context.watch<CalculatorProvider>();
+    final records = calc.records
+        .where((r) =>
+            r.name.toLowerCase().contains(_query.toLowerCase()) &&
+            (_filter == 'All' ||
+                (_filter == 'Drafts' ? !r.isSubmitted : r.isSubmitted)))
+        .toList();
+    return SafeArea(
+        child: ListView(padding: const EdgeInsets.all(24), children: [
+      PageIntro(
+          eyebrow: 'Zakat records',
+          title: 'A place for every year.',
+          description:
+              'Calculate once. Keep your records and payment history together.',
+          action: Wrap(spacing: 12, runSpacing: 12, children: [
+            FilledButton.icon(
+                onPressed: widget.onCreate,
+                icon: const Icon(Icons.add),
+                label: const Text('New Calculation')),
+            OutlinedButton.icon(
+                onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+                    builder: (_) => const RecycleBinScreen())),
+                icon: const Icon(Icons.delete_outline),
+                label: Text(
+                    'Recycle bin${calc.recycledRecords.isEmpty ? '' : ' (${calc.recycledRecords.length})'}')),
+          ])),
+      if (calc.error != null)
+        Card(
+            child: ListTile(
+                leading: const Icon(Icons.error_outline),
+                title: Text(calc.error!),
+                trailing: TextButton(
+                    onPressed: calc.clearError, child: const Text('Dismiss')))),
+      if (calc.recordsLoading)
+        const Center(child: CircularProgressIndicator())
+      else if (calc.records.isEmpty)
+        Card(
+            child: Padding(
+                padding: const EdgeInsets.all(28),
+                child: Column(children: [
+                  const Icon(Icons.folder_open_outlined,
+                      size: 48, color: kPrimaryGreen),
+                  const SizedBox(height: 16),
+                  Text('Your first record starts here',
+                      style: Theme.of(context).textTheme.titleLarge),
+                  const SizedBox(height: 8),
+                  const Text(
+                      'Use a guided calculation to work out your Zakat. Saved drafts are easy to continue.',
+                      textAlign: TextAlign.center),
+                  const SizedBox(height: 20),
                   TextButton(
-                      onPressed: () {
-                        calc.clearError();
-                        calc.loadRecords(auth.user!.uid);
-                      },
-                      child: const Text('Retry')),
-                ]))
-              : calc.records.isEmpty
-                  ? _EmptyRecords()
-                  : ListView(
-                      padding: const EdgeInsets.all(16),
-                      children: [
-                        if (due > 0)
-                          Card(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .secondaryContainer,
-                              child: ListTile(
-                                  leading: const Icon(
-                                      Icons.notifications_active_outlined),
-                                  title: Text(
-                                      '$due monthly ${due == 1 ? 'commitment is' : 'commitments are'} ready to give'),
-                                  subtitle: Text(
-                                      'Review this month’s giving in ${auth.profile?.monthlyGivingLabel ?? 'Monthly Giving'}'),
-                                  trailing: const Icon(Icons.chevron_right),
-                                  onTap: () => context
-                                      .findAncestorStateOfType<
-                                          _HomeScreenState>()
-                                      ?.openMonthly())),
-                        Text('Your Zakat records',
-                            style: Theme.of(context).textTheme.headlineSmall),
-                        const SizedBox(height: 8),
-                        const Text(
-                            'Continue a draft or open a submitted record to track payments.',
-                            style:
-                                TextStyle(height: 1.5, color: Colors.black54)),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            Text('${calc.records.length} record(s)',
-                                style: const TextStyle(
-                                    color: Colors.grey, fontSize: 13)),
-                            const Spacer(),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        ...calc.records.map(
-                            (r) => _RecordCard(record: r, currency: currency)),
-                      ],
-                    ),
-      floatingActionButton: FloatingActionButton.extended(
-        heroTag: 'new-calculation',
-        onPressed: () => Navigator.of(context)
-            .push(MaterialPageRoute(builder: (_) => const EntryModeScreen())),
-        icon: const Icon(Icons.add),
-        label: const Text('New Calculation'),
-      ),
-    );
-  }
-}
-
-class _RecordCard extends StatelessWidget {
-  final ZakatRecord record;
-  final String currency;
-
-  const _RecordCard({required this.record, required this.currency});
-
-  @override
-  Widget build(BuildContext context) {
-    final fmt = NumberFormat.currency(
-        name: record.currency ?? 'USD',
-        symbol: record.currency == null
-            ? 'Currency unknown '
-            : currencySymbol(record.currency!),
-        decimalDigits: currencyDecimals(record.currency ?? 'USD'));
-    final dateFmt = DateFormat('d MMM yyyy');
-
-    return Card(
-      child: InkWell(
-        borderRadius: BorderRadius.circular(14),
-        onTap: record.isSubmitted
-            ? () {
-                // Select this record in tracker and navigate to it
-                final auth = context.read<AuthProvider>();
-                context
-                    .read<TrackerProvider>()
-                    .selectRecord(auth.user!.uid, record);
-
-                // Navigate to tracker tab via home
-                final homeState =
-                    context.findAncestorStateOfType<_HomeScreenState>();
-                homeState?.openTracker();
-              }
-            : null,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: record.isSubmitted
-                      ? kPrimaryGreen.withOpacity(0.1)
-                      : Colors.orange.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  record.isSubmitted ? Icons.lock_outline : Icons.edit_outlined,
-                  color: record.isSubmitted ? kPrimaryGreen : Colors.orange,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
+                      onPressed: widget.onCreate,
+                      child: const Text('Create a Zakat record')),
+                ])))
+      else ...[
+        TextField(
+            decoration: const InputDecoration(
+                labelText: 'Search records', prefixIcon: Icon(Icons.search)),
+            onChanged: (v) => setState(() => _query = v)),
+        const SizedBox(height: 16),
+        Wrap(
+            spacing: 8,
+            children: ['All', 'Submitted', 'Drafts']
+                .map((v) => ChoiceChip(
+                    label: Text(v),
+                    selected: v == _filter,
+                    onSelected: (_) => setState(() => _filter = v)))
+                .toList()),
+        const SizedBox(height: 16),
+        if (records.isEmpty)
+          const Padding(
+              padding: EdgeInsets.all(24),
+              child: Text('No records match. Try another search or filter.')),
+        ...records.map((r) => Card(
+            child: Padding(
+                padding: const EdgeInsets.all(18),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(record.name,
-                        style: const TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 15)),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Lunar year started ${dateFmt.format(record.hawlStartDate)}',
-                      style: const TextStyle(color: Colors.grey, fontSize: 12),
-                    ),
-                    if (record.isSubmitted) ...[
-                      const SizedBox(height: 2),
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(children: [
+                        Expanded(
+                            child: Text(r.name,
+                                style: const TextStyle(
+                                    fontSize: 19,
+                                    fontWeight: FontWeight.w700))),
+                        PopupMenuButton<String>(
+                            tooltip: 'Record actions',
+                            onSelected: (_) => moveToRecycleBin(context, r),
+                            itemBuilder: (_) => [
+                                  const PopupMenuItem(
+                                      value: 'delete',
+                                      child: Text('Move to recycle bin',
+                                          style: TextStyle(
+                                              color: Color(0xFFB3261E))))
+                                ])
+                      ]),
+                      const SizedBox(height: 8),
+                      StatusPill(
+                          r.isSubmitted
+                              ? (r.hawlComplete
+                                  ? 'Hawl complete'
+                                  : 'Hawl in progress')
+                              : 'Draft',
+                          warning: !r.isSubmitted),
+                      const SizedBox(height: 12),
                       Text(
-                        record.nisabMet
-                            ? '${record.hawlComplete ? 'Zakat due' : 'Estimate'}: ${fmt.format(record.estimatedZakat)}'
-                            : 'Below Nisab — no Zakat due',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color:
-                              record.nisabMet ? kPrimaryGreen : Colors.orange,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              if (record.isSubmitted)
-                const Icon(Icons.chevron_right, color: Colors.grey)
-              else
-                TextButton(
-                  onPressed: () {
-                    context.read<CalculatorProvider>().resumeRecord(record);
-                    Navigator.of(context).push(MaterialPageRoute(
-                        builder: (_) => const OnePagerScreen()));
-                  },
-                  child: const Text('Continue'),
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _EmptyRecords extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(40),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: kPrimaryGreen.withOpacity(0.08),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.mosque, size: 56, color: kPrimaryGreen),
-            ),
-            const SizedBox(height: 24),
-            const Text(
-              'Bismillah',
-              style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: kPrimaryGreen),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Calculate your eligible wealth, then track what you give. You can also start with monthly giving.',
-              style: TextStyle(color: Colors.grey, height: 1.6),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
+                          'Lunar year started ${DateFormat.yMMMd().format(r.hawlStartDate)}',
+                          style: const TextStyle(
+                              color: Color(0xFF52655F), fontSize: 13)),
+                      if (r.isSubmitted) ...[
+                        const SizedBox(height: 12),
+                        Text(
+                            r.nisabMet
+                                ? money(r.estimatedZakat, r.currency)
+                                : 'Below Nisab',
+                            style: const TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.w700,
+                                color: kPrimaryGreen)),
+                        Text(
+                            r.hawlComplete
+                                ? 'Calculated Zakat'
+                                : 'Estimate until Hawl is complete',
+                            style: const TextStyle(
+                                fontSize: 13, color: Color(0xFF52655F)))
+                      ],
+                      const SizedBox(height: 12),
+                      TextButton.icon(
+                          onPressed: () => widget.onOpen(r),
+                          icon: Icon(r.isSubmitted
+                              ? Icons.arrow_forward
+                              : Icons.edit_outlined),
+                          label: Text(r.isSubmitted
+                              ? 'Open payment tracker'
+                              : 'Continue draft')),
+                    ])))),
+      ],
+    ]));
   }
 }

@@ -6,6 +6,7 @@ import '../../core/models/user_profile.dart';
 import '../../core/providers/auth_provider.dart';
 import 'account_security_card.dart';
 import '../monthly/monthly_screen.dart';
+import '../home/recycle_bin_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -66,7 +67,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           TextButton(
             onPressed: auth.signOut,
             child:
-                const Text('Sign out', style: TextStyle(color: Colors.white70)),
+                const Text('Sign out', style: TextStyle(color: kPrimaryGreen)),
           ),
         ],
       ),
@@ -136,6 +137,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 isScrollControlled: true,
                 builder: (_) => const MonthlySettings()),
           )),
+          const SizedBox(height: 12),
+          Card(
+              child: ListTile(
+                  leading: const Icon(Icons.delete_outline),
+                  title: const Text('Recycle bin'),
+                  subtitle:
+                      const Text('Restore deleted records within 60 days'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                      builder: (_) => const RecycleBinScreen())))),
           const SizedBox(height: 12),
           const Text(
               'Changing your default currency affects new records and recipients only. Existing amounts keep their original currency.',

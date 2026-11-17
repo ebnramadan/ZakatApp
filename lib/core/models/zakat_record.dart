@@ -112,6 +112,11 @@ class ZakatRecord {
   bool isSubmitted;
   DateTime? submittedAt;
   DateTime createdAt;
+  DateTime? deletedAt;
+  DateTime? purgeAt;
+  bool get isDeleted => deletedAt != null;
+  bool canRestoreAt(DateTime now) =>
+      isDeleted && purgeAt != null && now.isBefore(purgeAt!);
 
   ZakatRecord({
     required this.id,
@@ -133,6 +138,8 @@ class ZakatRecord {
     this.isSubmitted = false,
     this.submittedAt,
     required this.createdAt,
+    this.deletedAt,
+    this.purgeAt,
   });
 
   factory ZakatRecord.fromMap(String id, Map<String, dynamic> m) {
@@ -141,6 +148,12 @@ class ZakatRecord {
       userId: m['userId'] as String,
       name: m['name'] as String,
       currency: m['currency'] as String?,
+      deletedAt: m['deletedAt'] == null
+          ? null
+          : DateTime.fromMillisecondsSinceEpoch(m['deletedAt'] as int),
+      purgeAt: m['purgeAt'] == null
+          ? null
+          : DateTime.fromMillisecondsSinceEpoch(m['purgeAt'] as int),
       pricedAt: m['pricedAt'] == null
           ? null
           : DateTime.fromMillisecondsSinceEpoch(m['pricedAt'] as int),
@@ -188,6 +201,8 @@ class ZakatRecord {
         'isSubmitted': isSubmitted,
         'submittedAt': submittedAt?.millisecondsSinceEpoch,
         'createdAt': createdAt.millisecondsSinceEpoch,
+        if (deletedAt != null) 'deletedAt': deletedAt!.millisecondsSinceEpoch,
+        if (purgeAt != null) 'purgeAt': purgeAt!.millisecondsSinceEpoch,
       };
 
   // The calendar switch controls date presentation only. Hawl is a lunar year.

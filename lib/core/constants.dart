@@ -5,10 +5,10 @@ const double kNisabGrams = 85.0;
 const double kZakatRate = 0.025;
 const double kTroyOzToGrams = 31.1035;
 
-const Color kPrimaryGreen = Color(0xFF1B5E20);
+const Color kPrimaryGreen = Color(0xFF146356);
 const Color kLightGreen = Color(0xFF4CAF50);
 const Color kGold = Color(0xFFFFB300);
-const Color kSurface = Color(0xFFF9F6F0);
+const Color kSurface = Color(0xFFF4F6F5);
 
 const Map<int, double> kGoldPurity = {
   24: 1.0,

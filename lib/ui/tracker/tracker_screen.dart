@@ -9,6 +9,7 @@ import '../../core/providers/calculator_provider.dart';
 import '../../core/providers/tracker_provider.dart';
 import 'add_payment_sheet.dart';
 import '../calculator/entry_mode_screen.dart';
+import '../home/recycle_bin_screen.dart';
 
 class TrackerScreen extends StatefulWidget {
   final VoidCallback? onOpenMonthly;
@@ -41,6 +42,10 @@ class _TrackerScreenState extends State<TrackerScreen> {
     final calc = context.read<CalculatorProvider>();
     final tracker = context.read<TrackerProvider>();
     final submitted = calc.records.where((r) => r.isSubmitted).toList();
+    if (tracker.selectedRecord != null &&
+        !submitted.any((r) => r.id == tracker.selectedRecord!.id)) {
+      tracker.clearSelection();
+    }
     if (submitted.isNotEmpty && tracker.selectedRecord == null) {
       tracker.selectRecord(auth.user!.uid, submitted.first);
     }
@@ -63,7 +68,9 @@ class _TrackerScreenState extends State<TrackerScreen> {
     final tracker = context.watch<TrackerProvider>();
     final currency = tracker.selectedRecord?.currency;
     final submitted = calc.records.where((r) => r.isSubmitted).toList();
-    if (tracker.selectedRecord == null && submitted.isNotEmpty) {
+    if ((tracker.selectedRecord == null && submitted.isNotEmpty) ||
+        (tracker.selectedRecord != null &&
+            !submitted.any((r) => r.id == tracker.selectedRecord!.id))) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _autoSelect();
       });
@@ -73,6 +80,13 @@ class _TrackerScreenState extends State<TrackerScreen> {
       appBar: AppBar(
         title: const Text('Zakat Tracker'),
         actions: [
+          if (tracker.selectedRecord != null &&
+              submitted.any((r) => r.id == tracker.selectedRecord!.id))
+            IconButton(
+                tooltip: 'Move record to recycle bin',
+                icon: const Icon(Icons.delete_outline),
+                onPressed: () =>
+                    moveToRecycleBin(context, tracker.selectedRecord!)),
           if (submitted.length > 1)
             IconButton(
               icon: const Icon(Icons.swap_vert),
@@ -243,14 +257,14 @@ class _Header extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 14),
-          Row(
+          Wrap(
+            spacing: 24,
+            runSpacing: 16,
             children: [
               _StatColumn(label: 'Paid', value: fmt.format(tracker.totalPaid)),
-              const SizedBox(width: 24),
               _StatColumn(
                   label: r.hawlComplete ? 'Due' : 'Estimate',
                   value: fmt.format(tracker.totalDue)),
-              const SizedBox(width: 24),
               _StatColumn(
                   label: 'Remaining',
                   value: fmt.format(tracker.remaining),
