@@ -46,6 +46,26 @@ void main() {
         ChangeNotifierProvider.value(value: monthly),
       ], child: MaterialApp(home: AssetFormScreen(guided: guided))));
       await tester.pumpAndSettle();
+      final price = find.descendant(
+          of: find.byKey(const ValueKey('nisab-price')),
+          matching: find.byType(TextFormField));
+      calc.draft!.manualNisabPrice = false;
+      await tester.ensureVisible(price);
+      await tester.tap(price);
+      await tester.enterText(price, '1');
+      await tester.pump();
+      await tester.enterText(price, '100');
+      await tester.pump();
+      expect(calc.draft!.goldPricePerGram24k, 100);
+      final priceField = tester.widget<TextFormField>(price);
+      expect(priceField.controller!.text, '100');
+      expect(
+          tester
+              .widget<EditableText>(find.descendant(
+                  of: price, matching: find.byType(EditableText)))
+              .focusNode
+              .hasFocus,
+          isTrue);
       if (guided) {
         for (var i = 0; i < 3; i++) {
           await tester.scrollUntilVisible(find.text('Next'), 400,
