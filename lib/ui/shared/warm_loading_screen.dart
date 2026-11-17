@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../core/localization/strings.dart';
 import 'giving_artwork.dart';
+import '../../core/constants.dart';
 
 class WarmLoadingScreen extends StatefulWidget {
   const WarmLoadingScreen({super.key});
@@ -44,6 +45,8 @@ class _WarmLoadingScreenState extends State<WarmLoadingScreen>
                         offset: Offset(
                             0, math.sin(_motion.value * math.pi * 2) * 3),
                         child: GivingArtwork(
+                            accentColor: kPrimaryGreen,
+                            outlineColor: kPrimaryGreen,
                             progress: .75 +
                                 math.sin(_motion.value * math.pi * 2) * .25))),
                 const SizedBox(height: 18),
@@ -52,7 +55,7 @@ class _WarmLoadingScreenState extends State<WarmLoadingScreen>
                     style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: givingBurgundy)),
+                        color: kPrimaryGreen)),
                 const SizedBox(height: 8),
                 Text(l(context, 'Preparing your space for giving'),
                     style: const TextStyle(fontSize: 12, color: givingBrown)),

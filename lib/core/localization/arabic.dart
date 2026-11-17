@@ -846,5 +846,13 @@ const Map<String, String> arabic = {
   "Tests this device only. Enable reminders below for automatic notifications.":
       "ده اختبار للجهاز بس. فعّل التذكيرات تحت عشان الإشعارات التلقائية.",
   "Test notification requested. Check Notification Centre if no banner appears.":
-      "طلبنا عرض الإشعار التجريبي. لو مش ظاهر، بص في مركز الإشعارات."
+      "طلبنا عرض الإشعار التجريبي. لو مش ظاهر، بص في مركز الإشعارات.",
+  "Use my location": "استخدم موقعي",
+  "Finding your currency…": "بنحدّد العملة…",
+  "EGP is the default. Choose a currency manually or use your location once to fill it in.":
+      "العملة الافتراضية EGP. تقدر تغيّرها بنفسك، أو تستخدم موقعك مرة واحدة لتحديدها.",
+  "Location was not available. Your currency has not changed; you can choose it manually.":
+      "الموقع مش متاح. ما غيّرناش عملتك؛ تقدر تختارها بنفسك.",
+  "Currency changes only affect new records. Existing amounts are never converted.":
+      "تغيير العملة للسجلات الجديدة بس. المبالغ القديمة مش بتتحوّل."
 };

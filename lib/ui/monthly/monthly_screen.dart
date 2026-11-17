@@ -48,7 +48,9 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
       });
   Future<void> _edit({MonthlyPlan? plan}) async {
     await showDialog<void>(
-        context: context, builder: (_) => MonthlyPlanDialog(existing: plan));
+        context: context,
+        builder: (_) =>
+            MonthlyPlanDialog(existing: plan, initialMonth: _month));
   }
 
   Future<void> _undo(MonthlyPayment payment) async {
@@ -602,7 +604,8 @@ class _MonthlyStat extends StatelessWidget {
 
 class MonthlyPlanDialog extends StatefulWidget {
   final MonthlyPlan? existing;
-  const MonthlyPlanDialog({super.key, this.existing});
+  final DateTime? initialMonth;
+  const MonthlyPlanDialog({super.key, this.existing, this.initialMonth});
   @override
   State<MonthlyPlanDialog> createState() => _MonthlyPlanDialogState();
 }
@@ -630,7 +633,8 @@ class _MonthlyPlanDialogState extends State<MonthlyPlanDialog> {
     _day = p?.reminderDay ?? 1;
     _start = p != null && p.active
         ? monthFromKey(p.startMonth)
-        : DateTime(DateTime.now().year, DateTime.now().month);
+        : DateTime((widget.initialMonth ?? DateTime.now()).year,
+            (widget.initialMonth ?? DateTime.now()).month);
   }
 
   @override

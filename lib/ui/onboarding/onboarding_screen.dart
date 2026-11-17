@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/constants.dart';
 import '../widgets/searchable_picker.dart';
+import '../widgets/location_currency_button.dart';
 
 class OnboardingScreen extends StatefulWidget {
   final bool review;
@@ -23,7 +24,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     super.initState();
     final p = context.read<AuthProvider>().profile!;
     monthlyKind = p.monthlyDefaultKind;
-    currency = p.currency;
+    currency = p.onboardingCompleted ? p.currency : 'EGP';
     language = p.language;
   }
 
@@ -166,15 +167,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             value: currency,
                             options: currencyOptions,
                             onChanged: (v) => setState(() => currency = v)),
-                        const SizedBox(height: 12),
+                        LocationCurrencyButton(
+                            onSelected: (v) => setState(() => currency = v)),
                         Text(
                             l(context,
-                                'Suggested from your device region, or EGP when unavailable. You can change it.'),
+                                'EGP is the default. Choose a currency manually or use your location once to fill it in.'),
                             style: Theme.of(context).textTheme.bodySmall),
                         const SizedBox(height: 12),
                         Text(
                             l(context,
-                                'Your language applies throughout the app. Currency changes apply to new records; existing amounts are never converted.'),
+                                'Currency changes only affect new records. Existing amounts are never converted.'),
                             style: Theme.of(context).textTheme.bodySmall),
                       ],
                       if (step == 2) ...[

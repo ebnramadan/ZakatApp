@@ -71,6 +71,15 @@ Recipients can start in a previous month. Browse to it to record actual giving a
 
 ## Onboarding navigation and Arabic typography
 
-Onboarding has a fixed safe-area footer with Back and Next/Start tracking; the compact body fits all three steps on normal phone sizes, with scrolling reserved for enlarged text or unusually small windows. The final step focuses on the monthly classification rather than repeating a long feature tour. Existing currency choices stay intact; new accounts suggest currency from the device timezone/region and fall back to EGP, without GPS permission or external location requests.
+Onboarding has a fixed safe-area footer with Back and Next/Start tracking; the compact body fits all three steps on normal phone sizes, with scrolling reserved for enlarged text or unusually small windows. The final step focuses on the monthly classification rather than repeating a long feature tour. Existing currency choices stay intact; new accounts always start at EGP. An explicit Use my location button requests permission and performs a one-time country lookup; manual currency selection stays available. Existing saved choices and record amounts are preserved.
 
 Arabic selects Tajawal as its primary font, rather than relying on Inter fallback metrics. Button, chip, heading, date, and list label line boxes allow the Arabic ascenders/descenders to fit. Empty monthly screens have one add-recipient action, and month arrows follow the interface direction.
+
+
+## Explicit currency location and selected-month entry
+
+No location, timezone or locale lookup changes a new account’s EGP default. Onboarding and Profile provide **Use my location**. Only a tap requests browser geolocation; an approximate browser position is sent to the client country-lookup service to select a supported currency. Coordinates are not saved. Denial/failure preserves the current choice; unknown/unsupported countries fall back to EGP. Incomplete older onboarding profiles start the setup choice at EGP; completed accounts keep their saved currency.
+
+Adding a monthly recipient now passes the viewed month into the form’s First month value. Recording payment from that month stores its receipt/date there. The commitment remains recurring in later months, but the past payment never counts as a current-month payment.
+
+Startup artwork uses the app’s green on cream. The HTML loader fetches a fresh bootstrap script online to break old Flutter-cache loader cycles, with a cached loader fallback when offline. This addresses installed web apps continuing to show old notification settings after deployment. Browser subscription keys are normalized to unpadded URL-safe base64 before validation for browser compatibility.

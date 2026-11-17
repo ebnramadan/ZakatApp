@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'dart:html' as html;
 import 'dart:js_util' as js;
 import 'dart:typed_data';
+import 'push_subscription.dart';
 
 const _scope = '/push-scope/';
 String get pushSupport {
@@ -64,7 +65,7 @@ Future<Map<String, dynamic>?> currentPushSubscription() async {
   final sub = await js
       .promiseToFuture<Object?>(js.callMethod(manager, 'getSubscription', []));
   if (sub == null) return null;
-  return Map<String, dynamic>.from(
+  return normalizePushSubscription(
       js.dartify(js.callMethod(sub, 'toJSON', [])) as Map);
 }
 
@@ -97,7 +98,7 @@ Future<Map<String, dynamic>> subscribePush(String key) async {
     'applicationServerKey':
         Uint8List.fromList(base64Url.decode(base64Url.normalize(key))),
   });
-  return Map<String, dynamic>.from(
+  return normalizePushSubscription(
       js.dartify(js.callMethod(subscription, 'toJSON', [])) as Map);
 }
 
