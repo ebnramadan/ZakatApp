@@ -59,7 +59,7 @@ void main() {
               ],
               builder: (context, child) => MediaQuery(
                   data: MediaQuery.of(context)
-                      .copyWith(textScaler: TextScaler.linear(1.6)),
+                      .copyWith(textScaler: const TextScaler.linear(1.6)),
                   child: child!),
               home: const ProfileScreen())));
       await tester.pumpAndSettle();
