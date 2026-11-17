@@ -83,3 +83,10 @@ The installed app is named **Zakat Tracker**. The manifest has standalone displa
 Before using the new URL, add `ztracker.web.app` and `ztracker.firebaseapp.com` under Firebase Authentication → Settings → Authorized domains. Deployment checks this rather than publishing a broken Google-login URL.
 
 On iOS use Share → Add to Home Screen. Existing saved shortcuts may need to be removed and added again to pick up the new icon/name cached by iOS.
+
+
+## Backdated giving and forecasts
+
+Choose **First month** when adding/editing a recipient. An earlier month enables recording past giving. Browse to that month, mark the payment, and choose its actual date. Starting a plan in the past does not mark any months paid. API callers omitting a date for a past month use that month’s last day; explicit dates must belong to the selected month.
+
+Monthly cards show planned/given/outstanding by currency. The dashboard’s expandable 12-month forecast counts active commitments at current amounts and distinguishes Sadaqah from Zakat. It excludes deleted/unsubmitted/mismatched linked records, never converts currencies, and never affects Zakat until actual payment is confirmed.

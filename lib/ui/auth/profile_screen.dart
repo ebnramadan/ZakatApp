@@ -192,14 +192,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             padding: const EdgeInsets.all(16),
                             children: const [AccountSecurityCard()]))))),
             const Divider(height: 1, indent: 52, endIndent: 16),
-            ListTile(
-                leading: const Icon(Icons.delete_outline, size: 22),
-                title: Text(l(context, 'Recycle bin')),
-                subtitle:
-                    Text(l(context, 'Restore deleted records within 60 days')),
-                trailing: const Icon(Icons.chevron_right, size: 20),
-                onTap: () => Navigator.of(context).push(MaterialPageRoute(
-                    builder: (_) => const RecycleBinScreen()))),
+            Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    child: TextButton.icon(
+                        onPressed: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                                builder: (_) => const RecycleBinScreen())),
+                        icon: const Icon(Icons.delete_outline, size: 20),
+                        label: Text(l(context, 'Recycle bin'))))),
             const Divider(height: 1, indent: 52, endIndent: 16),
             ListTile(
                 leading: const Icon(Icons.explore_outlined, size: 22),

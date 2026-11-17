@@ -1,8 +1,9 @@
+import '../../core/localization/amount_formatter.dart';
 import '../../core/localization/strings.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:hijri/hijri_calendar.dart';
-import 'package:intl/intl.dart';
+import 'package:intl/intl.dart' hide TextDirection;
 import '../../core/constants.dart';
 import '../../core/models/zakat_record.dart';
 import '../../core/providers/calculator_provider.dart';
@@ -586,6 +587,8 @@ class _NumberInputState extends State<_NumberInput> {
           onTapOutside: (_) => _focus.unfocus(),
           decoration: InputDecoration(labelText: l(context, widget.label)),
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          textDirection: TextDirection.ltr,
+          inputFormatters: const [GroupedAmountFormatter()],
           validator: (text) {
             final number =
                 parseLocalizedNumber(text!.trim().isEmpty ? '0' : text.trim());

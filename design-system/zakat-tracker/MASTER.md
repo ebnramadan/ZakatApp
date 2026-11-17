@@ -3,7 +3,7 @@
 The generated broad design-system match suggested a marketing demo, handwritten type and glass effects, which do not fit this private financial tool. Explicit product/style searches verified financial dashboards and Minimalism & Swiss Style (full RTL compatibility). The following is the implementation synthesis, not an unmodified generated recommendation.
 
 ## Direction
-Content-first personal finance, inspired by Apple clarity and Google Material interaction. Keep the existing emerald identity. Soft neutral canvas, opaque white cards, dark ink, generous space, thin borders, no decorative charts or fake financial metrics. Use bundled Inter with Noto Sans Arabic fallback and a consistent outline icon family. The emerald desktop rail and gradient overview card establish hierarchy; a circular progress indicator represents actual recorded Zakat payments.
+Content-first personal finance, inspired by Apple clarity and Google Material interaction. Keep the existing emerald identity. Soft neutral canvas, opaque white cards, dark ink, generous space, thin borders, no decorative charts or fake financial metrics. Use bundled Inter with Tajawal Arabic fallback and a consistent outline icon family. The emerald desktop rail and gradient overview card establish hierarchy; a circular progress indicator represents actual recorded Zakat payments.
 
 ## Tokens
 - Primary emerald #146356; dark emerald #103F36; ink #172C27

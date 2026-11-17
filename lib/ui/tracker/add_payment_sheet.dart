@@ -1,9 +1,9 @@
 import '../../core/localization/strings.dart';
 import '../shared/giving_celebration.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import '../../core/localization/amount_formatter.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
+import 'package:intl/intl.dart' hide TextDirection;
 import '../../core/constants.dart';
 import '../../core/models/payment.dart';
 import '../../core/providers/auth_provider.dart';
@@ -35,10 +35,6 @@ class _AddPaymentSheetState extends State<AddPaymentSheet> {
       _nameCtrl.text = widget.existing!.name;
       _recipientCtrl.text = widget.existing!.recipient;
       _date = widget.existing!.date;
-    } else {
-      final tracker = context.read<TrackerProvider>();
-      final count = tracker.payments.length + 1;
-      _nameCtrl.text = 'Payment $count';
     }
   }
 
@@ -60,6 +56,9 @@ class _AddPaymentSheetState extends State<AddPaymentSheet> {
     );
     if (picked != null) setState(() => _date = picked);
   }
+
+  String _defaultName(BuildContext context) => l(context, 'Payment {0}',
+      [context.read<TrackerProvider>().payments.length + 1]);
 
   Future<void> _save() async {
     if (widget.existing?.isMonthly == true) {
@@ -83,7 +82,9 @@ class _AddPaymentSheetState extends State<AddPaymentSheet> {
         zakatRecordId: widget.existing!.zakatRecordId,
         userId: widget.existing!.userId,
         amount: amount,
-        name: _nameCtrl.text.trim(),
+        name: _nameCtrl.text.trim().isEmpty
+            ? _defaultName(context)
+            : _nameCtrl.text.trim(),
         date: _date,
         recipient: _recipientCtrl.text.trim(),
         createdAt: widget.existing!.createdAt,
@@ -93,7 +94,9 @@ class _AddPaymentSheetState extends State<AddPaymentSheet> {
       await tracker.addPayment(
         uid: auth.user!.uid,
         amount: amount,
-        name: _nameCtrl.text.trim(),
+        name: _nameCtrl.text.trim().isEmpty
+            ? _defaultName(context)
+            : _nameCtrl.text.trim(),
         date: _date,
         recipient: _recipientCtrl.text.trim(),
       );
@@ -154,15 +157,13 @@ class _AddPaymentSheetState extends State<AddPaymentSheet> {
               TextFormField(
                 controller: _amountCtrl,
                 autofocus: !_isEdit,
+                textDirection: TextDirection.ltr,
+                textInputAction: TextInputAction.next,
+                onTapOutside: (_) =>
+                    FocusManager.instance.primaryFocus?.unfocus(),
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
-                inputFormatters: [
-                  TextInputFormatter.withFunction((oldValue, newValue) =>
-                      RegExp(r'^\d*\.?\d*$')
-                              .hasMatch(normalizeNumber(newValue.text))
-                          ? newValue
-                          : oldValue)
-                ],
+                inputFormatters: const [GroupedAmountFormatter()],
                 decoration: InputDecoration(
                   labelText: l(context, "Amount"),
                   prefixText:
@@ -176,7 +177,8 @@ class _AddPaymentSheetState extends State<AddPaymentSheet> {
               TextField(
                   controller: _nameCtrl,
                   decoration: InputDecoration(
-                      labelText: l(context, "Payment name (optional)"))),
+                      labelText: l(context, "Payment name (optional)"),
+                      hintText: _defaultName(context))),
               if (tracker.payeeNames.isNotEmpty)
                 Wrap(
                     spacing: 6,

@@ -39,7 +39,7 @@ Arabic preferences apply immediately, including onboarding, forms, date formatti
 
 GitHub schedule triggers are best effort, not an immediate delivery service. A request still waiting after ten minutes now shows a delayed state instead of an indefinitely disabled button. Retry preserves its ID, recipients, and delivery receipts; changing saved recipients requires cancelling and creating a new request. Cancellation is rechecked before sending, but cannot retract mail already accepted by the provider. Failed requests can retry with the same delivery history. The worker cancels requests for unverified/disabled accounts and also runs when its delivery code is deployed. The schedule is staggered away from the busiest minute boundaries. For guaranteed low-latency delivery, this free scheduled worker would need to be replaced with an authenticated server endpoint.
 
-Mobile profile uses a compact identity header, grouped preferences, a report card with status and recovery, and a separate security screen. Navigation uses single-line labels, filled selected icons, and a 64px bar with safe-area padding. Bundled static Inter and Noto Sans Arabic weights make typography consistent across browsers; system text scaling remains enabled.
+Mobile profile uses a compact identity header, grouped preferences, a report card with status and recovery, and a separate security screen. Navigation uses single-line labels, filled selected icons, and a 64px bar with safe-area padding. Bundled static Inter and Tajawal Arabic weights make typography consistent across browsers; system text scaling remains enabled.
 
 ## iPhone setup and branding
 
@@ -54,3 +54,17 @@ Submitting below Nisab saves a submitted record with zero calculated Zakat. Subm
 Dashboard loading has an initial snapshot deadline. A silent first attempt reconnects the Firestore transport once without clearing cache or pending writes. A second stalled attempt becomes a retry state instead of an unbounded spinner; late snapshots may still recover. Retry is available during loading, and stream errors take precedence over another pending stream. Subscription generations prevent old callbacks from replacing a newer load. Resuming the app retries pending/failed account loads; monthly data also has a bounded initial wait.
 
 Bottom navigation has a 64px content area. Real CSS/Flutter safe-area insets are retained. Installed modern iPhones get a 34px portrait / 21px landscape fallback only when Safari reports no inset; normal browser tabs, older phones, tablets, and Android do not get that fallback.
+
+
+## Giving usability update
+
+- Welcome saves a Sadaqah/Zakat default for new monthly recipients. Existing receipts remain independent.
+- Amount inputs accept English, Arabic and Persian digits with comma grouping. Decimal precision and caret position are preserved; parsing removes display separators.
+- New payment names are localized placeholders. Blank names use a numbered default; custom names are saved as entered.
+- Bundled Tajawal makes Arabic more compact; Inter remains for Latin text. Financial inputs stay 16px and system text scaling remains enabled.
+- Browser routes omit canvas transition effects to avoid dark frames on iOS back navigation. Home retains its current tab/data. Recycle actions are compact with accessible labels and full touch targets.
+- Static Open Graph/Twitter metadata at the canonical ztracker URL references a public 512px brand image. Messaging apps can fetch it without running Flutter; cached previews may take time to refresh.
+
+The expandable home forecast projects the next 12 months starting this month. Active commitments are grouped by currency and classification; unavailable/unsubmitted/currency-mismatched Zakat records are excluded. Future starts enter in their month. Projections assume commitments continue at the current amount, without converting currencies, creating payments, or changing balances. Monthly summaries show planned, actually given, and still to give; paused unpaid commitments are excluded from outstanding amounts.
+
+Recipients can start in a previous month. Browse to it to record actual giving and choose its date; future months cannot be marked paid. Retroactive Zakat uses the same atomic, deterministic linked ledger receipt as current giving. Editing a commitment never rewrites saved receipts.

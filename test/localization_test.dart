@@ -97,6 +97,16 @@ void main() {
     expect(find.text('Make it feel like yours.'), findsOneWidget);
     expect(Directionality.of(tester.element(find.byType(OnboardingScreen))),
         TextDirection.ltr);
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Zakat · Part of Zakat'));
+    await tester.scrollUntilVisible(find.text('Start tracking'), 250,
+        scrollable: find.byType(Scrollable).first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Start tracking'));
+    await tester.pumpAndSettle();
+    expect(auth.profile!.monthlyDefaultKind, 'zakat');
+    expect(auth.profile!.onboardingCompleted, isTrue);
     await tester.pumpWidget(const SizedBox());
     auth.dispose();
   });

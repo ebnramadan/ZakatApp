@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'constants.dart';
 
 class AppTheme {
@@ -12,8 +13,20 @@ class AppTheme {
     );
     return ThemeData(
       useMaterial3: true,
+      // Web canvas route compositing can leave a black frame on iOS PWA back navigation.
+      // Keep browser navigation immediate while retaining native platform transitions.
+      pageTransitionsTheme: kIsWeb
+          ? const PageTransitionsTheme(builders: {
+              TargetPlatform.android: _BrowserPageTransition(),
+              TargetPlatform.iOS: _BrowserPageTransition(),
+              TargetPlatform.macOS: _BrowserPageTransition(),
+              TargetPlatform.windows: _BrowserPageTransition(),
+              TargetPlatform.linux: _BrowserPageTransition(),
+              TargetPlatform.fuchsia: _BrowserPageTransition(),
+            })
+          : const PageTransitionsTheme(),
       fontFamily: 'Inter',
-      fontFamilyFallback: const ['NotoSansArabic'],
+      fontFamilyFallback: const ['Tajawal'],
       visualDensity: VisualDensity.standard,
       textTheme: const TextTheme(
               bodyLarge: TextStyle(fontSize: 16, height: 1.4),
@@ -79,20 +92,21 @@ class AppTheme {
         contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         titleTextStyle: TextStyle(
             fontFamily: 'Inter',
-            fontFamilyFallback: ['NotoSansArabic'],
+            fontFamilyFallback: ['Tajawal'],
             fontSize: 14,
             height: 1.3,
             fontWeight: FontWeight.w500,
             color: Color(0xFF172C27)),
         subtitleTextStyle: TextStyle(
             fontFamily: 'Inter',
-            fontFamilyFallback: ['NotoSansArabic'],
+            fontFamilyFallback: ['Tajawal'],
             fontSize: 12,
             height: 1.35,
             color: Color(0xFF63716B)),
         iconColor: Color(0xFF52655F),
       ),
-      bottomSheetTheme: const BottomSheetThemeData(showDragHandle: true),
+      bottomSheetTheme: const BottomSheetThemeData(
+          showDragHandle: true, backgroundColor: Color(0xFFFFFCF7)),
       dividerTheme: const DividerThemeData(
           color: Color(0xFFDDE5E1), thickness: 1, space: 1),
       snackBarTheme: SnackBarThemeData(
@@ -161,4 +175,16 @@ class AppTheme {
       ),
     );
   }
+}
+
+class _BrowserPageTransition extends PageTransitionsBuilder {
+  const _BrowserPageTransition();
+  @override
+  Widget buildTransitions<T>(
+          PageRoute<T> route,
+          BuildContext context,
+          Animation<double> animation,
+          Animation<double> secondaryAnimation,
+          Widget child) =>
+      child;
 }
