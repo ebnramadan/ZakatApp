@@ -93,6 +93,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(height: 20),
           const AccountSecurityCard(),
           const SizedBox(height: 20),
+          DropdownButtonFormField<String>(
+            value: profile.language,
+            decoration: const InputDecoration(
+                labelText: 'Language / اللغة',
+                prefixIcon: Icon(Icons.language)),
+            items: const [
+              DropdownMenuItem(value: 'en', child: Text('English')),
+              DropdownMenuItem(value: 'ar', child: Text('العربية')),
+            ],
+            onChanged: (language) async {
+              if (language == null) return;
+              final ok = await auth.updateProfileFields(language: language);
+              if (!context.mounted || ok) return;
+              ScaffoldMessenger.of(context)
+                  .showSnackBar(SnackBar(content: Text(auth.error!)));
+            },
+          ),
+          const SizedBox(height: 20),
           _CurrencySelector(
             selected: _selectedCurrency ?? profile.currency,
             onChanged: (c) {

@@ -69,7 +69,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   isLabelVisible: due > 0,
                   label: Text('$due'),
                   child: const Icon(Icons.calendar_month_outlined)),
-              label: 'شهريات'),
+              label:
+                  context.watch<AuthProvider>().profile?.monthlyGivingLabel ??
+                      'Monthly Giving'),
           const BottomNavigationBarItem(
               icon: Icon(Icons.person_outline), label: 'Profile'),
         ],
@@ -86,7 +88,7 @@ class _RecordsTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final auth = context.read<AuthProvider>();
+    final auth = context.watch<AuthProvider>();
     final calc = context.watch<CalculatorProvider>();
     final currency = auth.profile?.currency ?? 'USD';
     final due = context.watch<MonthlyProvider>().dueCount(DateTime.now());
@@ -121,8 +123,8 @@ class _RecordsTab extends StatelessWidget {
                                       Icons.notifications_active_outlined),
                                   title: Text(
                                       '$due monthly ${due == 1 ? 'commitment is' : 'commitments are'} ready to give'),
-                                  subtitle: const Text(
-                                      'Review this month’s giving in شهريات'),
+                                  subtitle: Text(
+                                      'Review this month’s giving in ${auth.profile?.monthlyGivingLabel ?? 'Monthly Giving'}'),
                                   trailing: const Icon(Icons.chevron_right),
                                   onTap: () => context
                                       .findAncestorStateOfType<
@@ -286,7 +288,7 @@ class _EmptyRecords extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             const Text(
-              'Calculate your eligible wealth, then track what you give. You can also start with monthly giving in شهريات.',
+              'Calculate your eligible wealth, then track what you give. You can also start with monthly giving.',
               style: TextStyle(color: Colors.grey, height: 1.6),
               textAlign: TextAlign.center,
             ),

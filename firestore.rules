@@ -81,6 +81,7 @@ service cloud.firestore {
       allow create, update: if owner(uid) && request.resource.data.displayName is string
         && request.resource.data.email == request.auth.token.email
         && request.resource.data.currency is string && request.resource.data.currency.matches('^[A-Z]{3}$')
+        && request.resource.data.get('language', 'en') in ['en', 'ar']
         && request.resource.data.get('monthlyDefaultKind', 'sadaqah') in ['sadaqah', 'zakat']
         && request.resource.data.get('monthlyEmailReminders', false) is bool;
       allow delete: if owner(uid);

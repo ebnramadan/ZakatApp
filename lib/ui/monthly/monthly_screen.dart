@@ -79,15 +79,19 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
     }.toList()
       ..sort();
     return Scaffold(
-      appBar: AppBar(title: const Text('شهريات'), actions: [
-        IconButton(
-            tooltip: 'Monthly giving settings',
-            onPressed: () => showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                builder: (_) => const MonthlySettings()),
-            icon: const Icon(Icons.tune))
-      ]),
+      appBar: AppBar(
+          title: Text(
+              context.watch<AuthProvider>().profile?.monthlyGivingLabel ??
+                  'Monthly Giving'),
+          actions: [
+            IconButton(
+                tooltip: 'Monthly giving settings',
+                onPressed: () => showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    builder: (_) => const MonthlySettings()),
+                icon: const Icon(Icons.tune))
+          ]),
       body: monthly.loading
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
