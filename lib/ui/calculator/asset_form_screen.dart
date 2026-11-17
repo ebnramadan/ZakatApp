@@ -215,12 +215,6 @@ class _AssetFormScreenState extends State<AssetFormScreen> {
                 _rate(e);
               }
             }),
-        SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: Text(l(context, "Show Hijri date")),
-            subtitle: Text(l(context, "Hawl always lasts one lunar year.")),
-            value: d.isHijriCalendar,
-            onChanged: (v) => setState(() => d.isHijriCalendar = v)),
         ListTile(
             contentPadding: EdgeInsets.zero,
             title: Text(l(context, "Hawl start")),
@@ -232,6 +226,7 @@ class _AssetFormScreenState extends State<AssetFormScreen> {
                 : l(context, DateFormat.yMMMd().format(d.hawlStartDate))),
             trailing: const Icon(Icons.calendar_today),
             onTap: () async {
+              FocusManager.instance.primaryFocus?.unfocus();
               final selected = await showDatePicker(
                   context: context,
                   initialDate: d.hawlStartDate,
@@ -241,31 +236,45 @@ class _AssetFormScreenState extends State<AssetFormScreen> {
                 setState(() => d.hawlStartDate = selected);
               }
             }),
-        Text(l(context, "Lunar anniversary: {0}",
-            [DateFormat.yMMMd().format(d.hawlEndDate)])),
-        const SizedBox(height: 12),
-        Text(l(context,
-            "Uses 85g pure gold Nisab and a 2.5% lunar-year rate. Includes cash and gold only, with no debt deductions. Confirm that wealth remained eligible throughout the Hawl. Estimates before the anniversary are not amounts currently due.")),
-        _number('24K gold price per gram for Nisab (${currency ?? '?'})',
-            d.goldPricePerGram24k, calc.updateGoldPrice,
-            positive: true, key: const ValueKey('nisab-price')),
-        Text(d.manualNisabPrice
-            ? l(context, "Manual Nisab price")
-            : l(context, "Live Nisab price")),
-        if (d.pricedAt != null)
-          Text(l(context, "Price/rate updated: {0}",
-              [DateFormat.yMd().add_Hm().format(d.pricedAt!)])),
-        TextButton.icon(
-            onPressed: currency == null || calc.pricesLoading
-                ? null
-                : () {
-                    d.manualNisabPrice = false;
-                    calc.fetchPrices(currency);
-                  },
-            icon: const Icon(Icons.refresh),
-            label: Text(calc.pricesLoading
-                ? l(context, "Fetching prices…")
-                : l(context, "Refresh live gold price"))),
+        ExpansionTile(
+          key: const ValueKey('calculation-details'),
+          tilePadding: EdgeInsets.zero,
+          title: Text(l(context, 'More details')),
+          subtitle: Text(l(context, 'Nisab, gold price and Hijri date')),
+          children: [
+            SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(l(context, "Show Hijri date")),
+                subtitle: Text(l(context, "Hawl always lasts one lunar year.")),
+                value: d.isHijriCalendar,
+                onChanged: (v) => setState(() => d.isHijriCalendar = v)),
+            Text(l(context, "Lunar anniversary: {0}",
+                [DateFormat.yMMMd().format(d.hawlEndDate)])),
+            const SizedBox(height: 12),
+            Text(l(context,
+                "Uses 85g pure gold Nisab and a 2.5% lunar-year rate. Includes cash and gold only, with no debt deductions. Confirm that wealth remained eligible throughout the Hawl. Estimates before the anniversary are not amounts currently due.")),
+            _number('24K gold price per gram for Nisab (${currency ?? '?'})',
+                d.goldPricePerGram24k, calc.updateGoldPrice,
+                positive: true, key: const ValueKey('nisab-price')),
+            Text(d.manualNisabPrice
+                ? l(context, "Manual Nisab price")
+                : l(context, "Live Nisab price")),
+            if (d.pricedAt != null)
+              Text(l(context, "Price/rate updated: {0}",
+                  [DateFormat.yMd().add_Hm().format(d.pricedAt!)])),
+            TextButton.icon(
+                onPressed: currency == null || calc.pricesLoading
+                    ? null
+                    : () {
+                        d.manualNisabPrice = false;
+                        calc.fetchPrices(currency);
+                      },
+                icon: const Icon(Icons.refresh),
+                label: Text(calc.pricesLoading
+                    ? l(context, "Fetching prices…")
+                    : l(context, "Refresh live gold price"))),
+          ],
+        ),
       ]),
       _number('Local cash (${currency ?? '?'})', d.cashLocal,
           (v) => d.cashLocal = v),
@@ -422,40 +431,48 @@ class _AssetFormScreenState extends State<AssetFormScreen> {
               ]),
           body: Form(
               key: _form,
-              child: ListView(padding: const EdgeInsets.all(20), children: [
-                if (widget.guided)
-                  LinearProgressIndicator(value: (_step + 1) / 4),
-                if (calc.error != null)
-                  Padding(
-                      padding: const EdgeInsets.all(8),
-                      child: Text(l(context, calc.error!),
-                          style: const TextStyle(color: Colors.red))),
-                ...List.generate(
-                    4,
-                    (i) => Offstage(
-                        offstage: widget.guided && _step != i,
-                        child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  Text(l(context, titles[i]),
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .titleLarge),
-                                  const SizedBox(height: 12),
-                                  sections[i],
-                                ])))),
-                if (widget.guided && _step > 0)
-                  TextButton(
-                      onPressed: () {
-                        FocusManager.instance.primaryFocus?.unfocus();
-                        setState(() => _step--);
-                      },
-                      child: Text(l(context, "Previous"))),
-                ElevatedButton(
-                    onPressed:
-                        _saving || calc.pricesLoading || _fetching.isNotEmpty
+              child: ListView(
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
+                  padding: EdgeInsets.fromLTRB(
+                      20, 12, 20, 24 + MediaQuery.paddingOf(context).bottom),
+                  children: [
+                    if (widget.guided)
+                      LinearProgressIndicator(value: (_step + 1) / 4),
+                    if (calc.error != null)
+                      Padding(
+                          padding: const EdgeInsets.all(8),
+                          child: Text(l(context, calc.error!),
+                              style: const TextStyle(color: Colors.red))),
+                    ...List.generate(
+                        4,
+                        (i) => Offstage(
+                            offstage: widget.guided && _step != i,
+                            child: Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 12),
+                                child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [
+                                      Text(l(context, titles[i]),
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .titleLarge),
+                                      const SizedBox(height: 12),
+                                      sections[i],
+                                    ])))),
+                    if (widget.guided && _step > 0)
+                      TextButton(
+                          onPressed: () {
+                            FocusManager.instance.primaryFocus?.unfocus();
+                            setState(() => _step--);
+                          },
+                          child: Text(l(context, "Previous"))),
+                    ElevatedButton(
+                        onPressed: _saving ||
+                                calc.pricesLoading ||
+                                _fetching.isNotEmpty
                             ? null
                             : () {
                                 if (widget.guided && _step < 3) {
@@ -465,10 +482,10 @@ class _AssetFormScreenState extends State<AssetFormScreen> {
                                   _results();
                                 }
                               },
-                    child: Text(widget.guided && _step < 3
-                        ? l(context, "Next")
-                        : l(context, "Calculate Zakat"))),
-              ])),
+                        child: Text(widget.guided && _step < 3
+                            ? l(context, "Next")
+                            : l(context, "Calculate Zakat"))),
+                  ])),
         ));
   }
 }

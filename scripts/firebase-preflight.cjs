@@ -44,6 +44,15 @@ const fs = require('node:fs');
     console.log('Friendly domain authorized for Google login:',domains.includes(`${chosen}.web.app`));
     if(!domains.includes(`${chosen}.web.app`)){incomplete=true;console.log(`ACTION NEEDED: Firebase Authentication → Settings → Authorized domains: add ${chosen}.web.app and ${chosen}.firebaseapp.com. Existing app stays on its current URL until configured.`);}
   }catch(e){console.log('Friendly URL setup incomplete:',e.response?.status||e.code||e.message);incomplete=true;}
+  try {
+    const billing=await client.request({url:`https://cloudbilling.googleapis.com/v1/projects/${project}/billingInfo`});
+    console.log('Server backend billing enabled:',billing.data.billingEnabled===true);
+  }catch(e){console.log('Server backend billing check unavailable:',e.response?.status||e.code);}
+  try {
+    const permissions=['cloudfunctions.functions.create','cloudfunctions.functions.update','iam.serviceAccounts.actAs','secretmanager.secrets.create','serviceusage.services.enable'];
+    const result=await client.request({url:`https://cloudresourcemanager.googleapis.com/v1/projects/${project}:testIamPermissions`,method:'POST',data:{permissions}});
+    console.log('Missing server-backend deployment permissions:',permissions.filter(p=>!(result.data.permissions||[]).includes(p)).join(', ')||'none');
+  }catch(e){console.log('Server backend permission check unavailable:',e.response?.status||e.code);}
   console.log('Email sender secret present:',Boolean(process.env.RESEND_API_KEY));
   console.log('Verified sender address secret present:',Boolean(process.env.REMINDER_FROM));
   console.log('Gmail SMTP secrets present:',Boolean(process.env.REMINDER_SMTP_USER && process.env.REMINDER_SMTP_APP_PASSWORD));

@@ -17,6 +17,7 @@
   <base href="$FLUTTER_BASE_HREF">
 
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="description" content="Track your Zakat, monthly Sadaqah, and giving history in one private account.">
 
@@ -29,7 +30,13 @@
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <style>html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; position: fixed; background: #F4F6F5; } #app-loading { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 18px; font: 16px system-ui, sans-serif; color: #146356; background: #F4F6F5; z-index: 10; } #app-loading img { border-radius: 22px; }</style>
+  <style>
+    html, body { margin:0; width:100%; height:100%; height:100dvh; overflow:hidden; position:fixed; background:#F4F6F5; overscroll-behavior:none; }
+    #app-loading { position:fixed; inset:0; display:grid; place-items:center; background:#F4F6F5; z-index:10; }
+    .loading-ring { width:22px; height:22px; border:2px solid #DDE5E1; border-top-color:#146356; border-radius:50%; animation:spin .8s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    @media (prefers-reduced-motion:reduce) { .loading-ring { animation:none; } }
+  </style>
   <title>Zakat Tracker</title>
   <link rel="manifest" href="manifest.json">
   <link rel="canonical" href="https://zakat-tracker.web.app/">
@@ -37,7 +44,7 @@
   <meta name="application-name" content="Zakat Tracker">
 </head>
 <body>
-  <div id="app-loading" role="status" aria-label="Loading Zakat Tracker"><img src="icons/Icon-192.png" width="88" height="88" alt=""><span>Loading Zakat Tracker…</span></div>
+  <div id="app-loading" role="status" aria-label="Loading Zakat Tracker"><div class="loading-ring" aria-hidden="true"></div></div>
   <script>window.addEventListener("flutter-first-frame", function () { document.getElementById("app-loading")?.remove(); });</script>
   <noscript>Zakat Tracker needs JavaScript enabled to open your private account.</noscript>
   <script src="flutter_bootstrap.js" async></script>

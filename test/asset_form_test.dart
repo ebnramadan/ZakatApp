@@ -46,6 +46,8 @@ void main() {
         ChangeNotifierProvider.value(value: monthly),
       ], child: MaterialApp(home: AssetFormScreen(guided: guided))));
       await tester.pumpAndSettle();
+      await tester.tap(find.text('More details'));
+      await tester.pumpAndSettle();
       final price = find.descendant(
           of: find.byKey(const ValueKey('nisab-price')),
           matching: find.byType(TextFormField));

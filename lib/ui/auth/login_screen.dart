@@ -58,7 +58,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: ClipRRect(
                           borderRadius: BorderRadius.circular(20),
                           child: Image.asset('assets/brand/icon.png',
-                              width: 80, height: 80))),
+                              width: 64, height: 64))),
                   const SizedBox(height: 24),
                   Text(l(context, "Zakat Tracker"),
                       textAlign: TextAlign.center,

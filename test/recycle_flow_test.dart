@@ -52,14 +52,9 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Delete default record'));
     await tester.pumpAndSettle();
-    expect(find.textContaining('You can restore everything for 60 days'),
+    expect(find.textContaining('You can restore this record and its payments'),
         findsOneWidget);
-    expect(
-        tester
-            .widget<FilledButton>(
-                find.widgetWithText(FilledButton, 'Delete default record'))
-            .onPressed,
-        isNull);
+    expect(find.byType(TextField), findsNothing);
     await tester.tap(find.text('Keep record'));
     await tester.pumpAndSettle();
     expect(
@@ -68,12 +63,7 @@ void main() {
         isNull);
     await tester.tap(find.text('Delete default record'));
     await tester.pumpAndSettle();
-    await tester.enterText(
-        find.byKey(const ValueKey('default-delete-confirmation')),
-        'Annual Zakat');
-    await tester.pumpAndSettle();
-    await tester
-        .tap(find.widgetWithText(FilledButton, 'Delete default record'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Move to recycle bin'));
     await tester.pumpAndSettle();
     expect(calc.records, isEmpty);
     expect(calc.recycledRecords, hasLength(1));
