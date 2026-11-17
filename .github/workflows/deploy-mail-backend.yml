@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   backend:
-    if: github.ref == 'refs/heads/claude/zakat-app-build-0NR5K'
+    if: github.ref_name == github.event.repository.default_branch
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:

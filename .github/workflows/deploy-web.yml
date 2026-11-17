@@ -3,7 +3,7 @@ name: Deploy web to Firebase
 on:
   workflow_dispatch:
   push:
-    branches: ['claude/zakat-app-build-0NR5K']
+    branches: ['claude/zakat-app-build-0NR5K', 'main']
     paths:
       - 'lib/**'
       - 'web/**'
@@ -24,7 +24,7 @@ concurrency:
 
 jobs:
   preflight:
-    if: github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/claude/zakat-app-build-0NR5K'
+    if: github.event_name == 'workflow_dispatch' && github.ref_name != github.event.repository.default_branch
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -46,7 +46,7 @@ jobs:
           REMINDER_SMTP_APP_PASSWORD: ${{ secrets.REMINDER_SMTP_APP_PASSWORD }}
         run: node scripts/firebase-preflight.cjs
   deploy:
-    if: github.ref == 'refs/heads/claude/zakat-app-build-0NR5K'
+    if: github.ref_name == github.event.repository.default_branch
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
