@@ -56,6 +56,21 @@ class FirestoreService {
     await user.set(fresh.toMap());
   }
 
+  Stream<Map<String, dynamic>?> sheetRequestStream(String uid) => _users()
+      .doc(uid)
+      .snapshots()
+      .map((s) => s.data()?['sheetRequest'] as Map<String, dynamic>?);
+  Future<void> requestProgressSheet(
+          String uid, String id, List<String> recipients) =>
+      _users().doc(uid).update({
+        'sheetRequest': {
+          'id': id,
+          'status': 'queued',
+          'requestedAt': DateTime.now().millisecondsSinceEpoch,
+          'recipients': recipients
+        }
+      });
+
   // ─── Zakat Records ─────────────────────────────────────────────────────────
 
   Stream<List<ZakatRecord>> recordsStream(String uid) {

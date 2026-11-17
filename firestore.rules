@@ -18,6 +18,21 @@ service cloud.firestore {
       return recipients.size() <= i || (recipients[i] is string && recipients[i].size() <= 254
         && recipients[i].matches('^[^\\s@<>]+@[^\\s@<>]+[.][^\\s@<>]+$'));
     }
+    function sheetRequestChange(uid) {
+      let d = request.resource.data;
+      let old = resource.data.get('sheetRequest', {});
+      let next = d.get('sheetRequest', {});
+      return next == old || resetting(uid) || (
+        !profileResetting(uid) && next is map && next.keys().hasOnly(['id','status','requestedAt','recipients'])
+        && next.id is string && next.id.size() <= 80 && next.id.size() >= 16
+        && next.recipients == d.get('shareRecipients',[])
+        && next.status == 'queued' && next.requestedAt is int
+        && next.requestedAt >= request.time.toMillis()-300000 && next.requestedAt <= request.time.toMillis()+300000
+        && old.get('status','') != 'queued' && old.get('id','') != next.id
+        && old.get('requestedAt',0) <= request.time.toMillis()-60000
+        && d.get('shareRecipients',[]).size() >= 1
+      );
+    }
     function profileOptions(uid) {
       let d = request.resource.data;
       return d.get('defaultRecordId', '') is string && d.get('defaultRecordId', '').size() <= 200
@@ -122,12 +137,18 @@ service cloud.firestore {
     }
     match /users/{uid} {
       allow read: if owner(uid);
-      allow create, update: if owner(uid) && profileOptions(uid) && request.resource.data.displayName is string
+      allow create: if owner(uid) && !('sheetRequest' in request.resource.data) && profileOptions(uid) && request.resource.data.displayName is string
         && request.resource.data.email == request.auth.token.email
         && request.resource.data.currency is string && request.resource.data.currency.matches('^[A-Z]{3}$')
         && request.resource.data.get('language', 'en') in ['en', 'ar']
         && request.resource.data.get('monthlyDefaultKind', 'sadaqah') in ['sadaqah', 'zakat']
         && request.resource.data.get('monthlyEmailReminders', false) is bool;
+      allow update: if owner(uid) && profileOptions(uid) && sheetRequestChange(uid)
+        && request.resource.data.displayName is string && request.resource.data.email == request.auth.token.email
+        && request.resource.data.currency is string && request.resource.data.currency.matches('^[A-Z]{3}$')
+        && request.resource.data.get('language','en') in ['en','ar']
+        && request.resource.data.get('monthlyDefaultKind','sadaqah') in ['sadaqah','zakat']
+        && request.resource.data.get('monthlyEmailReminders',false) is bool;
       allow delete: if owner(uid);
       match /zakatRecords/{id} {
         allow read: if owner(uid);

@@ -54,7 +54,8 @@ void main() {
     expect(tracker.selectedRecord!.id, 'b');
     await tester.tap(find.text('Records'));
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('Set as default'));
+    await tester.scrollUntilVisible(find.text('Set as default'), 300,
+        scrollable: find.byType(Scrollable).first);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Set as default'));
     await tester.pumpAndSettle();

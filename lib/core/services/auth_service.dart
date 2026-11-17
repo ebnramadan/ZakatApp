@@ -67,6 +67,8 @@ class AuthService {
     await _auth.currentUser?.getIdToken(true);
   }
 
+  Future<void> setLanguage(String language) => _auth.setLanguageCode(language);
+
   Future<void> reauthenticate({String? password}) async {
     final user = _auth.currentUser;
     if (user == null || !user.emailVerified) {

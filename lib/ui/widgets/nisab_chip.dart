@@ -1,3 +1,4 @@
+import '../../core/localization/strings.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../core/constants.dart';
@@ -31,7 +32,7 @@ class NisabChip extends StatelessWidget {
           const Icon(Icons.balance, size: 14, color: kGold),
           const SizedBox(width: 6),
           Text(
-            'Nisab: ',
+            l(context, "Nisab: "),
             style: TextStyle(
                 fontSize: 12,
                 color: Colors.brown.shade700,
@@ -45,7 +46,7 @@ class NisabChip extends StatelessWidget {
             )
           else
             Text(
-              fmt.format(nisabValue),
+              l(context, fmt.format(nisabValue)),
               style: const TextStyle(
                   fontSize: 12,
                   color: kPrimaryGreen,

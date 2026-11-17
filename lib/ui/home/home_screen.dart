@@ -1,3 +1,4 @@
+import '../../core/localization/strings.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -50,7 +51,8 @@ class _HomeScreenState extends State<HomeScreen> {
     auth.updateProfileFields(defaultRecordId: r.id).then((ok) {
       if (!ok && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(auth.error ?? 'Default record could not be saved.')));
+            content: Text(l(
+                context, auth.error ?? 'Default record could not be saved.'))));
       }
     });
     if (r.isSubmitted) {
@@ -157,11 +159,11 @@ class _HomeScreenState extends State<HomeScreen> {
         body: wide
             ? Row(children: [
                 Container(
-                    width: 208,
+                    width: 232,
                     decoration: const BoxDecoration(
-                        color: Colors.white,
-                        border: Border(
-                            right: BorderSide(color: Color(0xFFDDE5E1)))),
+                        color: Color(0xFF103F36),
+                        border: BorderDirectional(
+                            end: BorderSide(color: Color(0xFFDDE5E1)))),
                     child: SafeArea(
                         child: Column(children: [
                       Padding(
@@ -170,31 +172,42 @@ class _HomeScreenState extends State<HomeScreen> {
                             Image.asset('assets/brand/icon.png',
                                 width: 36, height: 36),
                             const SizedBox(width: 10),
-                            const Expanded(
-                                child: Text('Zakat Tracker',
-                                    style: TextStyle(
+                            Expanded(
+                                child: Text(l(context, "Zakat Tracker"),
+                                    style: const TextStyle(
                                         fontSize: 16,
+                                        color: Colors.white,
                                         fontWeight: FontWeight.w700)))
                           ])),
                       Expanded(
                           child: NavigationRail(
                               extended: true,
-                              minExtendedWidth: 207,
+                              minExtendedWidth: 231,
                               selectedIndex: _tab,
                               onDestinationSelected: (i) =>
                                   setState(() => _tab = i),
-                              backgroundColor: Colors.white,
+                              backgroundColor: const Color(0xFF103F36),
+                              selectedIconTheme:
+                                  const IconThemeData(color: Color(0xFFE9C77B)),
+                              unselectedIconTheme:
+                                  const IconThemeData(color: Color(0xFFCBDFD5)),
+                              selectedLabelTextStyle: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700),
+                              unselectedLabelTextStyle:
+                                  const TextStyle(color: Color(0xFFCBDFD5)),
                               destinations: List.generate(
                                   5,
                                   (i) => NavigationRailDestination(
                                       icon: navIcon(i),
-                                      label: Text(labels[i]))))),
-                      const Padding(
-                          padding: EdgeInsets.all(24),
+                                      label: Text(l(context, labels[i])))))),
+                      Padding(
+                          padding: const EdgeInsets.all(24),
                           child: Text(
-                              'Give with intention.\nTrack with clarity.',
-                              style: TextStyle(
-                                  color: Color(0xFF52655F),
+                              l(context,
+                                  "Give with intention.\nTrack with clarity."),
+                              style: const TextStyle(
+                                  color: Color(0xFFCBDFD5),
                                   fontSize: 12,
                                   height: 1.7))),
                     ]))),
@@ -229,40 +242,148 @@ class _RecordsTabState extends State<_RecordsTab> {
   @override
   Widget build(BuildContext context) {
     final calc = context.watch<CalculatorProvider>();
+    final defaultId = calc
+        .defaultRecord(context.watch<AuthProvider>().profile?.defaultRecordId)
+        ?.id;
     final records = calc.records
         .where((r) =>
+            r.id != defaultId &&
             r.name.toLowerCase().contains(_query.toLowerCase()) &&
             (_filter == 'All' ||
                 (_filter == 'Drafts' ? !r.isSubmitted : r.isSubmitted)))
-        .toList();
+        .toList()
+      ..sort((a, b) => a.id == defaultId
+          ? -1
+          : b.id == defaultId
+              ? 1
+              : b.createdAt.compareTo(a.createdAt));
+    Widget recordCard(ZakatRecord r) => Card(
+        color: r.id == defaultId ? const Color(0xFFE8F2EC) : Colors.white,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(22),
+            side: BorderSide(
+                color:
+                    r.id == defaultId ? kPrimaryGreen : const Color(0xFFDDE5E1),
+                width: r.id == defaultId ? 2 : 1)),
+        child: Padding(
+            padding: const EdgeInsets.all(18),
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                Expanded(
+                    child: Text(r.name,
+                        style: const TextStyle(
+                            fontSize: 19, fontWeight: FontWeight.w700))),
+                const SizedBox.shrink()
+              ]),
+              if (calc
+                      .defaultRecord(context
+                          .watch<AuthProvider>()
+                          .profile
+                          ?.defaultRecordId)
+                      ?.id ==
+                  r.id)
+                Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: StatusPill(l(context, "Default record"))),
+              const SizedBox(height: 8),
+              StatusPill(
+                  r.isSubmitted
+                      ? l(
+                          context,
+                          (r.hawlComplete
+                              ? 'Hawl complete'
+                              : 'Hawl in progress'))
+                      : l(context, "Draft"),
+                  warning: !r.isSubmitted),
+              const SizedBox(height: 12),
+              Text(
+                  l(context, "Lunar year started {0}",
+                      [DateFormat.yMMMd().format(r.hawlStartDate)]),
+                  style:
+                      const TextStyle(color: Color(0xFF52655F), fontSize: 13)),
+              if (r.isSubmitted) ...[
+                const SizedBox(height: 12),
+                Text(
+                    r.nisabMet
+                        ? l(context, money(r.estimatedZakat, r.currency))
+                        : l(context, "Below Nisab"),
+                    style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w700,
+                        color: kPrimaryGreen)),
+                Text(
+                    r.hawlComplete
+                        ? l(context, "Calculated Zakat")
+                        : l(context, "Estimate until Hawl is complete"),
+                    style:
+                        const TextStyle(fontSize: 13, color: Color(0xFF52655F)))
+              ],
+              const SizedBox(height: 12),
+              if (context.watch<AuthProvider>().profile?.defaultRecordId !=
+                  r.id)
+                TextButton.icon(
+                    onPressed: () async {
+                      final auth = context.read<AuthProvider>();
+                      final ok =
+                          await auth.updateProfileFields(defaultRecordId: r.id);
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                            content: Text(ok
+                                ? l(context, "Default record updated.")
+                                : l(context, auth.error!))));
+                      }
+                    },
+                    icon: const Icon(Icons.star_outline),
+                    label: Text(l(context, "Set as default"))),
+              TextButton.icon(
+                  onPressed: () => widget.onOpen(r),
+                  icon: Icon(r.isSubmitted
+                      ? Icons.arrow_forward
+                      : Icons.edit_outlined),
+                  label: Text(r.isSubmitted
+                      ? l(context, "Open payment tracker")
+                      : l(context, "Continue draft"))),
+              TextButton.icon(
+                  onPressed: () => moveToRecycleBin(context, r),
+                  icon: const Icon(Icons.delete_outline),
+                  label: Text(r.id == defaultId
+                      ? l(context, "Delete default record")
+                      : l(context, "Delete record")),
+                  style: TextButton.styleFrom(
+                      foregroundColor: const Color(0xFFB3261E)))
+            ])));
     return SafeArea(
         child: ListView(padding: const EdgeInsets.all(24), children: [
       PageIntro(
-          eyebrow: 'Zakat records',
-          title: 'A place for every year.',
-          description:
-              'Calculate once. Keep your records and payment history together.',
+          eyebrow: l(context, "Zakat records"),
+          title: l(context, "A place for every year."),
+          description: l(context,
+              "Calculate once. Keep your records and payment history together."),
           action: Wrap(spacing: 12, runSpacing: 12, children: [
             FilledButton.icon(
                 onPressed: widget.onCreate,
                 icon: const Icon(Icons.add),
-                label: const Text('New Calculation')),
+                label: Text(l(context, "New Calculation"))),
             OutlinedButton.icon(
                 onPressed: () => Navigator.of(context).push(MaterialPageRoute(
                     builder: (_) => const RecycleBinScreen())),
                 icon: const Icon(Icons.delete_outline),
-                label: Text(
-                    'Recycle bin${calc.recycledRecords.isEmpty ? '' : ' (${calc.recycledRecords.length})'}')),
+                label: Text(l(context, "Recycle bin{0}", [
+                  calc.recycledRecords.isEmpty
+                      ? ''
+                      : ' (${calc.recycledRecords.length})'
+                ]))),
           ])),
       if (calc.recordsError != null)
         Card(
             child: ListTile(
                 leading: const Icon(Icons.error_outline),
-                title: Text(calc.recordsError!),
+                title: Text(l(context, calc.recordsError!)),
                 trailing: TextButton(
                     onPressed: () => calc
                         .loadRecords(context.read<AuthProvider>().user!.uid),
-                    child: const Text('Retry')))),
+                    child: Text(l(context, "Retry"))))),
       if (calc.recordsLoading)
         const Center(child: CircularProgressIndicator())
       else if (calc.records.isEmpty)
@@ -273,129 +394,46 @@ class _RecordsTabState extends State<_RecordsTab> {
                   const Icon(Icons.folder_open_outlined,
                       size: 48, color: kPrimaryGreen),
                   const SizedBox(height: 16),
-                  Text('Your first record starts here',
+                  Text(l(context, "Your first record starts here"),
                       style: Theme.of(context).textTheme.titleLarge),
                   const SizedBox(height: 8),
-                  const Text(
-                      'Use a guided calculation to work out your Zakat. Saved drafts are easy to continue.',
+                  Text(
+                      l(context,
+                          "Use a guided calculation to work out your Zakat. Saved drafts are easy to continue."),
                       textAlign: TextAlign.center),
                   const SizedBox(height: 20),
                   TextButton(
                       onPressed: widget.onCreate,
-                      child: const Text('Create a Zakat record')),
+                      child: Text(l(context, "Create a Zakat record"))),
                 ])))
       else ...[
+        if (defaultId != null)
+          recordCard(calc.records.firstWhere((r) => r.id == defaultId)),
+        SectionTitle(l(context, 'Other records')),
         TextField(
-            decoration: const InputDecoration(
-                labelText: 'Search records', prefixIcon: Icon(Icons.search)),
+            decoration: InputDecoration(
+                labelText: l(context, "Search records"),
+                prefixIcon: const Icon(Icons.search)),
             onChanged: (v) => setState(() => _query = v)),
         const SizedBox(height: 16),
         Wrap(
             spacing: 8,
             children: ['All', 'Submitted', 'Drafts']
                 .map((v) => ChoiceChip(
-                    label: Text(v),
+                    label: Text(l(context, v)),
                     selected: v == _filter,
                     onSelected: (_) => setState(() => _filter = v)))
                 .toList()),
         const SizedBox(height: 16),
         if (records.isEmpty)
-          const Padding(
-              padding: EdgeInsets.all(24),
-              child: Text('No records match. Try another search or filter.')),
-        ...records.map((r) => Card(
-            child: Padding(
-                padding: const EdgeInsets.all(18),
-                child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(children: [
-                        Expanded(
-                            child: Text(r.name,
-                                style: const TextStyle(
-                                    fontSize: 19,
-                                    fontWeight: FontWeight.w700))),
-                        PopupMenuButton<String>(
-                            tooltip: 'Record actions',
-                            onSelected: (_) => moveToRecycleBin(context, r),
-                            itemBuilder: (_) => [
-                                  const PopupMenuItem(
-                                      value: 'delete',
-                                      child: Text('Move to recycle bin',
-                                          style: TextStyle(
-                                              color: Color(0xFFB3261E))))
-                                ])
-                      ]),
-                      if (calc
-                              .defaultRecord(context
-                                  .watch<AuthProvider>()
-                                  .profile
-                                  ?.defaultRecordId)
-                              ?.id ==
-                          r.id)
-                        const Padding(
-                            padding: EdgeInsets.only(bottom: 8),
-                            child: StatusPill('Default record')),
-                      const SizedBox(height: 8),
-                      StatusPill(
-                          r.isSubmitted
-                              ? (r.hawlComplete
-                                  ? 'Hawl complete'
-                                  : 'Hawl in progress')
-                              : 'Draft',
-                          warning: !r.isSubmitted),
-                      const SizedBox(height: 12),
-                      Text(
-                          'Lunar year started ${DateFormat.yMMMd().format(r.hawlStartDate)}',
-                          style: const TextStyle(
-                              color: Color(0xFF52655F), fontSize: 13)),
-                      if (r.isSubmitted) ...[
-                        const SizedBox(height: 12),
-                        Text(
-                            r.nisabMet
-                                ? money(r.estimatedZakat, r.currency)
-                                : 'Below Nisab',
-                            style: const TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.w700,
-                                color: kPrimaryGreen)),
-                        Text(
-                            r.hawlComplete
-                                ? 'Calculated Zakat'
-                                : 'Estimate until Hawl is complete',
-                            style: const TextStyle(
-                                fontSize: 13, color: Color(0xFF52655F)))
-                      ],
-                      const SizedBox(height: 12),
-                      if (context
-                              .watch<AuthProvider>()
-                              .profile
-                              ?.defaultRecordId !=
-                          r.id)
-                        TextButton.icon(
-                            onPressed: () async {
-                              final auth = context.read<AuthProvider>();
-                              final ok = await auth.updateProfileFields(
-                                  defaultRecordId: r.id);
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                        content: Text(ok
-                                            ? 'Default record updated.'
-                                            : auth.error!)));
-                              }
-                            },
-                            icon: const Icon(Icons.star_outline),
-                            label: const Text('Set as default')),
-                      TextButton.icon(
-                          onPressed: () => widget.onOpen(r),
-                          icon: Icon(r.isSubmitted
-                              ? Icons.arrow_forward
-                              : Icons.edit_outlined),
-                          label: Text(r.isSubmitted
-                              ? 'Open payment tracker'
-                              : 'Continue draft')),
-                    ])))),
+          Padding(
+              padding: const EdgeInsets.all(24),
+              child: Text(l(
+                  context,
+                  _query.isEmpty && _filter == 'All'
+                      ? 'No other records yet.'
+                      : 'No records match. Try another search or filter.'))),
+        ...records.map(recordCard),
       ],
     ]));
   }

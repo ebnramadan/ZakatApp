@@ -1,3 +1,4 @@
+import '../../core/localization/strings.dart';
 import 'package:flutter/material.dart';
 import '../../core/constants.dart';
 
@@ -78,10 +79,10 @@ class _CelebrationState extends State<_Celebration>
             const SizedBox(height: 12),
             Text(
                 widget.planReady
-                    ? 'Your Zakat plan is ready'
+                    ? l(context, "Your Zakat plan is ready")
                     : widget.sadaqah
-                        ? 'A beautiful act of Sadaqah'
-                        : 'Your Zakat giving is recorded',
+                        ? l(context, "A beautiful act of Sadaqah")
+                        : l(context, "Your Zakat giving is recorded"),
                 textAlign: TextAlign.center,
                 style: Theme.of(context)
                     .textTheme
@@ -96,13 +97,15 @@ class _CelebrationState extends State<_Celebration>
             const SizedBox(height: 12),
             Text(
                 widget.planReady
-                    ? 'May Allah bless your intention and help you fulfil your Zakat. Record payments after you give.'
-                    : 'O Allah, accept from us and bless what You have provided us.',
+                    ? l(context,
+                        "May Allah bless your intention and help you fulfil your Zakat. Record payments after you give.")
+                    : l(context,
+                        "O Allah, accept from us and bless what You have provided us."),
                 textAlign: TextAlign.center),
           ])),
           actions: [
             FilledButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Continue'))
+                child: Text(l(context, "Continue")))
           ]);
 }

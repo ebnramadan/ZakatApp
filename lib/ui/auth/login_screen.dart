@@ -1,3 +1,4 @@
+import '../../core/localization/strings.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants.dart';
@@ -59,7 +60,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           child: Image.asset('assets/brand/icon.png',
                               width: 80, height: 80))),
                   const SizedBox(height: 24),
-                  Text('Zakat Tracker',
+                  Text(l(context, "Zakat Tracker"),
                       textAlign: TextAlign.center,
                       style: Theme.of(context)
                           .textTheme
@@ -68,25 +69,28 @@ class _LoginScreenState extends State<LoginScreen> {
                               fontWeight: FontWeight.bold,
                               color: kPrimaryGreen)),
                   const SizedBox(height: 10),
-                  const Text(
-                      'Your Zakat, monthly giving, and payment history—together in one private account.',
+                  Text(
+                      l(context,
+                          "Your Zakat, monthly giving, and payment history—together in one private account."),
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 16, height: 1.6)),
+                      style: const TextStyle(fontSize: 16, height: 1.6)),
                   const SizedBox(height: 32),
                   ElevatedButton.icon(
                       key: const Key('google-sign-in'),
                       onPressed: auth.busy ? null : auth.signInWithGoogle,
                       icon: const Icon(Icons.g_mobiledata, size: 30),
-                      label: const Text('Continue with Google')),
+                      label: Text(l(context, "Continue with Google"))),
                   const SizedBox(height: 8),
-                  const Text(
-                      'Sign in or create an account. No extra password needed.',
+                  Text(
+                      l(context,
+                          "Sign in or create an account. No extra password needed."),
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.black54, height: 1.5)),
+                      style:
+                          const TextStyle(color: Colors.black54, height: 1.5)),
                   if (auth.error != null)
                     Padding(
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                        child: Text(auth.error!,
+                        child: Text(l(context, auth.error!),
                             style: TextStyle(
                                 color: Theme.of(context).colorScheme.error),
                             textAlign: TextAlign.center)),
@@ -96,19 +100,21 @@ class _LoginScreenState extends State<LoginScreen> {
                         onPressed: auth.busy
                             ? null
                             : () => setState(() => _emailMode = true),
-                        child: const Text('Use email instead')),
+                        child: Text(l(context, "Use email instead"))),
                   if (_emailMode) ...[
                     const Divider(height: 32),
                     Text(
                         _register
-                            ? 'Create an account with email'
-                            : 'Sign in with email',
+                            ? l(context, "Create an account with email")
+                            : l(context, "Sign in with email"),
                         style: Theme.of(context).textTheme.titleLarge),
                     const SizedBox(height: 8),
                     Text(
                         _register
-                            ? 'We’ll send a verification link before you can access financial records.'
-                            : 'Use the password for your existing account.',
+                            ? l(context,
+                                "We’ll send a verification link before you can access financial records.")
+                            : l(context,
+                                "Use the password for your existing account."),
                         style: const TextStyle(
                             color: Colors.black54, height: 1.5)),
                     const SizedBox(height: 20),
@@ -117,14 +123,14 @@ class _LoginScreenState extends State<LoginScreen> {
                         textInputAction: TextInputAction.next,
                         keyboardType: TextInputType.emailAddress,
                         autofillHints: const [AutofillHints.email],
-                        decoration: const InputDecoration(
-                            labelText: 'Email address',
-                            prefixIcon: Icon(Icons.alternate_email)),
+                        decoration: InputDecoration(
+                            labelText: l(context, "Email address"),
+                            prefixIcon: const Icon(Icons.alternate_email)),
                         validator: (v) => v != null &&
                                 RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$')
                                     .hasMatch(v.trim())
                             ? null
-                            : 'Enter a valid email address'),
+                            : l(context, "Enter a valid email address")),
                     const SizedBox(height: 14),
                     TextFormField(
                         controller: _password,
@@ -139,23 +145,24 @@ class _LoginScreenState extends State<LoginScreen> {
                               : AutofillHints.password
                         ],
                         decoration: InputDecoration(
-                            labelText: 'Password',
+                            labelText: l(context, "Password"),
                             helperText: _register
-                                ? 'At least 10 characters. A passphrase works well.'
+                                ? l(context,
+                                    "At least 10 characters. A passphrase works well.")
                                 : null,
                             suffixIcon: IconButton(
                                 tooltip: _obscure
-                                    ? 'Show password'
-                                    : 'Hide password',
+                                    ? l(context, "Show password")
+                                    : l(context, "Hide password"),
                                 onPressed: () =>
                                     setState(() => _obscure = !_obscure),
                                 icon: Icon(_obscure
                                     ? Icons.visibility_outlined
                                     : Icons.visibility_off_outlined))),
                         validator: (v) => v == null || v.isEmpty
-                            ? 'Enter your password'
+                            ? l(context, "Enter your password")
                             : _register && v.length < 10
-                                ? 'Use at least 10 characters'
+                                ? l(context, "Use at least 10 characters")
                                 : null),
                     if (_register) ...[
                       const SizedBox(height: 14),
@@ -163,11 +170,11 @@ class _LoginScreenState extends State<LoginScreen> {
                           controller: _confirm,
                           onFieldSubmitted: (_) => _submit(),
                           obscureText: true,
-                          decoration: const InputDecoration(
-                              labelText: 'Confirm password'),
+                          decoration: InputDecoration(
+                              labelText: l(context, "Confirm password")),
                           validator: (v) => v == _password.text
                               ? null
-                              : 'Passwords do not match'),
+                              : l(context, "Passwords do not match")),
                     ],
                     if (!_register)
                       Align(
@@ -178,9 +185,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                   : () async {
                                       if (_email.text.trim().isEmpty) {
                                         ScaffoldMessenger.of(context)
-                                            .showSnackBar(const SnackBar(
-                                                content: Text(
-                                                    'Enter your email address first.')));
+                                            .showSnackBar(SnackBar(
+                                                content: Text(l(context,
+                                                    "Enter your email address first."))));
                                         return;
                                       }
                                       final sent = await auth.sendPasswordReset(
@@ -189,18 +196,19 @@ class _LoginScreenState extends State<LoginScreen> {
                                       ScaffoldMessenger.of(context)
                                           .showSnackBar(SnackBar(
                                               content: Text(sent
-                                                  ? 'If that account exists, a reset link is on its way. Check your inbox and spam folder.'
-                                                  : auth.error!)));
+                                                  ? l(context,
+                                                      "If that account exists, a reset link is on its way. Check your inbox and spam folder.")
+                                                  : l(context, auth.error!))));
                                     },
-                              child: const Text('Forgot password?'))),
+                              child: Text(l(context, "Forgot password?")))),
                     const SizedBox(height: 20),
                     ElevatedButton(
                         onPressed: auth.busy ? null : _submit,
                         child: Text(auth.busy
-                            ? 'Please wait…'
+                            ? l(context, "Please wait…")
                             : _register
-                                ? 'Create account & verify email'
-                                : 'Sign in')),
+                                ? l(context, "Create account & verify email")
+                                : l(context, "Sign in"))),
                     TextButton(
                         onPressed: auth.busy
                             ? null
@@ -209,22 +217,23 @@ class _LoginScreenState extends State<LoginScreen> {
                                 setState(() => _register = !_register);
                               },
                         child: Text(_register
-                            ? 'Already have an email account? Sign in'
-                            : 'New to Zakat? Create an email account')),
+                            ? l(context,
+                                "Already have an email account? Sign in")
+                            : l(context,
+                                "New to Zakat? Create an email account"))),
                   ],
                   const SizedBox(height: 28),
-                  const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.lock_outline,
-                            size: 15, color: Colors.black54),
-                        SizedBox(width: 6),
-                        Flexible(
-                            child: Text(
-                                'Your financial records stay in your account.',
-                                style: TextStyle(
-                                    color: Colors.black54, fontSize: 12)))
-                      ]),
+                  Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                    const Icon(Icons.lock_outline,
+                        size: 15, color: Colors.black54),
+                    const SizedBox(width: 6),
+                    Flexible(
+                        child: Text(
+                            l(context,
+                                "Your financial records stay in your account."),
+                            style: const TextStyle(
+                                color: Colors.black54, fontSize: 12)))
+                  ]),
                   const SizedBox(height: 24),
                 ]),
           ))),

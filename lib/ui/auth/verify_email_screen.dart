@@ -1,3 +1,4 @@
+import '../../core/localization/strings.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/providers/auth_provider.dart';
@@ -36,7 +37,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen>
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
     return Scaffold(
-        appBar: AppBar(title: const Text('Verify your email')),
+        appBar: AppBar(title: Text(l(context, "Verify your email"))),
         body: Center(
             child: SingleChildScrollView(
                 padding: const EdgeInsets.all(24),
@@ -50,27 +51,33 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen>
                               size: 64,
                               color: Theme.of(context).colorScheme.primary),
                           const SizedBox(height: 24),
-                          Text('Check your inbox',
+                          Text(l(context, "Check your inbox"),
                               textAlign: TextAlign.center,
                               style:
                                   Theme.of(context).textTheme.headlineMedium),
                           const SizedBox(height: 16),
                           Text(
-                              'Open the verification link sent to ${auth.user?.email ?? 'your email address'}. Then return here to continue.',
+                              l(
+                                  context,
+                                  "Open the verification link sent to {0}. Then return here to continue.",
+                                  [
+                                    auth.user?.email ?? 'your email address'
+                                  ]),
                               textAlign: TextAlign.center,
                               style:
                                   const TextStyle(fontSize: 16, height: 1.6)),
                           const SizedBox(height: 12),
-                          const Text(
-                              'Check spam or junk too. Your financial records remain protected until your address is verified.',
+                          Text(
+                              l(context,
+                                  "Check spam or junk too. Your financial records remain protected until your address is verified."),
                               textAlign: TextAlign.center,
-                              style: TextStyle(
+                              style: const TextStyle(
                                   color: Colors.black54, height: 1.5)),
                           if (auth.error != null)
                             Padding(
                                 padding:
                                     const EdgeInsets.symmetric(vertical: 16),
-                                child: Text(auth.error!,
+                                child: Text(l(context, auth.error!),
                                     style: TextStyle(
                                         color: Theme.of(context)
                                             .colorScheme
@@ -78,14 +85,14 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen>
                           if (_notice != null)
                             Padding(
                                 padding: const EdgeInsets.all(12),
-                                child: Text(_notice!)),
+                                child: Text(l(context, _notice!))),
                           const SizedBox(height: 24),
                           ElevatedButton(
                               onPressed:
                                   auth.busy ? null : auth.checkVerification,
                               child: Text(auth.busy
-                                  ? 'Checking…'
-                                  : 'I’ve verified my email')),
+                                  ? l(context, "Checking…")
+                                  : l(context, "I’ve verified my email"))),
                           TextButton(
                               onPressed: auth.busy
                                   ? null
@@ -97,10 +104,12 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen>
                                             'Verification email sent. Please check your inbox.');
                                       }
                                     },
-                              child: const Text('Resend verification email')),
+                              child: Text(
+                                  l(context, "Resend verification email"))),
                           TextButton(
                               onPressed: auth.busy ? null : auth.signOut,
-                              child: const Text('Use a different account')),
+                              child:
+                                  Text(l(context, "Use a different account"))),
                         ])))));
   }
 }

@@ -1,6 +1,6 @@
 # Dashboard, navigation, and recycle bin
 
-The dashboard is the signed-in landing page. Five destinations are always available: Dashboard, Records, Tracker, Monthly Giving, Profile. The shell uses bottom navigation below 900px and a labeled navigation rail above it. The saved Arabic preference translates navigation labels and the monthly title; existing financial forms are not fully translated.
+The dashboard is the signed-in landing page. Five destinations are always available: Dashboard, Records, Tracker, Monthly Giving, Profile. The shell uses bottom navigation below 900px and a labeled navigation rail above it. The language selected during onboarding applies immediately to the entire interface, financial forms, dates, and layout direction. Arabic and Persian numeric input is accepted. Desktop content fills the available screen width. The default record is pinned above search and filters, with an explicit delete action that requires typing its name.
 
 ## Dashboard financial meaning
 

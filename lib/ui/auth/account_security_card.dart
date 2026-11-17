@@ -1,3 +1,4 @@
+import '../../core/localization/strings.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/providers/auth_provider.dart';
@@ -11,9 +12,9 @@ class AccountSecurityCard extends StatelessWidget {
         barrierDismissible: false,
         builder: (_) => _SecurityDialog(addPassword: addPassword));
     if (!context.mounted || ok != true) return;
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text(
-            'Sign-in method connected. Your account and records are unchanged.')));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(l(context,
+            "Sign-in method connected. Your account and records are unchanged."))));
   }
 
   @override
@@ -25,26 +26,29 @@ class AccountSecurityCard extends StatelessWidget {
             child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text('Account security',
+                  Text(l(context, "Account security"),
                       style: Theme.of(context).textTheme.titleLarge),
                   const SizedBox(height: 8),
-                  const Text('One account. Your choice of sign-in methods.',
-                      style: TextStyle(color: Colors.black54)),
+                  Text(
+                      l(context,
+                          "One account. Your choice of sign-in methods."),
+                      style: const TextStyle(color: Colors.black54)),
                   const SizedBox(height: 12),
                   ListTile(
                       contentPadding: EdgeInsets.zero,
                       leading: const Icon(Icons.verified_user_outlined),
-                      title: const Text('Email verified'),
-                      subtitle: Text(auth.user?.email ?? ''),
+                      title: Text(l(context, "Email verified")),
+                      subtitle: Text(l(context, auth.user?.email ?? '')),
                       trailing:
                           const Icon(Icons.check_circle, color: Colors.green)),
                   ListTile(
                       contentPadding: EdgeInsets.zero,
                       leading: const Icon(Icons.g_mobiledata),
-                      title: const Text('Google'),
+                      title: Text(l(context, "Google")),
                       subtitle: Text(auth.hasGoogle
-                          ? 'Connected'
-                          : 'Connect a Google account to sign in more easily'),
+                          ? l(context, "Connected")
+                          : l(context,
+                              "Connect a Google account to sign in more easily")),
                       trailing: auth.hasGoogle
                           ? const Icon(Icons.check_circle, color: Colors.green)
                           : null),
@@ -53,14 +57,15 @@ class AccountSecurityCard extends StatelessWidget {
                         onPressed: auth.busy
                             ? null
                             : () => _change(context, addPassword: false),
-                        child: const Text('Connect Google securely')),
+                        child: Text(l(context, "Connect Google securely"))),
                   ListTile(
                       contentPadding: EdgeInsets.zero,
                       leading: const Icon(Icons.password_outlined),
-                      title: const Text('Email & password'),
+                      title: Text(l(context, "Email & password")),
                       subtitle: Text(auth.hasPassword
-                          ? 'Connected'
-                          : 'Add a password for your verified email'),
+                          ? l(context, "Connected")
+                          : l(context,
+                              "Add a password for your verified email")),
                       trailing: auth.hasPassword
                           ? const Icon(Icons.check_circle, color: Colors.green)
                           : null),
@@ -69,7 +74,7 @@ class AccountSecurityCard extends StatelessWidget {
                         onPressed: auth.busy
                             ? null
                             : () => _change(context, addPassword: true),
-                        child: const Text('Add a password')),
+                        child: Text(l(context, "Add a password"))),
                   if (auth.hasPassword)
                     TextButton(
                         onPressed: auth.busy
@@ -80,14 +85,16 @@ class AccountSecurityCard extends StatelessWidget {
                                 if (!context.mounted) return;
                                 ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                                     content: Text(sent
-                                        ? 'Password reset link sent to your verified email.'
-                                        : auth.error!)));
+                                        ? l(context,
+                                            "Password reset link sent to your verified email.")
+                                        : l(context, auth.error!))));
                               },
-                        child: const Text('Send password reset link')),
+                        child: Text(l(context, "Send password reset link"))),
                   const SizedBox(height: 8),
-                  const Text(
-                      'Connecting a sign-in method requires proof that you own both identities. Separate existing accounts are never combined automatically.',
-                      style: TextStyle(
+                  Text(
+                      l(context,
+                          "Connecting a sign-in method requires proof that you own both identities. Separate existing accounts are never combined automatically."),
+                      style: const TextStyle(
                           fontSize: 12, color: Colors.black54, height: 1.5)),
                 ])));
   }
@@ -140,10 +147,10 @@ class _SecurityDialogState extends State<_SecurityDialog> {
     final auth = context.watch<AuthProvider>();
     return AlertDialog(
         title: Text(widget.addPassword
-            ? 'Add an email password'
+            ? l(context, "Add an email password")
             : _confirmed
-                ? 'Choose your Google account'
-                : 'Confirm your identity'),
+                ? l(context, "Choose your Google account")
+                : l(context, "Confirm your identity")),
         content: SizedBox(
             width: 420,
             child: SingleChildScrollView(
@@ -154,10 +161,17 @@ class _SecurityDialogState extends State<_SecurityDialog> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           Text(widget.addPassword
-                              ? 'Create a password for ${auth.user?.email}. You’ll then confirm your existing Google identity in a secure popup.'
+                              ? l(
+                                  context,
+                                  "Create a password for {0}. You’ll then confirm your existing Google identity in a secure popup.",
+                                  [
+                                      auth.user?.email
+                                    ])
                               : _confirmed
-                                  ? 'Password confirmed. Now choose the Google identity you own. Both sign-in methods will open your existing records.'
-                                  : 'Enter your current password before connecting a Google identity. Your financial data stays in this same account.'),
+                                  ? l(context,
+                                      "Password confirmed. Now choose the Google identity you own. Both sign-in methods will open your existing records.")
+                                  : l(context,
+                                      "Enter your current password before connecting a Google identity. Your financial data stays in this same account.")),
                           if (!_confirmed) ...[
                             const SizedBox(height: 18),
                             TextFormField(
@@ -165,29 +179,31 @@ class _SecurityDialogState extends State<_SecurityDialog> {
                                 obscureText: true,
                                 decoration: InputDecoration(
                                     labelText: widget.addPassword
-                                        ? 'New password'
-                                        : 'Current password'),
+                                        ? l(context, "New password")
+                                        : l(context, "Current password")),
                                 validator: (v) => v == null || v.isEmpty
-                                    ? 'Enter your password'
+                                    ? l(context, "Enter your password")
                                     : widget.addPassword && v.length < 10
-                                        ? 'Use at least 10 characters'
+                                        ? l(context,
+                                            "Use at least 10 characters")
                                         : null),
                             if (widget.addPassword) ...[
                               const SizedBox(height: 12),
                               TextFormField(
                                   controller: _confirm,
                                   obscureText: true,
-                                  decoration: const InputDecoration(
-                                      labelText: 'Confirm new password'),
+                                  decoration: InputDecoration(
+                                      labelText:
+                                          l(context, "Confirm new password")),
                                   validator: (v) => v == _password.text
                                       ? null
-                                      : 'Passwords do not match')
+                                      : l(context, "Passwords do not match"))
                             ],
                           ],
                           if (auth.error != null)
                             Padding(
                                 padding: const EdgeInsets.only(top: 14),
-                                child: Text(auth.error!,
+                                child: Text(l(context, auth.error!),
                                     style: TextStyle(
                                         color: Theme.of(context)
                                             .colorScheme
@@ -196,16 +212,16 @@ class _SecurityDialogState extends State<_SecurityDialog> {
         actions: [
           TextButton(
               onPressed: auth.busy ? null : () => Navigator.pop(context, false),
-              child: const Text('Cancel')),
+              child: Text(l(context, "Cancel"))),
           TextButton(
               onPressed: auth.busy ? null : _submit,
               child: Text(auth.busy
-                  ? 'Confirming…'
+                  ? l(context, "Confirming…")
                   : _confirmed
-                      ? 'Continue with Google'
+                      ? l(context, "Continue with Google")
                       : widget.addPassword
-                          ? 'Confirm with Google'
-                          : 'Confirm password'))
+                          ? l(context, "Confirm with Google")
+                          : l(context, "Confirm password")))
         ]);
   }
 }

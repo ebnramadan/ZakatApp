@@ -29,3 +29,20 @@ test('scheduler dry run sends nothing; actual sends attach sheets and dedupe eac
   await user.update({resetInProgress:false});await sendProgressSheets({...options,auth:{getUser:async()=>({emailVerified:false})}});assert.equal(sent,1);
  }finally{await db.recursiveDelete(db.collection('users'));await deleteApp(app);}
 });
+test('Arabic reports use RTL worksheets and translated headers without changing names or amounts',async()=>{
+ const buffer=await buildWorkbook({language:'ar',records:[{id:'r',name:'Sarah record',currency:'EGP',isSubmitted:true,nisabMet:true,totalWealth:10000}]},now);
+ const book=new ExcelJS.Workbook();await book.xlsx.load(buffer);const sheet=book.getWorksheet('سجلات الزكاة');
+ assert.equal(sheet.views[0].rightToLeft,true);assert.equal(sheet.getCell('A1').value,'السجل');assert.equal(sheet.getCell('A2').value,'Sarah record');assert.equal(sheet.getCell('F2').value,250);
+});
+test('manual request ignores date and monthly opt-in, sends once, and preserves scheduled delivery',async()=>{
+ assert.ok(process.env.FIRESTORE_EMULATOR_HOST);
+ const {initializeApp,deleteApp}=require('firebase-admin/app'),{getFirestore}=require('firebase-admin/firestore');
+ const app=initializeApp({projectId:'demo-manual-progress'},'manual-progress-test'),db=getFirestore(app);let sent=0;
+ const user=db.doc('users/u'),settings={sharingEnabled:false,shareDay:31,shareRecipients:['trusted@example.com'],sheetRequest:{id:'manual-request-123456',status:'queued',requestedAt:new Date('2026-02-02T09:00:00Z').getTime(),recipients:['trusted@example.com']}};
+ const options={db,auth:{getUser:async()=>({emailVerified:true})},now:new Date('2026-02-02T09:00:00Z'),manualOnly:true,smtpUser:'sender@gmail.com',smtpPassword:'fake',smtpTransport:{verify:async()=>{},sendMail:async()=>{sent++;return{messageId:'accepted',rejected:[]};}},log:()=>{}};
+ try{await db.recursiveDelete(db.collection('users'));await user.set(settings);
+ await sendProgressSheets({...options,dryRun:true});assert.equal(sent,0);assert.equal((await user.get()).data().sheetRequest.status,'queued');
+ await sendProgressSheets(options);await sendProgressSheets(options);assert.equal(sent,1);assert.equal((await user.get()).data().sheetRequest.status,'sent');
+ await user.update({sharingEnabled:true});await sendProgressSheets({...options,manualOnly:false,now});assert.equal(sent,2);
+ }finally{await db.recursiveDelete(db.collection('users'));await deleteApp(app);}
+});

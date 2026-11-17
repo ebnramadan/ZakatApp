@@ -1,3 +1,4 @@
+import '../../core/localization/strings.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -42,8 +43,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _saveProfile(AuthProvider auth) async {
     if (_nameCtrl.text.trim().isEmpty || _nameCtrl.text.trim().length > 80) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Enter a name of up to 80 characters.')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(l(context, "Enter a name of up to 80 characters."))));
       return;
     }
     final ok =
@@ -52,7 +53,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (ok) setState(() => _editingName = false);
     if (!ok) {
       ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(auth.error!)));
+          .showSnackBar(SnackBar(content: Text(l(context, auth.error!))));
     }
   }
 
@@ -66,12 +67,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Profile'),
+        title: Text(l(context, "Profile")),
         actions: [
           TextButton(
             onPressed: auth.signOut,
-            child:
-                const Text('Sign out', style: TextStyle(color: kPrimaryGreen)),
+            child: Text(l(context, "Sign out"),
+                style: const TextStyle(color: kPrimaryGreen)),
           ),
         ],
       ),
@@ -79,7 +80,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         padding: const EdgeInsets.all(20),
         children: [
           if (auth.error != null)
-            Text(auth.error!, style: const TextStyle(color: Colors.red)),
+            Text(l(context, auth.error!),
+                style: const TextStyle(color: Colors.red)),
           _Avatar(profile: profile),
           const SizedBox(height: 24),
           _NameField(
@@ -94,25 +96,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           const SizedBox(height: 12),
           _InfoTile(
-              label: 'Email', value: profile.email, icon: Icons.email_outlined),
+              label: l(context, "Email"),
+              value: profile.email,
+              icon: Icons.email_outlined),
           const SizedBox(height: 20),
           const AccountSecurityCard(),
           const SizedBox(height: 20),
           DropdownButtonFormField<String>(
             value: profile.language,
-            decoration: const InputDecoration(
-                labelText: 'Language / اللغة',
-                prefixIcon: Icon(Icons.language)),
-            items: const [
-              DropdownMenuItem(value: 'en', child: Text('English')),
-              DropdownMenuItem(value: 'ar', child: Text('العربية')),
+            decoration: InputDecoration(
+                labelText: l(context, "Language / اللغة"),
+                prefixIcon: const Icon(Icons.language)),
+            items: [
+              DropdownMenuItem(value: 'en', child: Text(l(context, "English"))),
+              const DropdownMenuItem(value: 'ar', child: Text('العربية')),
             ],
             onChanged: (language) async {
               if (language == null) return;
               final ok = await auth.updateProfileFields(language: language);
               if (!context.mounted || ok) return;
-              ScaffoldMessenger.of(context)
-                  .showSnackBar(SnackBar(content: Text(auth.error!)));
+              ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(l(context, auth.error!))));
             },
           ),
           const SizedBox(height: 20),
@@ -123,8 +127,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               auth.updateProfileFields(currency: c).then((ok) {
                 if (!mounted || !context.mounted || ok) return;
                 setState(() => _selectedCurrency = profile.currency);
-                ScaffoldMessenger.of(context)
-                    .showSnackBar(SnackBar(content: Text(auth.error!)));
+                ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(l(context, auth.error!))));
               });
             },
           ),
@@ -132,9 +136,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Card(
               child: ListTile(
             leading: const Icon(Icons.calendar_month_outlined),
-            title: const Text('Monthly giving preferences'),
-            subtitle: Text(
-                'Default: ${profile.monthlyDefaultKind == 'zakat' ? 'Zakat' : 'Sadaqah'} · Email reminders ${profile.monthlyEmailReminders ? 'on' : 'off'}'),
+            title: Text(l(context, "Monthly giving preferences")),
+            subtitle: Text(l(context, "Default: {0} · Email reminders {1}", [
+              profile.monthlyDefaultKind == 'zakat'
+                  ? l(context, "Zakat")
+                  : l(context, "Sadaqah"),
+              profile.monthlyEmailReminders
+                  ? l(context, 'on')
+                  : l(context, 'off')
+            ])),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => showModalBottomSheet(
                 context: context,
@@ -145,9 +155,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Card(
               child: ListTile(
                   leading: const Icon(Icons.delete_outline),
-                  title: const Text('Recycle bin'),
-                  subtitle:
-                      const Text('Restore deleted records within 60 days'),
+                  title: Text(l(context, "Recycle bin")),
+                  subtitle: Text(
+                      l(context, "Restore deleted records within 60 days")),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => Navigator.of(context).push(MaterialPageRoute(
                       builder: (_) => const RecycleBinScreen())))),
@@ -156,17 +166,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Card(
               child: ListTile(
                   leading: const Icon(Icons.explore_outlined),
-                  title: const Text('Getting started'),
-                  subtitle: const Text('Review the welcome guide'),
+                  title: Text(l(context, "Getting started")),
+                  subtitle: Text(l(context, "Review the welcome guide")),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => Navigator.of(context).push(MaterialPageRoute(
                       builder: (_) => const OnboardingScreen(review: true))))),
           const AccountResetCard(),
           const SizedBox(height: 12),
-          const Text(
-              'Changing your default currency affects new records and recipients only. Existing amounts keep their original currency.',
-              style:
-                  TextStyle(fontSize: 13, color: Colors.black54, height: 1.6)),
+          Text(
+              l(context,
+                  "Changing your default currency affects new records and recipients only. Existing amounts keep their original currency."),
+              style: const TextStyle(
+                  fontSize: 13, color: Colors.black54, height: 1.6)),
         ],
       ),
     );
@@ -188,8 +199,12 @@ class _Avatar extends StatelessWidget {
             : null,
         child: profile.photoUrl == null
             ? Text(
-                (profile.displayName.isNotEmpty ? profile.displayName[0] : '?')
-                    .toUpperCase(),
+                l(
+                    context,
+                    (profile.displayName.isNotEmpty
+                            ? profile.displayName[0]
+                            : '?')
+                        .toUpperCase()),
                 style: const TextStyle(
                     fontSize: 36,
                     color: kPrimaryGreen,
@@ -221,9 +236,9 @@ class _NameField extends StatelessWidget {
     if (!editing) {
       return ListTile(
         leading: const Icon(Icons.person_outline, color: kPrimaryGreen),
-        title: Text(ctrl.text,
+        title: Text(l(context, ctrl.text),
             style: const TextStyle(fontWeight: FontWeight.w600)),
-        subtitle: const Text('Display name'),
+        subtitle: Text(l(context, "Display name")),
         trailing: IconButton(
             icon: const Icon(Icons.edit, size: 18), onPressed: onEdit),
         contentPadding: EdgeInsets.zero,
@@ -236,7 +251,7 @@ class _NameField extends StatelessWidget {
         Expanded(
           child: TextField(
             controller: ctrl,
-            decoration: const InputDecoration(labelText: 'Display name'),
+            decoration: InputDecoration(labelText: l(context, "Display name")),
             autofocus: true,
           ),
         ),
@@ -263,8 +278,8 @@ class _InfoTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListTile(
       leading: Icon(icon, color: kPrimaryGreen),
-      title: Text(value),
-      subtitle: Text(label),
+      title: Text(l(context, value)),
+      subtitle: Text(l(context, label)),
       contentPadding: EdgeInsets.zero,
     );
   }
@@ -281,14 +296,14 @@ class _CurrencySelector extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Local Currency',
-            style: TextStyle(
+        Text(l(context, "Local Currency"),
+            style: const TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
                 color: Colors.black54)),
         const SizedBox(height: 8),
         SearchablePicker<String>(
-            label: 'Default currency',
+            label: l(context, "Default currency"),
             value: selected,
             options: currencyOptions,
             onChanged: onChanged),

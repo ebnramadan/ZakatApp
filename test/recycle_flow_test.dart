@@ -48,25 +48,32 @@ void main() {
     expect(find.text('USD 150.00'), findsOneWidget);
     await tester.tap(find.text('Records'));
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.byTooltip('Record actions'));
+    await tester.ensureVisible(find.text('Delete default record'));
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Record actions'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Move to recycle bin'));
+    await tester.tap(find.text('Delete default record'));
     await tester.pumpAndSettle();
     expect(find.textContaining('You can restore everything for 60 days'),
         findsOneWidget);
+    expect(
+        tester
+            .widget<FilledButton>(
+                find.widgetWithText(FilledButton, 'Delete default record'))
+            .onPressed,
+        isNull);
     await tester.tap(find.text('Keep record'));
     await tester.pumpAndSettle();
     expect(
         (await db.doc('users/u/zakatRecords/Annual Zakat').get())
             .data()!['deletedAt'],
         isNull);
-    await tester.tap(find.byTooltip('Record actions'));
+    await tester.tap(find.text('Delete default record'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Move to recycle bin'));
+    await tester.enterText(
+        find.byKey(const ValueKey('default-delete-confirmation')),
+        'Annual Zakat');
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(FilledButton, 'Move to recycle bin'));
+    await tester
+        .tap(find.widgetWithText(FilledButton, 'Delete default record'));
     await tester.pumpAndSettle();
     expect(calc.records, isEmpty);
     expect(calc.recycledRecords, hasLength(1));

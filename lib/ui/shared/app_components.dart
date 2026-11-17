@@ -1,3 +1,4 @@
+import '../../core/localization/strings.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../core/constants.dart';
@@ -23,20 +24,23 @@ class PageIntro extends StatelessWidget {
   Widget build(BuildContext context) => Padding(
         padding: const EdgeInsets.only(bottom: 24),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(eyebrow.toUpperCase(),
-              style: const TextStyle(
+          Text(l(context, eyebrow.toUpperCase()),
+              style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
-                  letterSpacing: 1.4,
+                  letterSpacing:
+                      Localizations.localeOf(context).languageCode == 'ar'
+                          ? 0
+                          : 1.4,
                   color: kPrimaryGreen)),
           const SizedBox(height: 8),
-          Text(title,
+          Text(l(context, title),
               style: Theme.of(context)
                   .textTheme
                   .headlineMedium
                   ?.copyWith(fontWeight: FontWeight.w700, letterSpacing: -.7)),
           const SizedBox(height: 8),
-          Text(description,
+          Text(l(context, description),
               style: const TextStyle(color: Color(0xFF52655F), height: 1.5)),
           if (action != null) ...[const SizedBox(height: 20), action!],
         ]),
@@ -52,7 +56,7 @@ class SectionTitle extends StatelessWidget {
         padding: const EdgeInsets.only(top: 24, bottom: 12),
         child: Row(children: [
           Expanded(
-              child: Text(title,
+              child: Text(l(context, title),
                   style: Theme.of(context)
                       .textTheme
                       .titleLarge
@@ -72,7 +76,7 @@ class StatusPill extends StatelessWidget {
         decoration: BoxDecoration(
             color: warning ? const Color(0xFFFFF3D8) : const Color(0xFFE8F2ED),
             borderRadius: BorderRadius.circular(8)),
-        child: Text(label,
+        child: Text(l(context, label),
             style: TextStyle(
                 color: warning ? const Color(0xFF805600) : kPrimaryGreen,
                 fontSize: 12,
@@ -101,8 +105,9 @@ class ActionCard extends StatelessWidget {
                 color: const Color(0xFFE8F2ED),
                 borderRadius: BorderRadius.circular(12)),
             child: Icon(icon, color: kPrimaryGreen)),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
-        subtitle: Text(subtitle,
+        title: Text(l(context, title),
+            style: const TextStyle(fontWeight: FontWeight.w600)),
+        subtitle: Text(l(context, subtitle),
             style: const TextStyle(fontSize: 13, color: Color(0xFF52655F))),
         trailing: const Icon(Icons.chevron_right, size: 20),
         onTap: onTap,

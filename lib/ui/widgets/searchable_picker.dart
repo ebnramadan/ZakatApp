@@ -1,3 +1,4 @@
+import '../../core/localization/strings.dart';
 import 'package:flutter/material.dart';
 import '../../core/constants.dart';
 
@@ -40,16 +41,21 @@ class SearchablePicker<T> extends FormField<T> {
                         },
                   child: InputDecorator(
                       decoration: InputDecoration(
-                          labelText: label,
-                          helperText: helperText,
+                          labelText: l(state.context, label),
+                          helperText: helperText == null
+                              ? null
+                              : l(state.context, helperText),
                           errorText: state.errorText,
                           enabled: onChanged != null,
                           suffixIcon: const Icon(Icons.unfold_more)),
                       child: Semantics(
                           button: true,
-                          label: label,
-                          child: Text(selected?.label ?? 'Choose an option',
-                              maxLines: 2, overflow: TextOverflow.ellipsis))));
+                          label: l(state.context, label),
+                          child: Text(
+                              l(state.context,
+                                  selected?.label ?? 'Choose an option'),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis))));
             });
   @override
   FormFieldState<T> createState() => _SearchablePickerState<T>();
@@ -79,35 +85,41 @@ class _PickerDialogState<T> extends State<_PickerDialog<T>> {
   String query = '';
   @override
   Widget build(BuildContext context) {
+    String normalized(String text) =>
+        text.toLowerCase().replaceAllMapped(RegExp('[٠-٩۰-۹]'), (m) {
+          final n = m[0]!.codeUnitAt(0);
+          return (n > 0x6ef ? n - 0x6f0 : n - 0x660).toString();
+        });
     final filtered = widget.options
-        .where((o) => '${o.label} ${o.detail ?? ''}'
-            .toLowerCase()
-            .contains(query.toLowerCase()))
+        .where((o) => normalized(
+                '${o.label} ${l(context, o.label)} ${o.detail ?? ''} ${l(context, o.detail ?? '')}')
+            .contains(normalized(query)))
         .toList();
     return AlertDialog(
-        title: Text(widget.label),
+        title: Text(l(context, widget.label)),
         content: SizedBox(
             width: 440,
             height: MediaQuery.sizeOf(context).height * .5,
             child: Column(children: [
               TextField(
                   autofocus: true,
-                  decoration: const InputDecoration(
-                      labelText: 'Search options',
-                      prefixIcon: Icon(Icons.search)),
+                  decoration: InputDecoration(
+                      labelText: l(context, "Search options"),
+                      prefixIcon: const Icon(Icons.search)),
                   onChanged: (v) => setState(() => query = v)),
               const SizedBox(height: 12),
               Expanded(
                   child: filtered.isEmpty
-                      ? const Center(child: Text('No matching options'))
+                      ? Center(child: Text(l(context, "No matching options")))
                       : ListView.builder(
                           itemCount: filtered.length,
                           itemBuilder: (context, i) {
                             final o = filtered[i];
                             return ListTile(
-                                title: Text(o.label),
-                                subtitle:
-                                    o.detail == null ? null : Text(o.detail!),
+                                title: Text(l(context, o.label)),
+                                subtitle: o.detail == null
+                                    ? null
+                                    : Text(l(context, o.detail!)),
                                 trailing: o.value == widget.selected
                                     ? const Icon(Icons.check,
                                         color: kPrimaryGreen)
@@ -118,7 +130,7 @@ class _PickerDialogState<T> extends State<_PickerDialog<T>> {
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'))
+              child: Text(l(context, "Cancel")))
         ]);
   }
 }

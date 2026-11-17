@@ -1,3 +1,4 @@
+import '../../core/localization/strings.dart';
 import '../shared/giving_celebration.dart';
 import '../widgets/searchable_picker.dart';
 import 'package:flutter/material.dart';
@@ -53,23 +54,32 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
     final confirmed = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
-                title: const Text('Undo this payment?'),
-                content: Text(
-                    'This marks ${payment.recipient} as unpaid for ${DateFormat.yMMMM().format(monthFromKey(payment.month))}.${payment.kind == 'zakat' ? ' The matching Zakat tracker entry will also be removed.' : ''}'),
+                title: Text(l(context, "Undo this payment?")),
+                content:
+                    Text(l(context, "This marks {0} as unpaid for {1}.{2}", [
+                  payment.recipient,
+                  DateFormat.yMMMM().format(monthFromKey(payment.month)),
+                  payment.kind == 'zakat'
+                      ? l(context,
+                          " The matching Zakat tracker entry will also be removed.")
+                      : ''
+                ])),
                 actions: [
                   TextButton(
                       onPressed: () => Navigator.pop(ctx, false),
-                      child: const Text('Keep payment')),
+                      child: Text(l(context, "Keep payment"))),
                   TextButton(
                       onPressed: () => Navigator.pop(ctx, true),
-                      child: const Text('Undo payment'))
+                      child: Text(l(context, "Undo payment")))
                 ]));
     if (!mounted || confirmed != true) return;
     final monthly = context.read<MonthlyProvider>();
     final ok = await monthly.undo(payment);
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(ok ? 'Payment undone.' : monthly.error!)));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(ok
+              ? l(context, "Payment undone.")
+              : l(context, monthly.error!))));
     }
   }
 
@@ -101,12 +111,13 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
       ..sort();
     return Scaffold(
       appBar: AppBar(
-          title: Text(
+          title: Text(l(
+              context,
               context.watch<AuthProvider>().profile?.monthlyGivingLabel ??
-                  'Monthly Giving'),
+                  'Monthly Giving')),
           actions: [
             IconButton(
-                tooltip: 'Monthly giving settings',
+                tooltip: l(context, "Monthly giving settings"),
                 onPressed: () => showModalBottomSheet(
                     context: context,
                     isScrollControlled: true,
@@ -121,27 +132,30 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
                   key: const Key('monthly-list'),
                   padding: const EdgeInsets.fromLTRB(20, 20, 20, 110),
                   children: [
-                    Text('A little, every month.',
+                    Text(l(context, "A little, every month."),
                         style: Theme.of(context)
                             .textTheme
                             .headlineSmall
                             ?.copyWith(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
-                    const Text(
-                        'Keep your monthly commitments in one place. Mark a payment only after you have given the money.',
-                        style: TextStyle(height: 1.6, color: Colors.black54)),
+                    Text(
+                        l(context,
+                            "Keep your monthly commitments in one place. Mark a payment only after you have given the money."),
+                        style: const TextStyle(
+                            height: 1.6, color: Colors.black54)),
                     const SizedBox(height: 18),
                     Row(children: [
                       IconButton(
-                          tooltip: 'Previous month',
+                          tooltip: l(context, "Previous month"),
                           onPressed: () => _shift(-1),
                           icon: const Icon(Icons.chevron_left)),
                       Expanded(
-                          child: Text(DateFormat.yMMMM().format(_month),
+                          child: Text(
+                              l(context, DateFormat.yMMMM().format(_month)),
                               textAlign: TextAlign.center,
                               style: Theme.of(context).textTheme.titleLarge)),
                       IconButton(
-                          tooltip: 'Next month',
+                          tooltip: l(context, "Next month"),
                           onPressed: () => _shift(1),
                           icon: const Icon(Icons.chevron_right))
                     ]),
@@ -149,21 +163,21 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
                       Center(
                           child: TextButton(
                               onPressed: _currentMonth,
-                              child: const Text('Back to this month'))),
+                              child: Text(l(context, "Back to this month")))),
                     if (key.compareTo(nowKey) > 0)
-                      const Padding(
-                          padding: EdgeInsets.all(12),
-                          child: Text(
-                              'Planning ahead. Future months cannot be marked paid yet.')),
+                      Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Text(l(context,
+                              "Planning ahead. Future months cannot be marked paid yet."))),
                     if (monthly.error != null)
                       Card(
                           child: ListTile(
                               leading: const Icon(Icons.error_outline),
-                              title: Text(monthly.error!),
+                              title: Text(l(context, monthly.error!)),
                               trailing: TextButton(
                                   onPressed: () =>
                                       monthly.load(auth.user!.uid, force: true),
-                                  child: const Text('Retry')))),
+                                  child: Text(l(context, "Retry"))))),
                     ...currencies.map((currency) {
                       final paidTotal = paid
                           .where((p) => p.currency == currency)
@@ -182,16 +196,16 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
                               padding: const EdgeInsets.all(18),
                               child:
                                   Wrap(spacing: 28, runSpacing: 12, children: [
-                                _MonthlyStat(
-                                    'Given this month', fmt.format(paidTotal)),
-                                _MonthlyStat(
-                                    'Still to give', fmt.format(outstanding)),
+                                _MonthlyStat(l(context, "Given this month"),
+                                    fmt.format(paidTotal)),
+                                _MonthlyStat(l(context, "Still to give"),
+                                    fmt.format(outstanding)),
                               ])));
                     }),
                     const SizedBox(height: 14),
                     Wrap(spacing: 8, children: [
                       FilterChip(
-                          label: const Text('Include paused recipients'),
+                          label: Text(l(context, "Include paused recipients")),
                           selected: _showPaused,
                           onSelected: (value) =>
                               setState(() => _showPaused = value)),
@@ -201,7 +215,7 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
                       Align(
                           alignment: AlignmentDirectional.centerStart,
                           child: InputChip(
-                              label: Text('Showing: $_query'),
+                              label: Text(l(context, "Showing: {0}", [_query])),
                               onDeleted: () {
                                 _search.clear();
                                 setState(() => _query = '');
@@ -209,9 +223,9 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
                     if (all.isNotEmpty)
                       TextField(
                           controller: _search,
-                          decoration: const InputDecoration(
-                              labelText: 'Find a recipient',
-                              prefixIcon: Icon(Icons.search)),
+                          decoration: InputDecoration(
+                              labelText: l(context, "Find a recipient"),
+                              prefixIcon: const Icon(Icons.search)),
                           onChanged: (v) => setState(() => _query = v)),
                     const SizedBox(height: 12),
                     if (all.isEmpty)
@@ -222,24 +236,27 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
                                 size: 58,
                                 color: Theme.of(context).colorScheme.primary),
                             const SizedBox(height: 16),
-                            Text('Start a monthly habit',
+                            Text(l(context, "Start a monthly habit"),
                                 style: Theme.of(context).textTheme.titleLarge),
                             const SizedBox(height: 8),
-                            const Text(
-                                'Add a person and an amount. Choose صدقة or connect a Zakat record, then record each month when you pay.',
+                            Text(
+                                l(context,
+                                    "Add a person and an amount. Choose صدقة or connect a Zakat record, then record each month when you pay."),
                                 textAlign: TextAlign.center,
-                                style: TextStyle(
+                                style: const TextStyle(
                                     height: 1.6, color: Colors.black54)),
                             const SizedBox(height: 20),
                             OutlinedButton.icon(
                                 onPressed: () => _edit(),
                                 icon: const Icon(Icons.add),
-                                label: const Text('Add your first recipient'))
+                                label: Text(
+                                    l(context, "Add your first recipient")))
                           ])),
                     if (all.isNotEmpty && shown.isEmpty)
-                      const Padding(
-                          padding: EdgeInsets.all(24),
-                          child: Text('No recipients match your search.')),
+                      Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Text(
+                              l(context, "No recipients match your search."))),
                     ...shown.map((plan) {
                       final receipt = monthly.paid(plan.id, key);
                       final isPaid = receipt != null;
@@ -280,8 +297,10 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
                                                       CrossAxisAlignment.start,
                                                   children: [
                                                 Text(
-                                                    receipt?.recipient ??
-                                                        plan.recipient,
+                                                    l(
+                                                        context,
+                                                        receipt?.recipient ??
+                                                            plan.recipient),
                                                     style: Theme.of(context)
                                                         .textTheme
                                                         .titleMedium
@@ -292,14 +311,17 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
                                                 const SizedBox(height: 4),
                                                 Text(
                                                     kind == 'zakat'
-                                                        ? 'زكاة · Counts toward your selected Zakat record'
-                                                        : 'صدقة · Separate from Zakat',
+                                                        ? l(context,
+                                                            "زكاة · Counts toward your selected Zakat record")
+                                                        : l(context,
+                                                            "صدقة · Separate from Zakat"),
                                                     style: const TextStyle(
                                                         fontSize: 12,
                                                         height: 1.5))
                                               ])),
                                           PopupMenuButton<String>(
-                                              tooltip: 'Manage recipient',
+                                              tooltip: l(
+                                                  context, "Manage recipient"),
                                               onSelected: (v) async {
                                                 if (v == 'edit') {
                                                   _edit(plan: plan);
@@ -310,25 +332,32 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
                                                       context: context,
                                                       builder: (ctx) =>
                                                           AlertDialog(
-                                                              title: const Text(
-                                                                  'Pause monthly giving?'),
-                                                              content: Text(
-                                                                  'Stop future commitments and reminders for ${plan.recipient}. Payments already recorded will remain in your history.'),
+                                                              title: Text(l(
+                                                                  context,
+                                                                  "Pause monthly giving?")),
+                                                              content: Text(l(
+                                                                  context,
+                                                                  "Stop future commitments and reminders for {0}. Payments already recorded will remain in your history.",
+                                                                  [
+                                                                    plan.recipient
+                                                                  ])),
                                                               actions: [
                                                                 TextButton(
                                                                     onPressed: () =>
                                                                         Navigator.pop(
                                                                             ctx,
                                                                             false),
-                                                                    child: const Text(
-                                                                        'Cancel')),
+                                                                    child: Text(l(
+                                                                        context,
+                                                                        "Cancel"))),
                                                                 TextButton(
                                                                     onPressed: () =>
                                                                         Navigator.pop(
                                                                             ctx,
                                                                             true),
-                                                                    child: const Text(
-                                                                        'Pause recipient'))
+                                                                    child: Text(l(
+                                                                        context,
+                                                                        "Pause recipient")))
                                                               ]));
                                                   if (pause == true) {
                                                     await monthly
@@ -337,25 +366,27 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
                                                 }
                                               },
                                               itemBuilder: (_) => [
-                                                    const PopupMenuItem(
+                                                    PopupMenuItem(
                                                         value: 'edit',
-                                                        child: Text(
-                                                            'Edit commitment')),
+                                                        child: Text(l(context,
+                                                            "Edit commitment"))),
                                                     if (plan.active)
-                                                      const PopupMenuItem(
+                                                      PopupMenuItem(
                                                           value: 'pause',
-                                                          child: Text(
-                                                              'Pause recipient'))
+                                                          child: Text(l(context,
+                                                              "Pause recipient")))
                                                   ])
                                         ]),
                                     const SizedBox(height: 16),
                                     Text(
-                                        NumberFormat.currency(
-                                          name: receipt?.currency ??
-                                              plan.currency,
-                                          symbol:
-                                              '${receipt?.currency ?? plan.currency} ',
-                                        ).format(amount),
+                                        l(
+                                            context,
+                                            NumberFormat.currency(
+                                                    name: receipt?.currency ??
+                                                        plan.currency,
+                                                    symbol:
+                                                        '${receipt?.currency ?? plan.currency} ')
+                                                .format(amount)),
                                         style: Theme.of(context)
                                             .textTheme
                                             .headlineSmall
@@ -364,7 +395,10 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
                                     const SizedBox(height: 8),
                                     Text(
                                         isPaid
-                                            ? 'Paid on ${DateFormat.yMMMd().format(receipt.paidAt)}'
+                                            ? l(context, "Paid on {0}", [
+                                                DateFormat.yMMMd()
+                                                    .format(receipt.paidAt)
+                                              ])
                                             : '${overdue ? 'Ready to give' : 'Reminder'} · ${DateFormat.MMMd().format(due)}',
                                         style: TextStyle(
                                             color: isPaid
@@ -374,10 +408,11 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
                                                     : Colors.black54)),
                                     const SizedBox(height: 14),
                                     if (blocked)
-                                      const Padding(
-                                          padding: EdgeInsets.only(bottom: 12),
-                                          child: Text(
-                                              'Linked Zakat record is unavailable. Restore it from the recycle bin or edit this commitment to select another record.')),
+                                      Padding(
+                                          padding:
+                                              const EdgeInsets.only(bottom: 12),
+                                          child: Text(l(context,
+                                              "Linked Zakat record is unavailable. Restore it from the recycle bin or edit this commitment to select another record."))),
                                     if (isPaid)
                                       TextButton.icon(
                                           onPressed: monthly.busy || blocked
@@ -385,69 +420,97 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
                                               : () => _undo(receipt),
                                           icon:
                                               const Icon(Icons.undo, size: 18),
-                                          label: const Text('Undo payment'))
+                                          label:
+                                              Text(l(context, "Undo payment")))
                                     else
                                       OutlinedButton.icon(
-                                          onPressed: monthly.busy ||
-                                                  blocked ||
-                                                  key.compareTo(nowKey) > 0
-                                              ? null
-                                              : () async {
-                                                  final confirmed = await showDialog<
-                                                          bool>(
-                                                      context: context,
-                                                      builder: (ctx) =>
-                                                          AlertDialog(
-                                                              title: const Text(
-                                                                  'Record this month’s payment?'),
-                                                              content: Text(
-                                                                  'Confirm that you gave ${plan.currency} ${plan.amount.toStringAsFixed(currencyDecimals(plan.currency))} to ${plan.recipient}.${plan.kind == 'zakat' ? ' This will reduce the remaining amount on your selected Zakat record.' : ' Your Zakat balance will not change.'}'),
-                                                              actions: [
-                                                                TextButton(
-                                                                    onPressed: () =>
-                                                                        Navigator.pop(
+                                          onPressed:
+                                              monthly.busy ||
+                                                      blocked ||
+                                                      key.compareTo(nowKey) > 0
+                                                  ? null
+                                                  : () async {
+                                                      final confirmed = await showDialog<
+                                                              bool>(
+                                                          context: context,
+                                                          builder: (ctx) =>
+                                                              AlertDialog(
+                                                                  title: Text(l(
+                                                                      context,
+                                                                      "Record this month’s payment?")),
+                                                                  content: Text(l(
+                                                                      context,
+                                                                      "Confirm that you gave {0} {1} to {2}.{3}",
+                                                                      [
+                                                                        plan.currency,
+                                                                        plan.amount
+                                                                            .toStringAsFixed(currencyDecimals(plan.currency)),
+                                                                        plan.recipient,
+                                                                        plan.kind ==
+                                                                                'zakat'
+                                                                            ? l(context,
+                                                                                " This will reduce the remaining amount on your selected Zakat record.")
+                                                                            : l(context,
+                                                                                " Your Zakat balance will not change.")
+                                                                      ])),
+                                                                  actions: [
+                                                                    TextButton(
+                                                                        onPressed: () => Navigator.pop(
                                                                             ctx,
                                                                             false),
-                                                                    child: const Text(
-                                                                        'Not yet')),
-                                                                TextButton(
-                                                                    onPressed: () =>
-                                                                        Navigator.pop(
+                                                                        child: Text(l(
+                                                                            context,
+                                                                            "Not yet"))),
+                                                                    TextButton(
+                                                                        onPressed: () => Navigator.pop(
                                                                             ctx,
                                                                             true),
-                                                                    child: const Text(
-                                                                        'Yes, I paid'))
-                                                              ]));
-                                                  if (confirmed != true ||
-                                                      !context.mounted) return;
-                                                  final ok = await monthly
-                                                      .markPaid(plan, key);
-                                                  if (ok && context.mounted) {
-                                                    await showGivingCelebration(
-                                                        context,
-                                                        sadaqah: plan.kind ==
-                                                            'sadaqah');
-                                                  }
-                                                  if (context.mounted) {
-                                                    ScaffoldMessenger.of(
-                                                            context)
-                                                        .showSnackBar(SnackBar(
-                                                            content: Text(ok
-                                                                ? 'Payment recorded for ${plan.recipient}.'
-                                                                : monthly
-                                                                    .error!)));
-                                                  }
-                                                },
+                                                                        child: Text(l(
+                                                                            context,
+                                                                            "Yes, I paid")))
+                                                                  ]));
+                                                      if (confirmed != true ||
+                                                          !context.mounted) {
+                                                        return;
+                                                      }
+                                                      final ok = await monthly
+                                                          .markPaid(plan, key);
+                                                      if (ok &&
+                                                          context.mounted) {
+                                                        await showGivingCelebration(
+                                                            context,
+                                                            sadaqah:
+                                                                plan.kind ==
+                                                                    'sadaqah');
+                                                      }
+                                                      if (context.mounted) {
+                                                        ScaffoldMessenger.of(
+                                                                context)
+                                                            .showSnackBar(SnackBar(
+                                                                content: Text(ok
+                                                                    ? l(
+                                                                        context,
+                                                                        "Payment recorded for {0}.",
+                                                                        [
+                                                                            plan.recipient
+                                                                          ])
+                                                                    : l(
+                                                                        context,
+                                                                        monthly
+                                                                            .error!))));
+                                                      }
+                                                    },
                                           icon: const Icon(
                                               Icons.check_circle_outline),
-                                          label: const Text('Mark as paid')),
+                                          label:
+                                              Text(l(context, "Mark as paid"))),
                                   ])));
                     }),
                     if (monthly.plans.any((p) => !p.active))
                       ExpansionTile(
-                          title: const Text('Paused recipients'),
-                          subtitle: const Text(
-                              'Resume from this month; previous payments stay saved'),
+                          title: Text(l(context, "Paused recipients")),
+                          subtitle: Text(l(context,
+                              "Resume from this month; previous payments stay saved")),
                           children: monthly.plans
                               .where((p) => !p.active)
                               .map((p) => ListTile(
@@ -456,19 +519,21 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
                                       onPressed: monthly.busy
                                           ? null
                                           : () => _edit(plan: p),
-                                      child: const Text('Edit & resume'))))
+                                      child:
+                                          Text(l(context, "Edit & resume")))))
                               .toList()),
                     const SizedBox(height: 16),
-                    const Text(
-                        'Reminders are a prompt to give, not an automatic transfer. A commitment never reduces your Zakat until it is marked paid.',
-                        style: TextStyle(
+                    Text(
+                        l(context,
+                            "Reminders are a prompt to give, not an automatic transfer. A commitment never reduces your Zakat until it is marked paid."),
+                        style: const TextStyle(
                             color: Colors.black54, fontSize: 12, height: 1.6)),
                   ])),
       floatingActionButton: FloatingActionButton.extended(
           heroTag: 'monthly-add',
           onPressed: monthly.busy ? null : () => _edit(),
           icon: const Icon(Icons.add),
-          label: const Text('Add recipient')),
+          label: Text(l(context, "Add recipient"))),
     );
   }
 }
@@ -480,9 +545,9 @@ class _MonthlyStat extends StatelessWidget {
   @override
   Widget build(BuildContext context) =>
       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(label),
+        Text(l(context, label)),
         const SizedBox(height: 6),
-        Text(value,
+        Text(l(context, value),
             style: Theme.of(context)
                 .textTheme
                 .titleLarge
@@ -537,8 +602,8 @@ class _MonthlyPlanDialogState extends State<MonthlyPlanDialog> {
     final selected = records.any((r) => r.id == _record) ? _record : null;
     return AlertDialog(
         title: Text(widget.existing == null
-            ? 'Add monthly giving'
-            : 'Edit monthly commitment'),
+            ? l(context, "Add monthly giving")
+            : l(context, "Edit monthly commitment")),
         content: SizedBox(
             width: 440,
             child: SingleChildScrollView(
@@ -549,19 +614,20 @@ class _MonthlyPlanDialogState extends State<MonthlyPlanDialog> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           if (widget.existing != null)
-                            const Padding(
-                                padding: EdgeInsets.only(bottom: 16),
-                                child: Text(
-                                    'Changes apply to unpaid and future months. Recorded payments keep their original amounts and classification.')),
+                            Padding(
+                                padding: const EdgeInsets.only(bottom: 16),
+                                child: Text(l(context,
+                                    "Changes apply to unpaid and future months. Recorded payments keep their original amounts and classification."))),
                           TextFormField(
                               controller: _name,
                               textCapitalization: TextCapitalization.words,
-                              decoration: const InputDecoration(
-                                  labelText: 'Recipient name'),
+                              decoration: InputDecoration(
+                                  labelText: l(context, "Recipient name")),
                               validator: (v) => v == null ||
                                       v.trim().isEmpty ||
                                       v.length > 120
-                                  ? 'Enter a name (up to 120 characters)'
+                                  ? l(context,
+                                      "Enter a name (up to 120 characters)")
                                   : null),
                           const SizedBox(height: 14),
                           TextFormField(
@@ -569,20 +635,20 @@ class _MonthlyPlanDialogState extends State<MonthlyPlanDialog> {
                               keyboardType:
                                   const TextInputType.numberWithOptions(
                                       decimal: true),
-                              decoration: const InputDecoration(
-                                  labelText: 'Amount per month'),
+                              decoration: InputDecoration(
+                                  labelText: l(context, "Amount per month")),
                               validator: (v) {
-                                final n = double.tryParse(v ?? '');
+                                final n = parseLocalizedNumber(v ?? '');
                                 return n == null ||
                                         !n.isFinite ||
                                         n <= 0 ||
                                         n >= 1e15
-                                    ? 'Enter a positive amount'
+                                    ? l(context, "Enter a positive amount")
                                     : null;
                               }),
                           const SizedBox(height: 14),
                           SearchablePicker<String>(
-                              label: 'Currency',
+                              label: l(context, "Currency"),
                               value: _currency,
                               options: currencyOptions,
                               onChanged: monthly.busy
@@ -594,15 +660,17 @@ class _MonthlyPlanDialogState extends State<MonthlyPlanDialog> {
                           const SizedBox(height: 14),
                           DropdownButtonFormField<String>(
                               value: _kind,
-                              decoration: const InputDecoration(
-                                  labelText: 'Count this giving as'),
-                              items: const [
+                              decoration: InputDecoration(
+                                  labelText:
+                                      l(context, "Count this giving as")),
+                              items: [
                                 DropdownMenuItem(
                                     value: 'sadaqah',
-                                    child: Text('صدقة · Sadaqah')),
+                                    child: Text(l(context, "صدقة · Sadaqah"))),
                                 DropdownMenuItem(
                                     value: 'zakat',
-                                    child: Text('زكاة · Part of Zakat'))
+                                    child: Text(
+                                        l(context, "زكاة · Part of Zakat")))
                               ],
                               onChanged: monthly.busy
                                   ? null
@@ -610,7 +678,7 @@ class _MonthlyPlanDialogState extends State<MonthlyPlanDialog> {
                           if (_kind == 'zakat') ...[
                             const SizedBox(height: 14),
                             SearchablePicker<String>(
-                                label: 'Zakat record to reduce',
+                                label: l(context, "Zakat record to reduce"),
                                 value: selected,
                                 options: records
                                     .map((r) => PickerOption(r.id, r.name))
@@ -619,17 +687,18 @@ class _MonthlyPlanDialogState extends State<MonthlyPlanDialog> {
                                     ? null
                                     : (v) => setState(() => _record = v),
                                 validator: (v) => _kind == 'zakat' && v == null
-                                    ? 'Choose a submitted record in the same currency'
+                                    ? l(context,
+                                        "Choose a submitted record in the same currency")
                                     : null),
                             if (records.isEmpty)
-                              const Padding(
-                                  padding: EdgeInsets.only(top: 8),
-                                  child: Text(
-                                      'Create and submit a Zakat calculation in this currency first. You can also choose Sadaqah for now.')),
+                              Padding(
+                                  padding: const EdgeInsets.only(top: 8),
+                                  child: Text(l(context,
+                                      "Create and submit a Zakat calculation in this currency first. You can also choose Sadaqah for now."))),
                           ],
                           const SizedBox(height: 14),
                           SearchablePicker<int>(
-                              label: 'Remind me each month on day',
+                              label: l(context, "Remind me each month on day"),
                               value: _day,
                               options: List.generate(
                                   31, (i) => PickerOption(i + 1, '${i + 1}')),
@@ -637,16 +706,17 @@ class _MonthlyPlanDialogState extends State<MonthlyPlanDialog> {
                                   ? null
                                   : (v) => setState(() => _day = v)),
                           const SizedBox(height: 8),
-                          const Text(
-                              'If a month is shorter, the reminder falls on its last day.',
-                              style: TextStyle(
+                          Text(
+                              l(context,
+                                  "If a month is shorter, the reminder falls on its last day."),
+                              style: const TextStyle(
                                   fontSize: 12,
                                   color: Colors.black54,
                                   height: 1.5)),
                           if (_error != null)
                             Padding(
                                 padding: const EdgeInsets.only(top: 14),
-                                child: Text(_error!,
+                                child: Text(l(context, _error!),
                                     style: TextStyle(
                                         color: Theme.of(context)
                                             .colorScheme
@@ -655,7 +725,7 @@ class _MonthlyPlanDialogState extends State<MonthlyPlanDialog> {
         actions: [
           TextButton(
               onPressed: monthly.busy ? null : () => Navigator.pop(context),
-              child: const Text('Cancel')),
+              child: Text(l(context, "Cancel"))),
           TextButton(
               onPressed: monthly.busy
                   ? null
@@ -666,7 +736,7 @@ class _MonthlyPlanDialogState extends State<MonthlyPlanDialog> {
                           id: p?.id ?? const Uuid().v4(),
                           userId: context.read<AuthProvider>().user!.uid,
                           recipient: _name.text.trim(),
-                          amount: double.parse(_amount.text),
+                          amount: parseLocalizedNumber(_amount.text)!,
                           currency: _currency,
                           kind: _kind,
                           zakatRecordId: _kind == 'zakat' ? _record : '',
@@ -684,7 +754,9 @@ class _MonthlyPlanDialogState extends State<MonthlyPlanDialog> {
                         setState(() => _error = monthly.error);
                       }
                     },
-              child: Text(monthly.busy ? 'Saving…' : 'Save recipient')),
+              child: Text(monthly.busy
+                  ? l(context, "Saving…")
+                  : l(context, "Save recipient"))),
         ]);
   }
 }
@@ -703,59 +775,66 @@ class MonthlySettings extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text('Monthly giving settings',
+                  Text(l(context, "Monthly giving settings"),
                       style: Theme.of(context).textTheme.titleLarge),
                   const SizedBox(height: 18),
                   DropdownButtonFormField<String>(
                       value: profile.monthlyDefaultKind,
                       isExpanded: true,
-                      decoration: const InputDecoration(
-                          labelText: 'Default for new recipients'),
-                      items: const [
+                      decoration: InputDecoration(
+                          labelText: l(context, "Default for new recipients")),
+                      items: [
                         DropdownMenuItem(
-                            value: 'sadaqah', child: Text('صدقة · Sadaqah')),
+                            value: 'sadaqah',
+                            child: Text(l(context, "صدقة · Sadaqah"))),
                         DropdownMenuItem(
-                            value: 'zakat', child: Text('زكاة · Part of Zakat'))
+                            value: 'zakat',
+                            child: Text(l(context, "زكاة · Part of Zakat")))
                       ],
                       onChanged: (v) async {
                         final ok = await auth.updateProfileFields(
                             monthlyDefaultKind: v);
                         if (!context.mounted || ok) return;
-                        ScaffoldMessenger.of(context)
-                            .showSnackBar(SnackBar(content: Text(auth.error!)));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(l(context, auth.error!))));
                       }),
                   const SizedBox(height: 10),
-                  const Text(
-                      'Each recipient can override this. Changing the default never reclassifies existing payments.',
-                      style: TextStyle(height: 1.5, color: Colors.black54)),
+                  Text(
+                      l(context,
+                          "Each recipient can override this. Changing the default never reclassifies existing payments."),
+                      style:
+                          const TextStyle(height: 1.5, color: Colors.black54)),
                   const SizedBox(height: 18),
                   SwitchListTile(
                       contentPadding: EdgeInsets.zero,
-                      title: const Text('Email me monthly reminders'),
-                      subtitle: Text(
-                          'Sent to ${auth.user?.email ?? profile.email}. In-app reminders are always available.'),
+                      title: Text(l(context, "Email me monthly reminders")),
+                      subtitle: Text(l(
+                          context,
+                          "Sent to {0}. In-app reminders are always available.",
+                          [auth.user?.email ?? profile.email])),
                       value: profile.monthlyEmailReminders,
                       onChanged: (v) async {
                         final ok = await auth.updateProfileFields(
                             monthlyEmailReminders: v);
                         if (!context.mounted || ok) return;
-                        ScaffoldMessenger.of(context)
-                            .showSnackBar(SnackBar(content: Text(auth.error!)));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(l(context, auth.error!))));
                       }),
                   if (!monthly.emailReady)
-                    const Card(
+                    Card(
                         child: Padding(
-                            padding: EdgeInsets.all(14),
-                            child: Text(
-                                'Email delivery has not been confirmed yet. Your preference is saved; in-app due reminders are available now.'))),
-                  const Text(
-                      'Email reminders are checked daily around 08:00 UTC. One reminder per unpaid recipient per month; completed payments are skipped. Email includes the recipient and amount. You can turn it off at any time.',
-                      style: TextStyle(
+                            padding: const EdgeInsets.all(14),
+                            child: Text(l(context,
+                                "Email delivery has not been confirmed yet. Your preference is saved; in-app due reminders are available now.")))),
+                  Text(
+                      l(context,
+                          "Email reminders are checked daily around 08:00 UTC. One reminder per unpaid recipient per month; completed payments are skipped. Email includes the recipient and amount. You can turn it off at any time."),
+                      style: const TextStyle(
                           fontSize: 12, height: 1.6, color: Colors.black54)),
                   const SizedBox(height: 16),
                   TextButton(
                       onPressed: () => Navigator.pop(context),
-                      child: const Text('Done')),
+                      child: Text(l(context, "Done"))),
                 ])));
   }
 }
