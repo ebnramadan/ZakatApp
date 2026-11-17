@@ -16,6 +16,10 @@ class AuthProvider extends ChangeNotifier {
   UserProfile? _profile;
   bool _isLoading = true;
   bool _busy = false;
+  bool _resetting = false;
+  int dataRevision = 0;
+  bool get canResetAccount =>
+      isVerified && _user?.email == 'ebnramadan@gmail.com';
   String? _error;
   DateTime? _verificationSentAt;
   DateTime? _passwordConfirmedAt;
@@ -52,6 +56,7 @@ class AuthProvider extends ChangeNotifier {
     final generation = ++_generation;
     final changedAccount = _user?.uid != user?.uid;
     _user = user;
+    if (_resetting && !changedAccount) return;
     if (changedAccount || user == null || !user.emailVerified) _profile = null;
     _isLoading = _profile == null && user != null && user.emailVerified;
     _notify();
@@ -173,10 +178,40 @@ class AuthProvider extends ChangeNotifier {
 
   int _preferenceRevision = 0;
   final Map<String, int> _fieldRevision = {};
+  Future<bool> resetAppData({String? password}) => _wrap(() async {
+        if (!canResetAccount) {
+          throw StateError('Reset is unavailable for this account.');
+        }
+        final user = _user!;
+        _resetting = true;
+        try {
+          await _auth.reauthenticate(password: password);
+          await _auth.refreshUser();
+          final fresh = UserProfile(
+              uid: user.uid,
+              displayName: user.displayName ?? user.email!.split('@').first,
+              email: user.email!,
+              photoUrl: user.photoURL);
+          await _fs.resetAppData(fresh);
+          _profile = fresh;
+          dataRevision++;
+        } catch (_) {
+          _profile = await _fs.getProfile(user.uid);
+          rethrow;
+        } finally {
+          _resetting = false;
+        }
+      });
+
   Future<bool> updateProfileFields(
       {String? displayName,
       String? currency,
       String? language,
+      String? defaultRecordId,
+      bool? onboardingCompleted,
+      bool? sharingEnabled,
+      List<String>? shareRecipients,
+      int? shareDay,
       String? monthlyDefaultKind,
       bool? monthlyEmailReminders}) async {
     final current = _profile;
@@ -185,6 +220,12 @@ class AuthProvider extends ChangeNotifier {
       if (displayName != null) 'displayName': displayName,
       if (currency != null) 'currency': currency,
       if (language != null) 'language': language,
+      if (defaultRecordId != null) 'defaultRecordId': defaultRecordId,
+      if (onboardingCompleted != null)
+        'onboardingCompleted': onboardingCompleted,
+      if (sharingEnabled != null) 'sharingEnabled': sharingEnabled,
+      if (shareRecipients != null) 'shareRecipients': shareRecipients,
+      if (shareDay != null) 'shareDay': shareDay,
       if (monthlyDefaultKind != null) 'monthlyDefaultKind': monthlyDefaultKind,
       if (monthlyEmailReminders != null)
         'monthlyEmailReminders': monthlyEmailReminders,

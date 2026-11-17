@@ -1,6 +1,7 @@
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zakat_app/core/models/dashboard_summary.dart';
+import 'package:zakat_app/core/models/user_profile.dart';
 import 'package:zakat_app/core/models/zakat_record.dart';
 import 'package:zakat_app/core/models/payment.dart';
 import 'package:zakat_app/core/services/firestore_service.dart';
@@ -30,6 +31,62 @@ Payment payment(String id, String recordId, double amount) => Payment(
       createdAt: DateTime(2025),
     );
 void main() {
+  test(
+      'testing reset removes only this user’s app collections and restarts onboarding',
+      () async {
+    final db = FakeFirebaseFirestore();
+    final local = FirestoreService(database: db);
+    final fresh = UserProfile(
+        uid: 'u', displayName: 'Tester', email: 'ebnramadan@gmail.com');
+    await local.saveProfile(fresh.copyWith(
+        sharingEnabled: true,
+        shareRecipients: ['trusted@example.com'],
+        onboardingCompleted: true));
+    for (final name in [
+      'payments',
+      'monthlyPayments',
+      'monthlyPlans',
+      'reminderDeliveries',
+      'shareDeliveries',
+      'zakatRecords'
+    ]) {
+      await db.doc('users/u/$name/fixture').set({'fixture': true});
+    }
+    await db.doc('users/other/zakatRecords/saved').set({'keep': true});
+    await local.resetAppData(fresh);
+    for (final name in [
+      'payments',
+      'monthlyPayments',
+      'monthlyPlans',
+      'reminderDeliveries',
+      'shareDeliveries',
+      'zakatRecords'
+    ]) {
+      expect((await db.collection('users/u/$name').get()).docs, isEmpty);
+    }
+    final profile = (await local.getProfile('u'))!;
+    expect(profile.onboardingCompleted, isFalse);
+    expect(profile.sharingEnabled, isFalse);
+    expect(profile.resetInProgress, isFalse);
+    expect(
+        (await db.doc('users/other/zakatRecords/saved').get()).exists, isTrue);
+  });
+  test('legacy profiles do not silently enable sharing or repeat onboarding',
+      () {
+    final old = UserProfile.fromMap('u', {
+      'displayName': 'Old',
+      'email': 'old@example.com',
+      'shareRecipients': ['trusted@example.com'],
+      'shareFrequency': 'monthly'
+    });
+    expect(old.sharingEnabled, isFalse);
+    expect(old.onboardingCompleted, isTrue);
+    expect(
+        UserProfile(uid: 'new', displayName: 'New', email: 'new@example.com')
+            .onboardingCompleted,
+        isFalse);
+  });
+
   test(
       'dashboard separates currencies and estimates, excludes bin, and does not offset other records with overpayment',
       () {

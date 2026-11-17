@@ -44,7 +44,7 @@ void main() {
       ChangeNotifierProvider.value(value: monthly),
     ], child: MaterialApp(theme: AppTheme.light, home: const HomeScreen())));
     await tester.pumpAndSettle();
-    expect(find.text('Assalamu alaikum, u.'), findsOneWidget);
+    expect(find.text('One intention. Clear progress.'), findsOneWidget);
     expect(find.text('USD 150.00'), findsOneWidget);
     await tester.tap(find.text('Records'));
     await tester.pumpAndSettle();

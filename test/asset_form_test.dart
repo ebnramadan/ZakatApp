@@ -74,6 +74,14 @@ void main() {
           await tester.pumpAndSettle();
         }
       }
+      await tester.ensureVisible(find.text('21K'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('21K'));
+      await tester.pumpAndSettle();
+      expect(find.text('21K price: USD 87.50 / g'), findsOneWidget);
+      expect(find.text('Gold value: USD 8750.00'), findsOneWidget);
+      await tester.tap(find.text('18K'));
+      await tester.pumpAndSettle();
       await tester.scrollUntilVisible(find.text('Calculate Zakat'), 400,
           scrollable: find.byType(Scrollable).first);
       await tester.tap(find.text('Calculate Zakat'));
@@ -85,6 +93,9 @@ void main() {
       await tester.scrollUntilVisible(find.text('Confirm & Submit'), 400,
           scrollable: find.byType(Scrollable).first);
       await tester.tap(find.text('Confirm & Submit'));
+      await tester.pumpAndSettle();
+      expect(find.text('Your Zakat plan is ready'), findsOneWidget);
+      await tester.tap(find.text('Continue'));
       await tester.pumpAndSettle();
       expect(find.text('Zakat Tracker'), findsOneWidget);
       expect(tracker.selectedRecord!.totalWealth, 10000);

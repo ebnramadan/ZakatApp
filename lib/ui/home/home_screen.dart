@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../core/constants.dart';
 import '../../core/models/zakat_record.dart';
+import '../../core/models/monthly_giving.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/providers/calculator_provider.dart';
 import '../../core/providers/tracker_provider.dart';
@@ -25,16 +26,33 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   late int _tab;
+  String? _monthlyFocus;
   void _selectTab(int index) {
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     setState(() => _tab = index);
   }
 
   void openTracker() => _selectTab(2);
-  void openMonthly() => _selectTab(3);
+  void openMonthly() {
+    setState(() => _monthlyFocus = null);
+    _selectTab(3);
+  }
+
+  void _openCommitment(MonthlyPlan plan) {
+    setState(() => _monthlyFocus = plan.recipient);
+    _selectTab(3);
+  }
+
   void _create() => Navigator.of(context)
       .push(MaterialPageRoute(builder: (_) => const EntryModeScreen()));
   void _open(ZakatRecord r) {
+    final auth = context.read<AuthProvider>();
+    auth.updateProfileFields(defaultRecordId: r.id).then((ok) {
+      if (!ok && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(auth.error ?? 'Default record could not be saved.')));
+      }
+    });
     if (r.isSubmitted) {
       context
           .read<TrackerProvider>()
@@ -66,6 +84,20 @@ class _HomeScreenState extends State<HomeScreen> {
     final auth = context.watch<AuthProvider>();
     final calc = context.watch<CalculatorProvider>();
     final monthly = context.watch<MonthlyProvider>();
+    final current = calc.defaultRecord(auth.profile?.defaultRecordId);
+    if (!calc.recordsLoading &&
+        current != null &&
+        current.id != auth.profile?.defaultRecordId) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted &&
+            context.read<AuthProvider>().profile?.defaultRecordId !=
+                current.id) {
+          context
+              .read<AuthProvider>()
+              .updateProfileFields(defaultRecordId: current.id);
+        }
+      });
+    }
     final now = DateTime.now();
     final due = monthly.loading
         ? 0
@@ -103,11 +135,14 @@ class _HomeScreenState extends State<HomeScreen> {
       DashboardScreen(
           onRecords: () => _selectTab(1),
           onMonthly: openMonthly,
+          onCommitment: _openCommitment,
           onCreate: _create,
           onRecord: _open),
       _RecordsTab(onCreate: _create, onOpen: _open),
-      TrackerScreen(onOpenMonthly: openMonthly),
-      const MonthlyScreen(),
+      TrackerScreen(
+          onOpenMonthly: openMonthly, onOpenRecords: () => _selectTab(1)),
+      MonthlyScreen(
+          key: ValueKey(_monthlyFocus), focusRecipient: _monthlyFocus),
       const ProfileScreen(),
     ]);
     Widget navIcon(int index) => index == 3
@@ -291,6 +326,16 @@ class _RecordsTabState extends State<_RecordsTab> {
                                               color: Color(0xFFB3261E))))
                                 ])
                       ]),
+                      if (calc
+                              .defaultRecord(context
+                                  .watch<AuthProvider>()
+                                  .profile
+                                  ?.defaultRecordId)
+                              ?.id ==
+                          r.id)
+                        const Padding(
+                            padding: EdgeInsets.only(bottom: 8),
+                            child: StatusPill('Default record')),
                       const SizedBox(height: 8),
                       StatusPill(
                           r.isSubmitted
@@ -322,6 +367,26 @@ class _RecordsTabState extends State<_RecordsTab> {
                                 fontSize: 13, color: Color(0xFF52655F)))
                       ],
                       const SizedBox(height: 12),
+                      if (context
+                              .watch<AuthProvider>()
+                              .profile
+                              ?.defaultRecordId !=
+                          r.id)
+                        TextButton.icon(
+                            onPressed: () async {
+                              final auth = context.read<AuthProvider>();
+                              final ok = await auth.updateProfileFields(
+                                  defaultRecordId: r.id);
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                        content: Text(ok
+                                            ? 'Default record updated.'
+                                            : auth.error!)));
+                              }
+                            },
+                            icon: const Icon(Icons.star_outline),
+                            label: const Text('Set as default')),
                       TextButton.icon(
                           onPressed: () => widget.onOpen(r),
                           icon: Icon(r.isSubmitted

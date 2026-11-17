@@ -28,6 +28,34 @@ class FirestoreService {
   Future<void> updateProfileFields(String uid, Map<String, dynamic> fields) =>
       _users().doc(uid).set(fields, SetOptions(merge: true));
 
+  Future<void> resetAppData(UserProfile fresh) async {
+    final user = _users().doc(fresh.uid);
+    await user.update({
+      'resetInProgress': true,
+      'sharingEnabled': false,
+      'monthlyEmailReminders': false
+    });
+    for (final collection in [
+      'payments',
+      'monthlyPayments',
+      'monthlyPlans',
+      'reminderDeliveries',
+      'shareDeliveries',
+      'zakatRecords'
+    ]) {
+      while (true) {
+        final page = await user.collection(collection).limit(300).get();
+        if (page.docs.isEmpty) break;
+        final batch = _db.batch();
+        for (final doc in page.docs) {
+          batch.delete(doc.reference);
+        }
+        await batch.commit();
+      }
+    }
+    await user.set(fresh.toMap());
+  }
+
   // ─── Zakat Records ─────────────────────────────────────────────────────────
 
   Stream<List<ZakatRecord>> recordsStream(String uid) {

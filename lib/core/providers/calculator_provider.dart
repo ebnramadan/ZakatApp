@@ -36,6 +36,14 @@ class CalculatorProvider extends ChangeNotifier {
   List<ZakatRecord> get recycledRecords =>
       List.unmodifiable(_records.where((r) => r.canRestoreAt(DateTime.now())));
   bool isRecordActive(String id) => records.any((r) => r.id == id);
+  ZakatRecord? defaultRecord(String? id) {
+    final selected = records.where((r) => r.id == id);
+    if (selected.isNotEmpty) return selected.first;
+    final submitted = records.where((r) => r.isSubmitted);
+    if (submitted.isNotEmpty) return submitted.first;
+    return records.isEmpty ? null : records.first;
+  }
+
   ZakatRecord? get draft => _draft;
   bool get loading => _loading;
   bool get recordsLoading => _recordsLoading;

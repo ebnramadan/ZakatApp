@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../core/constants.dart';
-import '../../core/models/dashboard_summary.dart';
-import '../../core/models/zakat_record.dart';
 import '../../core/models/monthly_giving.dart';
+import '../../core/models/zakat_record.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/providers/calculator_provider.dart';
 import '../../core/providers/monthly_provider.dart';
@@ -13,210 +12,245 @@ import '../shared/app_components.dart';
 class DashboardScreen extends StatelessWidget {
   final VoidCallback onRecords, onMonthly, onCreate;
   final ValueChanged<ZakatRecord> onRecord;
+  final ValueChanged<MonthlyPlan>? onCommitment;
   const DashboardScreen(
       {super.key,
       required this.onRecords,
       required this.onMonthly,
       required this.onCreate,
-      required this.onRecord});
+      required this.onRecord,
+      this.onCommitment});
   @override
   Widget build(BuildContext context) {
-    final auth = context.watch<AuthProvider>();
-    final calc = context.watch<CalculatorProvider>();
-    final monthly = context.watch<MonthlyProvider>();
-    final now = DateTime.now();
-    final submitted = calc.records.where((r) => r.isSubmitted).toList();
-    final summaries =
-        DashboardSummary.build(calc.records, calc.allPayments, now);
+    final auth = context.watch<AuthProvider>(),
+        calc = context.watch<CalculatorProvider>(),
+        monthly = context.watch<MonthlyProvider>();
+    final current = calc.defaultRecord(auth.profile?.defaultRecordId),
+        now = DateTime.now(),
+        key = monthKey(DateTime.now());
+    final payments = calc.allPayments
+        .where((p) => p.zakatRecordId == current?.id)
+        .toList()
+      ..sort((a, b) => b.date.compareTo(a.date));
+    final paid = payments.fold(0.0, (s, p) => s + p.amount),
+        target = current?.estimatedZakat ?? 0;
+    final remaining = (target - paid).clamp(0.0, double.infinity);
     final due = monthly.plans
         .where((p) =>
             p.active &&
-            p.startMonth.compareTo(monthKey(now)) <= 0 &&
-            (p.kind != 'zakat' || calc.isRecordActive(p.zakatRecordId)) &&
-            !p.dueDate(monthKey(now)).isAfter(now) &&
-            monthly.paid(p.id, monthKey(now)) == null)
-        .length;
-    final activeIds = submitted.map((r) => r.id).toSet();
-    final recent = calc.allPayments
-        .where((p) => activeIds.contains(p.zakatRecordId))
+            p.startMonth.compareTo(key) <= 0 &&
+            (p.kind == 'sadaqah' || p.zakatRecordId == current?.id) &&
+            !p.dueDate(key).isAfter(now) &&
+            monthly.paid(p.id, key) == null)
         .toList()
-      ..sort((a, b) => b.date.compareTo(a.date));
-    final name = auth.profile?.displayName.trim().split(' ').first ?? '';
-    final overview = <Widget>[
-      if (calc.recordsLoading || calc.paymentsLoading)
-        const Card(
-            child: Padding(
-                padding: EdgeInsets.all(32),
-                child: Center(child: CircularProgressIndicator())))
-      else if (calc.recordsError != null || calc.paymentsError != null)
+      ..sort((a, b) => a.dueDate(key).compareTo(b.dueDate(key)));
+    final events = <({
+      String title,
+      String detail,
+      double amount,
+      String? currency,
+      DateTime date
+    })>[
+      ...payments.map((p) => (
+            title: p.recipient.isEmpty ? p.name : p.recipient,
+            detail: 'Zakat · ${current?.name ?? ''}',
+            amount: p.amount,
+            currency: current?.currency,
+            date: p.date
+          )),
+      ...monthly.payments.where((p) => p.kind == 'sadaqah').map((p) => (
+            title: p.recipient,
+            detail: 'Sadaqah · Monthly giving',
+            amount: p.amount,
+            currency: p.currency,
+            date: p.paidAt
+          )),
+    ]..sort((a, b) => b.date.compareTo(a.date));
+    final loading = calc.recordsLoading || calc.paymentsLoading;
+    final hasError = calc.recordsError != null || calc.paymentsError != null;
+    return SafeArea(
+        child: ListView(padding: const EdgeInsets.all(24), children: [
+      const PageIntro(
+          eyebrow: 'Your giving',
+          title: 'One intention. Clear progress.',
+          description: 'Your default Zakat record and the next things to do.'),
+      if (loading)
+        const Center(child: CircularProgressIndicator())
+      else if (hasError)
         ActionCard(
             icon: Icons.cloud_off_outlined,
-            title: 'Your overview couldn’t load',
-            subtitle: 'Tap to retry. Your saved data is unchanged.',
+            title: 'Your progress couldn’t load',
+            subtitle: 'Tap to retry; saved payments are unchanged.',
             onTap: () => calc.loadRecords(auth.user!.uid))
-      else if (summaries.isEmpty)
+      else if (current == null)
         Card(
             child: Padding(
-                padding: const EdgeInsets.all(28),
+                padding: const EdgeInsets.all(24),
                 child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.account_balance_wallet_outlined,
-                          color: kPrimaryGreen, size: 36),
+                      const Icon(Icons.mosque_outlined,
+                          size: 40, color: kPrimaryGreen),
                       const SizedBox(height: 16),
-                      Text('Start with a clear picture',
+                      Text('Begin with your Zakat',
                           style: Theme.of(context).textTheme.titleLarge),
                       const SizedBox(height: 8),
                       const Text(
-                          'Create your first calculation or continue a draft. Your balances will appear here once a record is submitted.'),
-                      const SizedBox(height: 16),
-                      TextButton.icon(
-                          onPressed: onRecords,
-                          icon: const Icon(Icons.arrow_forward),
-                          label: const Text('Open your records')),
+                          'A guided calculation helps you set up your first record. You can add monthly Sadaqah at any time.'),
+                      const SizedBox(height: 20),
+                      FilledButton.icon(
+                          onPressed: onCreate,
+                          icon: const Icon(Icons.add),
+                          label: const Text('Calculate my Zakat')),
                     ])))
       else ...[
-        const SectionTitle('Your Zakat overview'),
-        const Text(
-            'Each currency is shown separately. Payments apply only to their linked record.',
-            style: TextStyle(fontSize: 13, color: Color(0xFF52655F))),
-        const SizedBox(height: 12),
-        ...summaries.map((s) => Card(
+        Row(children: [
+          const Expanded(
+              child: Text('Default record',
+                  style: TextStyle(color: Color(0xFF52655F)))),
+          TextButton(
+              onPressed: onRecords, child: const Text('View all records'))
+        ]),
+        Card(
             color: const Color(0xFF103F36),
             child: Padding(
                 padding: const EdgeInsets.all(24),
                 child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(s.currency ?? 'Currency not recorded',
+                      Text(current.name,
                           style: const TextStyle(
-                              color: Color(0xFFD6E9E1),
-                              fontWeight: FontWeight.w600)),
-                      const SizedBox(height: 14),
-                      const Text('Remaining Zakat due',
-                          style: TextStyle(color: Color(0xFFD6E9E1))),
-                      FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: AlignmentDirectional.centerStart,
-                          child: Text(money(s.remaining, s.currency),
-                              style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 34,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: -1))),
+                              color: Colors.white,
+                              fontSize: 21,
+                              fontWeight: FontWeight.w700)),
+                      const SizedBox(height: 8),
+                      Text(
+                          !current.isSubmitted
+                              ? 'Draft · Ready to finish'
+                              : current.hawlComplete
+                                  ? 'Hawl complete'
+                                  : 'Hawl ends ${DateFormat.yMMMd().format(current.hawlEndDate)}',
+                          style: const TextStyle(color: Color(0xFFD6E9E1))),
                       const SizedBox(height: 24),
-                      Wrap(spacing: 36, runSpacing: 16, children: [
-                        _Metric('Due after completed Hawl',
-                            money(s.due, s.currency)),
-                        _Metric(
-                            'Given toward Zakat', money(s.given, s.currency)),
-                      ]),
-                      if (s.upcomingEstimate > 0) ...[
-                        const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 16),
-                            child: Divider(color: Color(0xFF60887B))),
+                      if (current.isSubmitted) ...[
                         Text(
-                            'Upcoming estimate: ${money(s.upcomingEstimate, s.currency)}',
+                            current.hawlComplete
+                                ? 'Remaining Zakat'
+                                : 'Remaining estimate',
                             style: const TextStyle(color: Color(0xFFD6E9E1))),
+                        FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(money(remaining, current.currency),
+                                style: const TextStyle(
+                                    fontSize: 34,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white))),
+                        const SizedBox(height: 20),
+                        Wrap(spacing: 32, runSpacing: 12, children: [
+                          _Metric('Calculated Zakat',
+                              money(target, current.currency)),
+                          _Metric('Given', money(paid, current.currency))
+                        ]),
+                        const SizedBox(height: 20),
+                        Semantics(
+                            label:
+                                '${target > 0 ? ((paid / target).clamp(0, 1) * 100).round() : 0}% of calculated Zakat recorded',
+                            child: LinearProgressIndicator(
+                                value: target > 0
+                                    ? (paid / target).clamp(0, 1)
+                                    : 0,
+                                backgroundColor: const Color(0xFF52766A),
+                                color: const Color(0xFFE9C77B),
+                                minHeight: 8)),
+                        const SizedBox(height: 12),
+                        Text(
+                            current.hawlComplete
+                                ? 'Payments reduce this record’s remaining balance.'
+                                : 'This is an estimate until your Hawl is complete.',
+                            style: const TextStyle(
+                                color: Color(0xFFD6E9E1), fontSize: 13)),
+                      ] else
                         const Text(
-                            'Hawl not complete. This is separate from the amount due.',
-                            style: TextStyle(
-                                color: Color(0xFFD6E9E1), fontSize: 12))
-                      ],
-                    ])))),
+                            'Your calculation is saved. Finish reviewing the amounts before submitting it.',
+                            style: TextStyle(color: Color(0xFFD6E9E1))),
+                      const SizedBox(height: 20),
+                      if (current.isSubmitted &&
+                          (!current.hawlComplete || remaining == 0))
+                        FilledButton.tonalIcon(
+                            onPressed: () => onRecord(current),
+                            icon: Icon(current.isSubmitted
+                                ? Icons.arrow_forward
+                                : Icons.edit_outlined),
+                            label: Text(current.isSubmitted
+                                ? 'Open payment tracker'
+                                : 'Finish this calculation')),
+                    ]))),
       ],
-    ];
-    final nextSteps = <Widget>[
-      const SectionTitle('Your next steps'),
-      if (!monthly.loading && due > 0)
-        ActionCard(
-            icon: Icons.notifications_active_outlined,
-            title:
-                '$due monthly ${due == 1 ? 'commitment' : 'commitments'} ready to give',
-            subtitle: 'Review recipients and mark payments after giving.',
-            onTap: onMonthly),
-      if (calc.records.any((r) => !r.isSubmitted))
-        ActionCard(
-            icon: Icons.edit_note_outlined,
-            title: 'Continue your draft',
-            subtitle: 'Pick up where you left off in Records.',
-            onTap: onRecords),
-      ActionCard(
-          icon: Icons.calendar_month_outlined,
-          title: auth.profile?.monthlyGivingLabel ?? 'Monthly Giving',
-          subtitle: 'Build a regular habit of Sadaqah or Zakat.',
-          onTap: onMonthly),
-    ];
-    return SafeArea(
-        child: ListView(
-            padding: const EdgeInsets.fromLTRB(24, 28, 24, 32),
-            children: [
-          PageIntro(
-              eyebrow: DateFormat('EEEE, d MMMM').format(now),
-              title: name.isEmpty
-                  ? 'Your giving, at a glance.'
-                  : 'Assalamu alaikum, $name.',
-              description:
-                  'A clear view of your Zakat, your progress, and what comes next.',
-              action: Align(
-                  alignment: AlignmentDirectional.centerStart,
-                  child: FilledButton.icon(
-                      onPressed: onCreate,
-                      icon: const Icon(Icons.add),
-                      label: const Text('New Calculation')))),
-          LayoutBuilder(builder: (context, constraints) {
-            if (constraints.maxWidth < 960) {
-              return Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [...overview, ...nextSteps]);
-            }
-            return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Expanded(
-                  flex: 3,
-                  child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: overview)),
-              const SizedBox(width: 28),
-              Expanded(
-                  flex: 2,
-                  child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: nextSteps)),
-            ]);
-          }),
-          if (submitted.isNotEmpty) ...[
-            SectionTitle('Your records',
-                trailing: TextButton(
-                    onPressed: onRecords, child: const Text('View all'))),
-            ...submitted.take(3).map((r) => ActionCard(
-                icon: Icons.description_outlined,
-                title: r.name,
-                subtitle: r.hawlComplete
-                    ? 'Hawl complete · Open payment tracker'
-                    : 'Hawl ends ${DateFormat.yMMMd().format(r.hawlEndDate)}',
-                onTap: () => onRecord(r))),
-          ],
-          if (!calc.paymentsLoading &&
-              calc.paymentsError == null &&
-              recent.isNotEmpty) ...[
-            const SectionTitle('Recent Zakat payments'),
-            Card(
-                child: Column(
-                    children: recent.take(4).map((p) {
-              final record =
-                  submitted.firstWhere((r) => r.id == p.zakatRecordId);
-              return ListTile(
-                  onTap: () => onRecord(record),
-                  leading: const Icon(Icons.check_circle_outline,
-                      color: kPrimaryGreen),
-                  title: Text(p.recipient.isNotEmpty ? p.recipient : p.name),
-                  subtitle: Text(
-                      '${record.name} · ${DateFormat.MMMd().format(p.date)}'),
-                  trailing: Text(money(p.amount, record.currency),
-                      style: const TextStyle(fontWeight: FontWeight.w600)));
-            }).toList())),
-          ],
-        ]));
+      if (!loading && !hasError) ...[
+        const SectionTitle('Your next steps'),
+        if (current != null && !current.isSubmitted)
+          ActionCard(
+              icon: Icons.edit_note_outlined,
+              title: 'Finalize ${current.name}',
+              subtitle: 'Review your assets and submit the calculation.',
+              onTap: () => onRecord(current)),
+        if (current?.isSubmitted == true &&
+            current!.hawlComplete &&
+            remaining > 0 &&
+            !due.any((p) => p.kind == 'zakat'))
+          ActionCard(
+              icon: Icons.volunteer_activism_outlined,
+              title: 'Fulfil ${money(remaining, current.currency)} of Zakat',
+              subtitle:
+                  'Record a payment after you give. It will reduce this balance.',
+              onTap: () => onRecord(current)),
+        if (!monthly.loading && monthly.error == null)
+          ...due.take(3).map((p) => ActionCard(
+              icon: Icons.calendar_month_outlined,
+              title: 'Give ${money(p.amount, p.currency)} to ${p.recipient}',
+              subtitle:
+                  '${p.kind == 'zakat' ? 'Zakat' : 'Sadaqah'} · Due ${DateFormat.MMMd().format(p.dueDate(key))}',
+              onTap: () =>
+                  onCommitment != null ? onCommitment!(p) : onMonthly())),
+        if (current != null &&
+            (current.isSubmitted &&
+                (!current.hawlComplete || remaining == 0)) &&
+            due.isEmpty &&
+            !monthly.loading)
+          const Card(
+              child: Padding(
+                  padding: EdgeInsets.all(20),
+                  child: Text(
+                      'You’re up to date. New monthly commitments will appear here when they are due.'))),
+        const SectionTitle('Recent giving'),
+        if (events.isEmpty)
+          const Card(
+              child: Padding(
+                  padding: EdgeInsets.all(20),
+                  child: Text(
+                      'Your recent Zakat and Sadaqah payments will appear here after you record them.')))
+        else
+          Card(
+              child: Column(
+                  children: events
+                      .take(5)
+                      .map((e) => ListTile(
+                          leading: const Icon(Icons.check_circle_outline,
+                              color: kPrimaryGreen),
+                          title: Text(e.title),
+                          subtitle: Text(
+                              '${e.detail}\n${DateFormat.yMMMd().format(e.date)}'),
+                          isThreeLine: true,
+                          trailing: Text(money(e.amount, e.currency),
+                              style: const TextStyle(
+                                  fontSize: 14, fontWeight: FontWeight.w600))))
+                      .toList())),
+        const SizedBox(height: 12),
+        const Text(
+            'Zakat progress belongs to the default record. Sadaqah is shown as giving history and never reduces Zakat.',
+            style: TextStyle(fontSize: 13, color: Color(0xFF52655F))),
+      ],
+    ]));
   }
 }
 
@@ -227,12 +261,10 @@ class _Metric extends StatelessWidget {
   Widget build(BuildContext context) =>
       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(label,
-            style: const TextStyle(fontSize: 12, color: Color(0xFFD6E9E1))),
+            style: const TextStyle(fontSize: 13, color: Color(0xFFD6E9E1))),
         const SizedBox(height: 4),
         Text(value,
             style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: Colors.white)),
+                fontSize: 18, fontWeight: FontWeight.w600, color: Colors.white))
       ]);
 }

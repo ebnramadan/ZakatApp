@@ -28,7 +28,7 @@ async function createSender({apiKey, from, smtpUser, smtpPassword, smtpTransport
       auth:{user:smtpUser,pass:smtpPassword.replace(/\s/g,'')},connectionTimeout:15000,greetingTimeout:10000,socketTimeout:20000});
     await transport.verify();
     return {ready:true,send:async(to,message,key)=>{
-      const result=await transport.sendMail({from:smtpUser,to,subject:message.subject,text:message.text,messageId:`<${key}@zakat-tracker.web.app>`});
+      const result=await transport.sendMail({from:smtpUser,to,subject:message.subject,text:message.text,attachments:message.attachments,messageId:`<${key}@zakat-tracker.web.app>`});
       if(result.rejected?.length || !result.messageId) throw new Error('SMTP provider did not accept this reminder.');
       return result.messageId;
     }};
@@ -37,7 +37,7 @@ async function createSender({apiKey, from, smtpUser, smtpPassword, smtpTransport
   return {ready:false,send:async(to,message,key)=>{
     const response=await fetchImpl('https://api.resend.com/emails',{method:'POST',
       headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json','Idempotency-Key':key},
-      body:JSON.stringify({from,to:[to],subject:message.subject,text:message.text})});
+      body:JSON.stringify({from,to:[to],subject:message.subject,text:message.text,attachments:message.attachments?.map(a=>({filename:a.filename,content:Buffer.from(a.content).toString('base64')}))})});
     if(!response.ok) throw new Error(`Email provider returned HTTP ${response.status}`);
     const result=await response.json();
     if(!result.id) throw new Error('Email provider did not confirm delivery acceptance.');
@@ -52,6 +52,7 @@ async function sendReminders({db, auth, fetchImpl = fetch, now = new Date(), api
   let failed = 0;
   for (const userDoc of users.docs) {
     try {
+      if (userDoc.data().resetInProgress === true) continue;
       // Never send to a client-supplied address without checking Firebase Auth ownership.
       const account = await auth.getUser(userDoc.id);
       if (!account.emailVerified || account.disabled || !account.email) continue;

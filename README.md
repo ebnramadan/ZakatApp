@@ -35,7 +35,7 @@ The restored Android project uses Gradle 8.7 / AGP 8.6.1. Release signing must b
 5. Review and submit. Submission locks the asset snapshot. A failed/lost network response can be retried without creating another record.
 6. Tracker opens the saved record. Add/edit/delete payment logs, search by payment name/recipient, and switch records. Amounts always use the record's currency. Future-dated payments are not recorded as paid.
 
-Summary sharing is **not implemented** and is explicitly marked unavailable. Previously stored sharing preferences do not send anything. Payments are logs, not transfers. An erroneous submitted record cannot be edited: create a clearly named replacement calculation and use that replacement for subsequent tracking; old payment logs are not automatically transferred.
+Monthly Excel progress sharing can be enabled in Profile. Users explicitly choose recipients and a day of the month; the 09:00 UTC worker sends one snapshot per recipient per month. Legacy sharing fields never enable sending by themselves. See docs/focused-giving-and-sharing.md. Payments are logs, not transfers. An erroneous submitted record cannot be edited: create a clearly named replacement calculation and use that replacement for subsequent tracking; old payment logs are not automatically transferred.
 
 ## Existing data and migration
 

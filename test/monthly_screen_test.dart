@@ -106,6 +106,8 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Yes, I paid'));
     await tester.pumpAndSettle();
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
     expect(find.text('Undo payment'), findsOneWidget);
     expect(tracker.totalPaid, 100);
     await tester.tap(find.text('Tracker'));

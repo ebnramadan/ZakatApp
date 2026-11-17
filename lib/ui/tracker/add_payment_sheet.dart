@@ -1,3 +1,4 @@
+import '../shared/giving_celebration.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -99,6 +100,10 @@ class _AddPaymentSheetState extends State<AddPaymentSheet> {
     if (!mounted) return;
     setState(() => _saving = false);
     if (tracker.error == null) {
+      if (!_isEdit) {
+        await showGivingCelebration(context);
+        if (!mounted) return;
+      }
       Navigator.of(context).pop();
     } else {
       ScaffoldMessenger.of(context)
