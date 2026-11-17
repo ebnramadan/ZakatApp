@@ -18,7 +18,7 @@ Payment history remains intact during the window. Payments and monthly Zakat rec
 
 `.github/workflows/recycle-bin-cleanup.yml` runs daily at 03:00 UTC, independent of the website being open. A manual run defaults to a read-only dry run. The worker rechecks expiry, pauses associated monthly plans, removes linked manual/monthly ledger payments and monthly receipts in bounded batches, then recursively deletes the expired record. Other records and Sadaqah receipts are preserved. Retrying a partially completed run is safe. Monthly plans are retained paused so users can relink a recurring recipient rather than losing the commitment.
 
-The restore window ends at exactly 60 days. Physical removal happens in the next successful daily cleanup, normally within 24 hours afterward. GitHub Actions schedules may be delayed; check workflow failures when operating the service. The app explains this daily cleanup behavior. Do not use Firestore TTL on only the parent document: it would leave related collections behind.
+The restore window ends at exactly 60 days. Physical removal happens in the next successful daily cleanup, normally within 24 hours afterward. GitHub Actions schedules may be delayed. GitHub can also disable scheduled workflows in public repositories after 60 days without repository activity; keep the scheduled workflows enabled and monitor their run history when operating the service. The app explains this daily cleanup behavior. Do not use Firestore TTL on only the parent document: it would leave related collections behind.
 
 ## Validation
 

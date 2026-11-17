@@ -219,13 +219,15 @@ class _RecordsTabState extends State<_RecordsTab> {
                 label: Text(
                     'Recycle bin${calc.recycledRecords.isEmpty ? '' : ' (${calc.recycledRecords.length})'}')),
           ])),
-      if (calc.error != null)
+      if (calc.recordsError != null)
         Card(
             child: ListTile(
                 leading: const Icon(Icons.error_outline),
-                title: Text(calc.error!),
+                title: Text(calc.recordsError!),
                 trailing: TextButton(
-                    onPressed: calc.clearError, child: const Text('Dismiss')))),
+                    onPressed: () => calc
+                        .loadRecords(context.read<AuthProvider>().user!.uid),
+                    child: const Text('Retry')))),
       if (calc.recordsLoading)
         const Center(child: CircularProgressIndicator())
       else if (calc.records.isEmpty)

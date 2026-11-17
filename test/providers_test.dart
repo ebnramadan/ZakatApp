@@ -27,7 +27,45 @@ class UnreliableStore extends FirestoreService {
   }
 }
 
+class OfflineRecordStore extends FirestoreService {
+  OfflineRecordStore() : super(database: FakeFirebaseFirestore());
+  bool offline = true;
+  @override
+  Stream<List<ZakatRecord>> recordsStream(String uid) =>
+      offline ? Stream.error(StateError('Offline')) : Stream.value([]);
+}
+
 void main() {
+  test(
+      'record-load errors clear on a successful retry independently of draft errors',
+      () async {
+    final store = OfflineRecordStore();
+    final provider = CalculatorProvider(store: store);
+    provider.loadRecords('alice');
+    await Future<void>.delayed(Duration.zero);
+    expect(provider.recordsError, isNotNull);
+    expect(provider.error, isNull);
+    store.offline = false;
+    provider.loadRecords('alice');
+    await Future<void>.delayed(Duration.zero);
+    expect(provider.recordsError, isNull);
+    expect(provider.recordsLoading, isFalse);
+    provider.dispose();
+  });
+  test('calculator price failures do not become dashboard record errors',
+      () async {
+    final provider = CalculatorProvider(
+        store: FirestoreService(database: FakeFirebaseFirestore()),
+        prices: PriceService.forTesting(
+            MockClient((_) async => http.Response('Unavailable', 503))));
+    provider.loadRecords('alice');
+    provider.startNewRecord('alice', 'USD');
+    await provider.fetchPrices('USD');
+    expect(provider.error, isNotNull);
+    expect(provider.recordsError, isNull);
+    expect(provider.recordsLoading, isFalse);
+    provider.dispose();
+  });
   test('fetched price updates the draft, Nisab and nonmanual gold entries',
       () async {
     final response = Completer<http.Response>();
