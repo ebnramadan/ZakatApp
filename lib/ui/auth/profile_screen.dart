@@ -77,112 +77,158 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.all(20),
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         children: [
           if (auth.error != null)
             Text(l(context, auth.error!),
                 style: const TextStyle(color: Colors.red)),
-          _Avatar(profile: profile),
-          const SizedBox(height: 24),
-          _NameField(
-            ctrl: _nameCtrl,
-            editing: _editingName,
-            onEdit: () => setState(() => _editingName = true),
-            onSave: () => _saveProfile(auth),
-            onCancel: () {
-              _nameCtrl.text = profile.displayName;
-              setState(() => _editingName = false);
-            },
-          ),
-          const SizedBox(height: 12),
-          _InfoTile(
-              label: l(context, "Email"),
-              value: profile.email,
-              icon: Icons.email_outlined),
-          const SizedBox(height: 20),
-          const AccountSecurityCard(),
-          const SizedBox(height: 20),
-          DropdownButtonFormField<String>(
-            value: profile.language,
-            decoration: InputDecoration(
-                labelText: l(context, "Language / اللغة"),
-                prefixIcon: const Icon(Icons.language)),
-            items: [
-              DropdownMenuItem(value: 'en', child: Text(l(context, "English"))),
-              const DropdownMenuItem(value: 'ar', child: Text('العربية')),
-            ],
-            onChanged: (language) async {
-              if (language == null) return;
-              final ok = await auth.updateProfileFields(language: language);
-              if (!context.mounted || ok) return;
-              ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(l(context, auth.error!))));
-            },
-          ),
-          const SizedBox(height: 20),
-          _CurrencySelector(
-            selected: _selectedCurrency ?? profile.currency,
-            onChanged: (c) {
-              setState(() => _selectedCurrency = c);
-              auth.updateProfileFields(currency: c).then((ok) {
-                if (!mounted || !context.mounted || ok) return;
-                setState(() => _selectedCurrency = profile.currency);
-                ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(l(context, auth.error!))));
-              });
-            },
-          ),
-          const SizedBox(height: 20),
+          Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Row(children: [
+                _Avatar(profile: profile),
+                const SizedBox(width: 14),
+                Expanded(
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                      Text(profile.displayName,
+                          style: const TextStyle(
+                              fontSize: 20, fontWeight: FontWeight.w700)),
+                      const SizedBox(height: 4),
+                      Text(profile.email,
+                          style: const TextStyle(
+                              fontSize: 12, color: Color(0xFF63716B))),
+                    ])),
+                IconButton(
+                    tooltip: l(context, 'Edit name'),
+                    onPressed: () =>
+                        setState(() => _editingName = !_editingName),
+                    icon: const Icon(Icons.edit_outlined, size: 20)),
+              ])),
+          if (_editingName)
+            _NameField(
+                ctrl: _nameCtrl,
+                editing: true,
+                onEdit: () {},
+                onSave: () => _saveProfile(auth),
+                onCancel: () => setState(() {
+                      _nameCtrl.text = profile.displayName;
+                      _editingName = false;
+                    })),
+          _groupLabel(context, 'Preferences'),
           Card(
-              child: ListTile(
-            leading: const Icon(Icons.calendar_month_outlined),
-            title: Text(l(context, "Monthly giving preferences")),
-            subtitle: Text(l(context, "Default: {0} · Email reminders {1}", [
-              profile.monthlyDefaultKind == 'zakat'
-                  ? l(context, "Zakat")
-                  : l(context, "Sadaqah"),
-              profile.monthlyEmailReminders
-                  ? l(context, 'on')
-                  : l(context, 'off')
-            ])),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                builder: (_) => const MonthlySettings()),
-          )),
-          const SizedBox(height: 12),
-          Card(
-              child: ListTile(
-                  leading: const Icon(Icons.delete_outline),
-                  title: Text(l(context, "Recycle bin")),
-                  subtitle: Text(
-                      l(context, "Restore deleted records within 60 days")),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => Navigator.of(context).push(MaterialPageRoute(
-                      builder: (_) => const RecycleBinScreen())))),
-          const SizedBox(height: 12),
+              child: Column(children: [
+            Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(children: [
+                  DropdownButtonFormField<String>(
+                      value: profile.language,
+                      decoration: InputDecoration(
+                          labelText: l(context, 'Language / اللغة'),
+                          prefixIcon: const Icon(Icons.language, size: 20)),
+                      items: [
+                        DropdownMenuItem(
+                            value: 'en', child: Text(l(context, 'English'))),
+                        const DropdownMenuItem(
+                            value: 'ar', child: Text('العربية'))
+                      ],
+                      onChanged: (language) async {
+                        if (language == null) return;
+                        final ok =
+                            await auth.updateProfileFields(language: language);
+                        if (!context.mounted || ok) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(l(context, auth.error!))));
+                      }),
+                  const SizedBox(height: 12),
+                  SearchablePicker<String>(
+                      label: l(context, 'Default currency'),
+                      value: _selectedCurrency ?? profile.currency,
+                      options: currencyOptions,
+                      onChanged: (c) async {
+                        setState(() => _selectedCurrency = c);
+                        final ok = await auth.updateProfileFields(currency: c);
+                        if (!mounted || !context.mounted || ok) return;
+                        setState(() => _selectedCurrency = profile.currency);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(l(context, auth.error!))));
+                      }),
+                ])),
+            const Divider(height: 1, indent: 16, endIndent: 16),
+            ListTile(
+                leading: const Icon(Icons.calendar_month_outlined, size: 22),
+                title: Text(l(context, 'Monthly giving preferences')),
+                subtitle:
+                    Text(l(context, 'Default: {0} · Email reminders {1}', [
+                  profile.monthlyDefaultKind == 'zakat'
+                      ? l(context, 'Zakat')
+                      : l(context, 'Sadaqah'),
+                  profile.monthlyEmailReminders
+                      ? l(context, 'on')
+                      : l(context, 'off')
+                ])),
+                trailing: const Icon(Icons.chevron_right, size: 20),
+                onTap: () => showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    builder: (_) => const MonthlySettings())),
+          ])),
+          _groupLabel(context, 'Progress sharing'),
           const SharingSettingsCard(),
+          _groupLabel(context, 'Account'),
           Card(
-              child: ListTile(
-                  leading: const Icon(Icons.explore_outlined),
-                  title: Text(l(context, "Getting started")),
-                  subtitle: Text(l(context, "Review the welcome guide")),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => Navigator.of(context).push(MaterialPageRoute(
-                      builder: (_) => const OnboardingScreen(review: true))))),
+              child: Column(children: [
+            ListTile(
+                leading: const Icon(Icons.shield_outlined, size: 22),
+                title: Text(l(context, 'Account security')),
+                subtitle: Text(l(context, 'Sign-in methods and password')),
+                trailing: const Icon(Icons.chevron_right, size: 20),
+                onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                    builder: (_) => Scaffold(
+                        appBar:
+                            AppBar(title: Text(l(context, 'Account security'))),
+                        body: ListView(
+                            padding: const EdgeInsets.all(16),
+                            children: const [AccountSecurityCard()]))))),
+            const Divider(height: 1, indent: 52, endIndent: 16),
+            ListTile(
+                leading: const Icon(Icons.delete_outline, size: 22),
+                title: Text(l(context, 'Recycle bin')),
+                subtitle:
+                    Text(l(context, 'Restore deleted records within 60 days')),
+                trailing: const Icon(Icons.chevron_right, size: 20),
+                onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                    builder: (_) => const RecycleBinScreen()))),
+            const Divider(height: 1, indent: 52, endIndent: 16),
+            ListTile(
+                leading: const Icon(Icons.explore_outlined, size: 22),
+                title: Text(l(context, 'Getting started')),
+                subtitle: Text(l(context, 'Review the welcome guide')),
+                trailing: const Icon(Icons.chevron_right, size: 20),
+                onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                    builder: (_) => const OnboardingScreen(review: true)))),
+          ])),
           const AccountResetCard(),
           const SizedBox(height: 12),
           Text(
               l(context,
-                  "Changing your default currency affects new records and recipients only. Existing amounts keep their original currency."),
+                  'Changing your default currency affects new records and recipients only. Existing amounts keep their original currency.'),
               style: const TextStyle(
-                  fontSize: 13, color: Colors.black54, height: 1.6)),
+                  fontSize: 11, color: Color(0xFF63716B), height: 1.4)),
         ],
       ),
     );
   }
 }
+
+Widget _groupLabel(BuildContext context, String title) => Padding(
+    padding: const EdgeInsets.fromLTRB(4, 20, 4, 6),
+    child: Text(l(context, title),
+        style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF63716B))));
 
 class _Avatar extends StatelessWidget {
   final UserProfile profile;
@@ -192,7 +238,7 @@ class _Avatar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: CircleAvatar(
-        radius: 44,
+        radius: 28,
         backgroundColor: kPrimaryGreen.withOpacity(0.15),
         backgroundImage: profile.photoUrl != null
             ? CachedNetworkImageProvider(profile.photoUrl!)
@@ -206,7 +252,7 @@ class _Avatar extends StatelessWidget {
                             : '?')
                         .toUpperCase()),
                 style: const TextStyle(
-                    fontSize: 36,
+                    fontSize: 24,
                     color: kPrimaryGreen,
                     fontWeight: FontWeight.bold),
               )
@@ -261,52 +307,6 @@ class _NameField extends StatelessWidget {
         IconButton(
             icon: const Icon(Icons.close, color: Colors.red),
             onPressed: onCancel),
-      ],
-    );
-  }
-}
-
-class _InfoTile extends StatelessWidget {
-  final String label;
-  final String value;
-  final IconData icon;
-
-  const _InfoTile(
-      {required this.label, required this.value, required this.icon});
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      leading: Icon(icon, color: kPrimaryGreen),
-      title: Text(l(context, value)),
-      subtitle: Text(l(context, label)),
-      contentPadding: EdgeInsets.zero,
-    );
-  }
-}
-
-class _CurrencySelector extends StatelessWidget {
-  final String selected;
-  final void Function(String) onChanged;
-
-  const _CurrencySelector({required this.selected, required this.onChanged});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(l(context, "Local Currency"),
-            style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: Colors.black54)),
-        const SizedBox(height: 8),
-        SearchablePicker<String>(
-            label: l(context, "Default currency"),
-            value: selected,
-            options: currencyOptions,
-            onChanged: onChanged),
       ],
     );
   }

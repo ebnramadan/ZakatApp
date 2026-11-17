@@ -71,6 +71,43 @@ class FirestoreService {
         }
       });
 
+  Future<void> retryProgressSheet(String uid, String id) async {
+    final ref = _users().doc(uid);
+    await _db.runTransaction((tx) async {
+      final data = (await tx.get(ref)).data()!;
+      final old = Map<String, dynamic>.from(data['sheetRequest'] as Map);
+      final now = DateTime.now().millisecondsSinceEpoch;
+      if (old['id'] != id ||
+          !['queued', 'failed'].contains(old['status']) ||
+          now - (old['requestedAt'] as int) <
+              (old['status'] == 'queued' ? 600000 : 60000)) {
+        throw StateError('request-not-retryable');
+      }
+      tx.update(ref, {
+        'sheetRequest': {
+          'id': id,
+          'status': 'queued',
+          'requestedAt': now,
+          'recipients': old['recipients']
+        }
+      });
+    });
+  }
+
+  Future<void> cancelProgressSheet(String uid, String id) async {
+    final ref = _users().doc(uid);
+    await _db.runTransaction((tx) async {
+      final data = (await tx.get(ref)).data()!;
+      final old = Map<String, dynamic>.from(data['sheetRequest'] as Map);
+      if (old['id'] != id || old['status'] != 'queued') {
+        throw StateError('request-not-queued');
+      }
+      tx.update(ref, {
+        'sheetRequest': {...old, 'status': 'cancelled'}
+      });
+    });
+  }
+
   // ─── Zakat Records ─────────────────────────────────────────────────────────
 
   Stream<List<ZakatRecord>> recordsStream(String uid) {

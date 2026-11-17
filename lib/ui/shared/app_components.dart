@@ -22,7 +22,7 @@ class PageIntro extends StatelessWidget {
       this.action});
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(bottom: 24),
+        padding: const EdgeInsets.only(bottom: 20),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(l(context, eyebrow.toUpperCase()),
               style: TextStyle(
@@ -60,7 +60,7 @@ class SectionTitle extends StatelessWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleLarge
-                      ?.copyWith(fontSize: 20, fontWeight: FontWeight.w700))),
+                      ?.copyWith(fontSize: 17, fontWeight: FontWeight.w700))),
           if (trailing != null) trailing!
         ]),
       );
@@ -97,8 +97,7 @@ class ActionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Card(
           child: ListTile(
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         leading: Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(

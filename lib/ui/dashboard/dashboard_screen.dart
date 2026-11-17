@@ -23,6 +23,7 @@ class DashboardScreen extends StatelessWidget {
       this.onCommitment});
   @override
   Widget build(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < 600;
     final auth = context.watch<AuthProvider>(),
         calc = context.watch<CalculatorProvider>(),
         monthly = context.watch<MonthlyProvider>();
@@ -81,7 +82,7 @@ class DashboardScreen extends StatelessWidget {
       else if (current == null)
         Card(
             child: Padding(
-                padding: const EdgeInsets.all(28),
+                padding: EdgeInsets.all(compact ? 20 : 28),
                 child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -129,14 +130,14 @@ class DashboardScreen extends StatelessWidget {
                       child: Icon(Icons.mosque_outlined,
                           size: 320, color: Colors.white))),
               Padding(
-                  padding: const EdgeInsets.all(28),
+                  padding: EdgeInsets.all(compact ? 20 : 28),
                   child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(current.name,
                             style: const TextStyle(
                                 color: Colors.white,
-                                fontSize: 21,
+                                fontSize: 18,
                                 fontWeight: FontWeight.w700)),
                         const SizedBox(height: 8),
                         Text(
@@ -297,7 +298,7 @@ class DashboardScreen extends StatelessWidget {
       ]
     ];
     return SafeArea(
-        child: ListView(padding: const EdgeInsets.all(28), children: [
+        child: ListView(padding: EdgeInsets.all(compact ? 20 : 28), children: [
       PageIntro(
           eyebrow: l(context, "Your giving"),
           title: l(context, "One intention. Clear progress."),

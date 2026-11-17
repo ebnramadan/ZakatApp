@@ -247,6 +247,30 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  Future<bool> retryProgressSheet(String id) async {
+    if (_user == null || !isVerified) return false;
+    try {
+      await _fs.retryProgressSheet(_user!.uid, id);
+      return true;
+    } catch (_) {
+      _error = 'Could not retry. Check your saved recipients and try again.';
+      _notify();
+      return false;
+    }
+  }
+
+  Future<bool> cancelProgressSheet(String id) async {
+    if (_user == null || !isVerified) return false;
+    try {
+      await _fs.cancelProgressSheet(_user!.uid, id);
+      return true;
+    } catch (_) {
+      _error = 'The request changed. Refresh its status and try again.';
+      _notify();
+      return false;
+    }
+  }
+
   Future<bool> updateProfileFields(
       {String? displayName,
       String? currency,
