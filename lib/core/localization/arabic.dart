@@ -768,5 +768,7 @@ const Map<String, String> arabic = {
   "Loading…": "بنحمّل البيانات…",
   "Record payment": "سجّل دفعة",
   "Search payments…": "دوّر في الدفعات…",
-  "No matching records": "مفيش سجلات مطابقة"
+  "No matching records": "مفيش سجلات مطابقة",
+  "Add the gold price in More details to continue.":
+      "ضيف سعر الذهب من «تفاصيل أكتر» علشان تكمّل."
 };

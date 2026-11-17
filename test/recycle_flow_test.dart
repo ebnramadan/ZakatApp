@@ -54,7 +54,10 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.textContaining('You can restore this record and its payments'),
         findsOneWidget);
-    expect(find.byType(TextField), findsNothing);
+    expect(
+        find.descendant(
+            of: find.byType(AlertDialog), matching: find.byType(TextField)),
+        findsNothing);
     await tester.tap(find.text('Keep record'));
     await tester.pumpAndSettle();
     expect(

@@ -55,7 +55,7 @@ class AppTheme {
               textStyle:
                   const TextStyle(fontSize: 14, fontWeight: FontWeight.w600))),
       navigationBarTheme: NavigationBarThemeData(
-          height: 64,
+          height: 56,
           backgroundColor: Colors.white,
           elevation: 0,
           indicatorColor: const Color(0xFFDDEEE6),

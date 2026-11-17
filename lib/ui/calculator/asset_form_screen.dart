@@ -21,6 +21,8 @@ class AssetFormScreen extends StatefulWidget {
 class _AssetFormScreenState extends State<AssetFormScreen> {
   int _step = 0;
   final _form = GlobalKey<FormState>();
+  bool _showDetails = false;
+  int _detailsRevision = 0;
   final Set<ForeignCashEntry> _fetching = {};
   final Map<ForeignCashEntry, int> _requests = {};
   int _sequence = 0;
@@ -131,8 +133,27 @@ class _AssetFormScreenState extends State<AssetFormScreen> {
     return answer == 'leave';
   }
 
+  bool _checkGoldPrice() {
+    final draft = context.read<CalculatorProvider>().draft;
+    if (draft == null ||
+        draft.goldPricePerGram24k > 0 && draft.goldPricePerGram24k.isFinite) {
+      return true;
+    }
+    FocusManager.instance.primaryFocus?.unfocus();
+    setState(() {
+      _step = 0;
+      _showDetails = true;
+      _detailsRevision++;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(
+            l(context, 'Add the gold price in More details to continue.'))));
+    return false;
+  }
+
   void _results() {
     final calc = context.read<CalculatorProvider>();
+    if (!_checkGoldPrice()) return;
     if (!_form.currentState!.validate()) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(l(context,
@@ -237,7 +258,9 @@ class _AssetFormScreenState extends State<AssetFormScreen> {
               }
             }),
         ExpansionTile(
-          key: const ValueKey('calculation-details'),
+          key: ValueKey('calculation-details-$_detailsRevision'),
+          initiallyExpanded: _showDetails,
+          onExpansionChanged: (expanded) => _showDetails = expanded,
           tilePadding: EdgeInsets.zero,
           title: Text(l(context, 'More details')),
           subtitle: Text(l(context, 'Nisab, gold price and Hijri date')),
@@ -477,6 +500,7 @@ class _AssetFormScreenState extends State<AssetFormScreen> {
                             : () {
                                 if (widget.guided && _step < 3) {
                                   FocusManager.instance.primaryFocus?.unfocus();
+                                  if (_step == 0 && !_checkGoldPrice()) return;
                                   setState(() => _step++);
                                 } else {
                                   _results();
@@ -557,6 +581,9 @@ class _NumberInputState extends State<_NumberInput> {
         child: TextFormField(
           controller: _controller,
           focusNode: _focus,
+          textInputAction: TextInputAction.done,
+          onFieldSubmitted: (_) => _focus.unfocus(),
+          onTapOutside: (_) => _focus.unfocus(),
           decoration: InputDecoration(labelText: l(context, widget.label)),
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           validator: (text) {

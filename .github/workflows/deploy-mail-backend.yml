@@ -1,0 +1,77 @@
+name: Deploy Firebase report delivery
+on:
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: 'Deploy the Firestore-triggered sender after access is configured (does not enable billing)'
+        type: boolean
+        default: false
+permissions:
+  contents: read
+  actions: write
+concurrency:
+  group: monthly-progress-sheets
+  cancel-in-progress: false
+jobs:
+  backend:
+    if: github.ref == 'refs/heads/claude/zakat-app-build-0NR5K'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_ZAKAT_APP_36C58 }}
+          project_id: zakat-app-36c58
+      - name: Verify server deployment access
+        run: node scripts/check-mail-backend.cjs
+      - name: Install report backend
+        if: inputs.deploy
+        run: npm ci --prefix functions
+      - name: Configure existing Gmail sender in Firebase Secret Manager
+        if: inputs.deploy
+        env:
+          REMINDER_SMTP_USER: ${{ secrets.REMINDER_SMTP_USER }}
+          REMINDER_SMTP_APP_PASSWORD: ${{ secrets.REMINDER_SMTP_APP_PASSWORD }}
+        run: |
+          set -eu
+          test -n "$REMINDER_SMTP_USER" && test -n "$REMINDER_SMTP_APP_PASSWORD"
+          sender_file=$(mktemp)
+          password_file=$(mktemp)
+          trap 'rm -f "$sender_file" "$password_file"' EXIT
+          printf '%s' "$REMINDER_SMTP_USER" > "$sender_file"
+          printf '%s' "$REMINDER_SMTP_APP_PASSWORD" > "$password_file"
+          npx --no-install firebase functions:secrets:set REMINDER_SMTP_USER --data-file "$sender_file" --project zakat-app-36c58 --non-interactive
+          npx --no-install firebase functions:secrets:set REMINDER_SMTP_APP_PASSWORD --data-file "$password_file" --project zakat-app-36c58 --non-interactive
+      - name: Deploy report sender
+        if: inputs.deploy
+        run: npx --no-install firebase deploy --only functions:mail --project zakat-app-36c58 --non-interactive
+      - name: Retire GitHub email schedules after Firebase deployment succeeds
+        id: retire
+        if: inputs.deploy
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh workflow disable requested-progress-sheets.yml
+          gh workflow disable monthly-progress-sheet.yml
+          gh workflow disable monthly-reminders.yml
+      - name: Activate Firebase sender
+        if: inputs.deploy
+        run: node scripts/activate-mail-backend.cjs
+      - name: Activate existing queued requests
+        if: inputs.deploy
+        run: node scripts/wake-queued-reports.cjs
+      - name: Restore GitHub processing if activation failed
+        if: failure() && inputs.deploy && (steps.retire.outcome == 'success' || steps.retire.outcome == 'failure')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          node scripts/activate-mail-backend.cjs --github || true
+          gh workflow enable requested-progress-sheets.yml
+          gh workflow enable monthly-progress-sheet.yml
+          gh workflow enable monthly-reminders.yml

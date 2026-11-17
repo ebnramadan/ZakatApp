@@ -156,6 +156,10 @@ service cloud.firestore {
         && request.resource.data.get('monthlyDefaultKind','sadaqah') in ['sadaqah','zakat']
         && request.resource.data.get('monthlyEmailReminders',false) is bool;
       allow delete: if owner(uid);
+      match /mailLocks/{id} {
+        allow read: if owner(uid);
+        allow delete: if resetting(uid);
+      }
       match /zakatRecords/{id} {
         allow read: if owner(uid);
         allow create: if owner(uid) && !profileResetting(uid) && validRecord(uid) && request.resource.data.get('deletedAt', null) == null && request.resource.data.get('purgeAt', null) == null;
