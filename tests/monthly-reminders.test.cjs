@@ -39,7 +39,7 @@ function memoryStore({plans=[],payments=[],deliveries=[],records={}}={}) {
 test('email delivery uses verified Firebase Auth address and records deduplication receipts',async()=>{
  const {db,state}=memoryStore({plans:[plan('p')]});
  const calls=[];
- const options={db,auth:{getUser:async()=>({email:'verified-owner@example.com',emailVerified:true,disabled:false})},now,apiKey:'test-key',from:'sender@example.com',appUrl:'https://zakat-tracker.web.app',log:()=>{},fetchImpl:async(url,request)=>{calls.push(JSON.parse(request.body));return {ok:true,json:async()=>({id:'accepted-email'})};}};
+ const options={db,auth:{getUser:async()=>({email:'verified-owner@example.com',emailVerified:true,disabled:false})},now,apiKey:'test-key',from:'sender@example.com',appUrl:'https://ztracker.web.app',log:()=>{},fetchImpl:async(url,request)=>{calls.push(JSON.parse(request.body));return {ok:true,json:async()=>({id:'accepted-email'})};}};
  await sendReminders(options); await sendReminders(options);
  assert.equal(calls.length,1);
  assert.deepEqual(calls[0].to,['verified-owner@example.com']);
@@ -49,20 +49,20 @@ test('email delivery uses verified Firebase Auth address and records deduplicati
 test('unverified or disabled accounts never receive reminder emails',async()=>{
  for(const account of [{email:'u@example.com',emailVerified:false},{email:'u@example.com',emailVerified:true,disabled:true}]){
   const {db}=memoryStore({plans:[plan('p')]});let sent=false;
-  await sendReminders({db,auth:{getUser:async()=>account},now,apiKey:'test-key',from:'sender@example.com',appUrl:'https://zakat-tracker.web.app',log:()=>{},fetchImpl:async()=>{sent=true;throw Error('Must not send');}});
+  await sendReminders({db,auth:{getUser:async()=>account},now,apiKey:'test-key',from:'sender@example.com',appUrl:'https://ztracker.web.app',log:()=>{},fetchImpl:async()=>{sent=true;throw Error('Must not send');}});
   assert.equal(sent,false);
  }
 });
 test('a rejected email is not marked sent and is eligible for a later retry',async()=>{
  const {db,state}=memoryStore({plans:[plan('p')]});
- await assert.rejects(sendReminders({db,auth:{getUser:async()=>({email:'u@example.com',emailVerified:true})},now,apiKey:'test-key',from:'sender@example.com',appUrl:'https://zakat-tracker.web.app',log:()=>{},fetchImpl:async()=>({ok:false,status:429})}));
+ await assert.rejects(sendReminders({db,auth:{getUser:async()=>({email:'u@example.com',emailVerified:true})},now,apiKey:'test-key',from:'sender@example.com',appUrl:'https://ztracker.web.app',log:()=>{},fetchImpl:async()=>({ok:false,status:429})}));
  assert.equal(state.deliveries.length,0);
  assert.equal(state.ready,false);
 });
 test('Gmail transport uses the dedicated sender and only the verified recipient',async()=>{
  const {db,state}=memoryStore({plans:[plan('p')]});let verified=0;let delivered;
  const smtpTransport={verify:async()=>{verified++;},sendMail:async message=>{delivered=message;return {messageId:'smtp-accepted',rejected:[]};}};
- await sendReminders({db,auth:{getUser:async()=>({email:'verified@example.com',emailVerified:true})},now,smtpUser:'sender@gmail.com',smtpPassword:'test-app-password',smtpTransport,appUrl:'https://zakat-tracker.web.app',log:()=>{}});
+ await sendReminders({db,auth:{getUser:async()=>({email:'verified@example.com',emailVerified:true})},now,smtpUser:'sender@gmail.com',smtpPassword:'test-app-password',smtpTransport,appUrl:'https://ztracker.web.app',log:()=>{}});
  assert.equal(verified,1);
  assert.equal(delivered.from,'sender@gmail.com');
  assert.equal(delivered.to,'verified@example.com');
@@ -73,7 +73,7 @@ test('Zakat email reminders skip recycled and missing records and resume after r
  const records={r:{isSubmitted:true,currency:'USD',deletedAt:123}};
  const {db}=memoryStore({plans:[plan('p',{kind:'zakat',zakatRecordId:'r'})],records});
  let sent=0;
- const options={db,auth:{getUser:async()=>({email:'verified@example.com',emailVerified:true})},now,apiKey:'key',from:'sender@example.com',appUrl:'https://zakat-tracker.web.app',log:()=>{},fetchImpl:async()=>{sent++;return {ok:true,json:async()=>({id:'accepted'})};}};
+ const options={db,auth:{getUser:async()=>({email:'verified@example.com',emailVerified:true})},now,apiKey:'key',from:'sender@example.com',appUrl:'https://ztracker.web.app',log:()=>{},fetchImpl:async()=>{sent++;return {ok:true,json:async()=>({id:'accepted'})};}};
  await sendReminders(options);assert.equal(sent,0);
  delete records.r.deletedAt;
  await sendReminders(options);assert.equal(sent,1);

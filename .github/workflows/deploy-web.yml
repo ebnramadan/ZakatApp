@@ -84,10 +84,10 @@ jobs:
       - name: Deploy to the existing live Hosting site
         run: npx --no-install firebase deploy --project zakat-app-36c58 --only hosting --non-interactive
       - name: Verify Hosting responds
-        run: curl --fail --silent --show-error --retry 3 https://zakat-tracker.web.app/ -o /dev/null
+        run: curl --fail --silent --show-error --retry 3 https://ztracker.web.app/ -o /dev/null
       - name: Record deployed version
         env:
           DEPLOYED_SHA: ${{ github.sha }}
         run: |
-          echo 'Live site: https://zakat-tracker.web.app (previous URL remains available)' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Live site: https://ztracker.web.app (previous URL remains available)' >> "$GITHUB_STEP_SUMMARY"
           echo "Source commit: $DEPLOYED_SHA" >> "$GITHUB_STEP_SUMMARY"

@@ -1,7 +1,7 @@
 # Enable GitHub deployment to the existing Firebase site
 
 Project/site: `zakat-app-36c58`  
-Primary URL: https://zakat-tracker.web.app (reserved in the same project)
+Primary URL: https://ztracker.web.app (in the same project)
 Previous URL retained: https://zakat-app-36c58.web.app
 
 The workflow now deploys the reviewed Firestore rules first, then the web build to both Hosting sites. It does not replace the Firebase project, change accounts, or delete financial records. The new rules are required for verification gating and the monthly-giving collections; do not deploy the new web UI against the old rules.
@@ -43,3 +43,5 @@ Use the existing Firebase Hosting site's release history to roll back to a previ
 Workload Identity Federation can replace the JSON secret with GitHub OIDC and short-lived credentials. It requires a Google identity pool/provider restricted to this repository and production branch, a service-account binding, and `id-token: write` in the workflow. Configure that trust relationship before changing the authentication step; the current workflow deliberately expects the documented JSON secret.
 
 Add the new Hosting domains in Firebase Authentication → Settings → Authorized domains before deployment. For Gmail/Resend sender setup, see [monthly giving](monthly-giving.md).
+
+The previous zakat-tracker.web.app and zakat-app-36c58.web.app sites remain deployed. All addresses use the same Firebase Auth/Firestore project. Browser sign-in storage belongs to each origin, so users may need to sign in again on the new address; this does not create a separate financial account.
