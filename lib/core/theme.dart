@@ -3,7 +3,12 @@ import 'package:flutter/foundation.dart';
 import 'constants.dart';
 
 class AppTheme {
-  static ThemeData get light {
+  static ThemeData get light => forLanguage('en');
+
+  static ThemeData forLanguage(String language) {
+    final arabic = language == 'ar';
+    final family = arabic ? 'Tajawal' : 'Inter';
+    final fallback = [arabic ? 'Inter' : 'Tajawal'];
     final base = ColorScheme.fromSeed(
       seedColor: kPrimaryGreen,
       brightness: Brightness.light,
@@ -25,30 +30,37 @@ class AppTheme {
               TargetPlatform.fuchsia: _BrowserPageTransition(),
             })
           : const PageTransitionsTheme(),
-      fontFamily: 'Inter',
-      fontFamilyFallback: const ['Tajawal'],
+      fontFamily: family,
+      fontFamilyFallback: fallback,
       visualDensity: VisualDensity.standard,
-      textTheme: const TextTheme(
-              bodyLarge: TextStyle(fontSize: 16, height: 1.4),
-              bodyMedium: TextStyle(fontSize: 14, height: 1.4),
-              bodySmall: TextStyle(fontSize: 12, height: 1.35),
-              titleMedium: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-              titleLarge: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+      textTheme: TextTheme(
+              bodyLarge: const TextStyle(fontSize: 16, height: 1.4),
+              bodyMedium: const TextStyle(fontSize: 14, height: 1.4),
+              bodySmall: const TextStyle(fontSize: 12, height: 1.35),
+              titleMedium: const TextStyle(
+                  fontSize: 14, height: 1.4, fontWeight: FontWeight.w600),
+              titleLarge: const TextStyle(
+                  fontSize: 18, height: 1.4, fontWeight: FontWeight.w700),
               headlineMedium: TextStyle(
-                  fontSize: 25, height: 1.18, fontWeight: FontWeight.w700))
+                  fontSize: 25,
+                  height: arabic ? 1.4 : 1.18,
+                  fontWeight: FontWeight.w700))
           .apply(
               bodyColor: const Color(0xFF172C27),
               displayColor: const Color(0xFF172C27)),
       colorScheme: base,
       scaffoldBackgroundColor: kSurface,
-      appBarTheme: const AppBarTheme(
+      appBarTheme: AppBarTheme(
         backgroundColor: kSurface,
-        foregroundColor: Color(0xFF172C27),
+        foregroundColor: const Color(0xFF172C27),
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
         titleTextStyle: TextStyle(
-          color: Color(0xFF172C27),
+          fontFamily: family,
+          fontFamilyFallback: fallback,
+          height: 1.4,
+          color: const Color(0xFF172C27),
           fontSize: 20,
           fontWeight: FontWeight.w600,
           letterSpacing: 0.3,
@@ -65,14 +77,21 @@ class AppTheme {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14)),
-              textStyle:
-                  const TextStyle(fontSize: 14, fontWeight: FontWeight.w600))),
+              textStyle: TextStyle(
+                  fontFamily: family,
+                  fontFamilyFallback: fallback,
+                  fontSize: 14,
+                  height: 1.5,
+                  fontWeight: FontWeight.w600))),
       navigationBarTheme: NavigationBarThemeData(
           height: 64,
           backgroundColor: const Color(0xFFFFFCF7),
           elevation: 0,
           indicatorColor: const Color(0xFFDDEEE6),
           labelTextStyle: WidgetStateProperty.resolveWith((states) => TextStyle(
+              fontFamily: family,
+              fontFamilyFallback: fallback,
+              height: 1.4,
               fontSize: 10,
               fontWeight: states.contains(WidgetState.selected)
                   ? FontWeight.w700
@@ -86,24 +105,24 @@ class AppTheme {
           selectedLabelTextStyle:
               TextStyle(color: kPrimaryGreen, fontWeight: FontWeight.w700),
           unselectedLabelTextStyle: TextStyle(color: Color(0xFF52655F))),
-      listTileTheme: const ListTileThemeData(
+      listTileTheme: ListTileThemeData(
         minLeadingWidth: 24,
         horizontalTitleGap: 12,
-        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         titleTextStyle: TextStyle(
-            fontFamily: 'Inter',
-            fontFamilyFallback: ['Tajawal'],
+            fontFamily: family,
+            fontFamilyFallback: fallback,
+            height: 1.4,
             fontSize: 14,
-            height: 1.3,
             fontWeight: FontWeight.w500,
-            color: Color(0xFF172C27)),
+            color: const Color(0xFF172C27)),
         subtitleTextStyle: TextStyle(
-            fontFamily: 'Inter',
-            fontFamilyFallback: ['Tajawal'],
+            fontFamily: family,
+            fontFamilyFallback: fallback,
             fontSize: 12,
             height: 1.35,
-            color: Color(0xFF63716B)),
-        iconColor: Color(0xFF52655F),
+            color: const Color(0xFF63716B)),
+        iconColor: const Color(0xFF52655F),
       ),
       bottomSheetTheme: const BottomSheetThemeData(
           showDragHandle: true, backgroundColor: Color(0xFFFFFCF7)),
@@ -121,7 +140,12 @@ class AppTheme {
           minimumSize: const Size(0, 48),
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+          textStyle: TextStyle(
+              fontFamily: family,
+              fontFamilyFallback: fallback,
+              fontSize: 14,
+              height: 1.5,
+              fontWeight: FontWeight.w600),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
@@ -131,7 +155,12 @@ class AppTheme {
           minimumSize: const Size(0, 48),
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+          textStyle: TextStyle(
+              fontFamily: family,
+              fontFamilyFallback: fallback,
+              fontSize: 14,
+              height: 1.5,
+              fontWeight: FontWeight.w600),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
@@ -164,7 +193,13 @@ class AppTheme {
         backgroundColor: const Color(0xFFFFFCF7),
         selectedColor: kPrimaryGreen.withOpacity(0.15),
         side: const BorderSide(color: kPrimaryGreen),
-        labelStyle: const TextStyle(color: kPrimaryGreen, fontSize: 13),
+        labelStyle: TextStyle(
+            fontFamily: family,
+            fontFamilyFallback: fallback,
+            color: kPrimaryGreen,
+            fontSize: 13,
+            height: 1.5),
+        labelPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
