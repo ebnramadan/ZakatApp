@@ -4,7 +4,7 @@ Project/site: `zakat-app-36c58`
 Primary URL: https://ztracker.web.app (in the same project)
 Previous URL retained: https://zakat-app-36c58.web.app
 
-The workflow now deploys the reviewed Firestore rules first, then the web build to both Hosting sites. It does not replace the Firebase project, change accounts, or delete financial records. The new rules are required for verification gating and the monthly-giving collections; do not deploy the new web UI against the old rules.
+The workflow now deploys the reviewed Firestore rules first, then the web build to the primary ztracker site and the two previous Hosting sites. It does not replace the Firebase project, change accounts, or delete financial records. The new rules are required for verification gating and the monthly-giving collections; do not deploy the new web UI against the old rules.
 
 ## One-time setup by the project owner
 
