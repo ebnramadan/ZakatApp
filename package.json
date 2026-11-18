@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "test:rules": "firebase emulators:exec --project demo-zakat-app --only firestore \"node --test tests/firestore.rules.test.cjs tests/legacy-currency.test.cjs tests/recycle-cleanup.test.cjs tests/progress-sheet.test.cjs tests/server-delivery.test.cjs\"",
-    "test:reminders": "node --test tests/monthly-reminders.test.cjs",
+    "test:reminders": "node --test tests/monthly-reminders.test.cjs tests/email-delivery.test.cjs",
     "test:push": "node --test tests/push-reminders.test.cjs",
     "test:startup": "node --test tests/startup.test.cjs"
   },

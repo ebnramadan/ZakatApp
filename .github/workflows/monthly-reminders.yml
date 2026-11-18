@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
     inputs:
       dry_run:
-        description: 'Check reminder eligibility without sending emails'
+        description: 'Check all email tasks without sending'
         type: boolean
         default: true
 permissions:
@@ -39,7 +39,7 @@ jobs:
         with:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_ZAKAT_APP_36C58 }}
           project_id: zakat-app-36c58
-      - name: Send verified-account reminders
+      - name: Deliver queued sheets, scheduled sharing and reminders
         env:
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           REMINDER_FROM: ${{ secrets.REMINDER_FROM }}
@@ -48,7 +48,7 @@ jobs:
           DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
         run: |
           if [ "$DRY_RUN" = "true" ]; then
-            node scripts/monthly-reminders.cjs --dry-run
+            node scripts/email-delivery.cjs --dry-run
           else
-            node scripts/monthly-reminders.cjs
+            node scripts/email-delivery.cjs
           fi
