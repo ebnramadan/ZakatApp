@@ -21,8 +21,11 @@ void main() {
         'notification': 'n',
         'keep': '1'
       });
-      html.window.history.replaceState(null, '', link.toString());
+      html.window.history.replaceState(
+          {'serialCount': 42, 'flutter': 'route-state'}, '', link.toString());
       clearNotificationLink();
+      expect(html.window.history.state,
+          {'serialCount': 42, 'flutter': 'route-state'});
       expect(
           Uri.parse(html.window.location.href).queryParameters, {'keep': '1'});
       html.window.history.replaceState(

@@ -157,7 +157,7 @@ void clearNotificationLink() {
       ..removeWhere((key, _) =>
           ['open', 'plan', 'record', 'month', 'notification'].contains(key));
     html.window.history.replaceState(
-        null,
+        html.window.history.state,
         html.document.title,
         uri
             .replace(
