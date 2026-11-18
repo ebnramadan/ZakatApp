@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 import '../models/payment.dart';
+import '../models/confirmed_payments.dart';
 import '../models/zakat_record.dart';
 import '../services/firestore_service.dart';
 
@@ -12,6 +13,7 @@ class TrackerProvider extends ChangeNotifier {
   bool _disposed = false;
   String? _pendingPaymentId;
   int _selection = 0;
+  final _confirmed = ConfirmedPayments();
 
   ZakatRecord? _selectedRecord;
   List<Payment> _payments = [];
@@ -28,20 +30,26 @@ class TrackerProvider extends ChangeNotifier {
   double get totalDue => _selectedRecord?.estimatedZakat ?? 0;
   double get remaining => (totalDue - totalPaid).clamp(0.0, double.infinity);
 
-  void selectRecord(String uid, ZakatRecord record) {
-    if (_selectedRecord?.id == record.id) return;
+  void selectRecord(String uid, ZakatRecord record, {bool force = false}) {
+    final same =
+        _selectedRecord?.id == record.id && _selectedRecord?.userId == uid;
+    if (same && !force) return;
     _selection++;
-    _pendingPaymentId = null;
-    _payments = [];
+    if (!same) {
+      _pendingPaymentId = null;
+      _payments = [];
+      _confirmed.clear();
+    }
     _error = null;
     _selectedRecord = record;
     _sub?.cancel();
     final selection = _selection;
     _sub = _fs.paymentsStream(uid, record.id).listen((list) {
       if (_disposed || selection != _selection) return;
-      _payments = list;
+      _payments = _confirmed.merge(list, acknowledge: true);
       _notify();
     }, onError: (Object e) {
+      if (_disposed || selection != _selection) return;
       _error = 'Could not load payments. Check your connection.';
       _notify();
     });
@@ -53,6 +61,7 @@ class TrackerProvider extends ChangeNotifier {
     _sub?.cancel();
     _selectedRecord = null;
     _payments = [];
+    _confirmed.clear();
     _error = null;
     _notify();
   }
@@ -60,18 +69,18 @@ class TrackerProvider extends ChangeNotifier {
   void reload() {
     final record = _selectedRecord;
     if (record == null) return;
-    _selectedRecord = null;
-    selectRecord(record.userId, record);
+    selectRecord(record.userId, record, force: true);
   }
 
-  Future<void> addPayment({
+  Future<Payment?> addPayment({
     required String uid,
     required double amount,
     required String name,
     required DateTime date,
     required String recipient,
   }) async {
-    if (_loading) return;
+    if (_loading) return null;
+    final selection = _selection;
     _loading = true;
     _error = null;
     _notify();
@@ -94,12 +103,20 @@ class TrackerProvider extends ChangeNotifier {
         createdAt: DateTime.now(),
       );
       await _fs.addPayment(payment);
+      if (_disposed || selection != _selection) return null;
+      _confirmed.save(payment);
+      _payments = _confirmed.merge(_payments);
       _pendingPaymentId = null;
+      return payment;
     } catch (e) {
-      _error = 'Failed to save payment.';
+      if (!_disposed && selection == _selection) {
+        _error = 'Failed to save payment.';
+      }
+      return null;
+    } finally {
+      _loading = false;
+      _notify();
     }
-    _loading = false;
-    _notify();
   }
 
   Future<void> updatePayment(Payment updated) async {
@@ -111,7 +128,12 @@ class TrackerProvider extends ChangeNotifier {
       if (!updated.amount.isFinite || updated.amount <= 0) {
         throw const FormatException('Invalid amount');
       }
+      final selection = _selection;
       await _fs.updatePayment(updated);
+      if (_disposed || selection != _selection) return;
+      _confirmed.save(updated);
+      _payments = _confirmed.merge(_payments);
+      _notify();
     } catch (e) {
       _error = 'Failed to update payment.';
       _notify();
@@ -121,7 +143,12 @@ class TrackerProvider extends ChangeNotifier {
   Future<void> deletePayment(String uid, String paymentId) async {
     _error = null;
     try {
+      final selection = _selection;
       await _fs.deletePayment(uid, paymentId);
+      if (_disposed || selection != _selection) return;
+      _confirmed.delete(paymentId);
+      _payments = _confirmed.merge(_payments);
+      _notify();
     } catch (e) {
       _error = 'Failed to delete payment.';
       _notify();

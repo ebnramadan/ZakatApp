@@ -45,7 +45,7 @@ class ZakatBalanceSummary extends StatelessWidget {
             child: Text(
                 l(
                     context,
-                    'Not due yet. This estimate is for {0}. Payments made now count as advance payments.',
+                    'Your Zakat date is {0}. Payments made before that date count as advance payments.',
                     [
                       DateFormat.yMMMd().format(record.hawlEndDate)
                     ]),
@@ -54,13 +54,11 @@ class ZakatBalanceSummary extends StatelessWidget {
       if (!record.nisabMet)
         Text(l(context, 'Below Nisab: no Zakat is due on this calculation.'),
             style: const TextStyle(color: Colors.white, height: 1.5)),
-      row(record.hawlComplete ? 'Total Zakat' : 'Estimated total Zakat', total),
-      row('Already paid', paid),
+      row('Total Zakat', total),
+      row('Paid', paid),
       const Divider(color: Colors.white38, height: 12),
-      row(record.hawlComplete ? 'Still to pay' : 'Still to cover (estimate)',
-          remaining,
-          prominent: true),
-      Text(l(context, 'Total Zakat − Already paid = Still to pay'),
+      row('Still To Pay', remaining, prominent: true),
+      Text(l(context, 'Still To Pay = Total Zakat − Paid'),
           style:
               const TextStyle(color: Colors.white, fontSize: 12, height: 1.5)),
     ]);

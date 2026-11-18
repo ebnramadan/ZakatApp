@@ -52,14 +52,21 @@ class _TrackerScreenState extends State<TrackerScreen> {
     }
   }
 
-  void _openAddSheet() {
-    showModalBottomSheet(
+  Future<void> _openAddSheet() async {
+    final saved = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (_) => const AddPaymentSheet(),
     );
+    if (mounted && saved == true) {
+      FocusManager.instance.primaryFocus?.unfocus();
+      setState(() {
+        _searchCtrl.clear();
+        _query = '';
+      });
+    }
   }
 
   @override
@@ -183,7 +190,12 @@ class _TrackerScreenState extends State<TrackerScreen> {
         ],
       ),
     );
-    if (confirmed == true) await tracker.deletePayment(uid, p.id);
+    if (confirmed == true) {
+      await tracker.deletePayment(uid, p.id);
+      if (mounted && tracker.error == null) {
+        context.read<CalculatorProvider>().confirmPaymentDeletion(uid, p.id);
+      }
+    }
   }
 }
 

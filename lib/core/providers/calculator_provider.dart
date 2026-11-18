@@ -5,6 +5,7 @@ import '../constants.dart';
 import '../calculation/zakat_calculator.dart';
 import '../models/zakat_record.dart';
 import '../models/payment.dart';
+import '../models/confirmed_payments.dart';
 import '../services/firestore_service.dart';
 import '../services/price_service.dart';
 
@@ -36,6 +37,22 @@ class CalculatorProvider extends ChangeNotifier {
 
   StreamSubscription<List<Payment>>? _paymentSub;
   List<Payment> _allPayments = [];
+  final _confirmedPayments = ConfirmedPayments();
+
+  void confirmPayment(Payment payment) {
+    if (_disposed || payment.userId != _recordsUid) return;
+    _confirmedPayments.save(payment);
+    _allPayments = _confirmedPayments.merge(_allPayments);
+    _notify();
+  }
+
+  void confirmPaymentDeletion(String uid, String id) {
+    if (_disposed || uid != _recordsUid) return;
+    _confirmedPayments.delete(id);
+    _allPayments = _confirmedPayments.merge(_allPayments);
+    _notify();
+  }
+
   bool paymentsLoading = true;
   String? paymentsError;
   List<Payment> get allPayments => List.unmodifiable(_allPayments);
@@ -103,6 +120,7 @@ class CalculatorProvider extends ChangeNotifier {
     if (_recordsUid != uid) {
       _records = [];
       _allPayments = [];
+      _confirmedPayments.clear();
       if (_draft?.userId != uid) _draft = null;
     }
     _recordsUid = uid;
@@ -136,6 +154,7 @@ class CalculatorProvider extends ChangeNotifier {
     if (_recordsUid != uid) {
       _records = [];
       _allPayments = [];
+      _confirmedPayments.clear();
       if (_draft?.userId != uid) _draft = null;
     }
     _recordsUid = uid;
@@ -165,7 +184,7 @@ class CalculatorProvider extends ChangeNotifier {
     _notify();
     _paymentSub = _fs.allPaymentsStream(uid).listen((payments) {
       if (_disposed || generation != _dataGeneration) return;
-      _allPayments = payments;
+      _allPayments = _confirmedPayments.merge(payments, acknowledge: true);
       paymentsLoading = false;
       paymentsError = null;
       _finishInitialLoad();

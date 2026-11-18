@@ -305,7 +305,7 @@ class _AssetFormScreenState extends State<AssetFormScreen> {
                 [DateFormat.yMMMd().format(d.hawlEndDate)])),
             const SizedBox(height: 12),
             Text(l(context,
-                "Uses 85g pure gold Nisab and a 2.5% lunar-year rate. Includes cash and gold only, with no debt deductions. Confirm that wealth remained eligible throughout the Hawl. Estimates before the anniversary are not amounts currently due.")),
+                "Uses 85g pure gold Nisab and a 2.5% lunar-year rate. Includes cash and gold only, with no debt deductions. Confirm that wealth remained eligible throughout the Hawl. Amounts before your Zakat date are not currently due.")),
             _number('24K gold price per gram for Nisab (${currency ?? '?'})',
                 d.goldPricePerGram24k, calc.updateGoldPrice,
                 positive: true, key: const ValueKey('nisab-price')),
