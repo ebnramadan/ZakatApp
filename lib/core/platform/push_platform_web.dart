@@ -111,6 +111,13 @@ Future<Map<String, dynamic>> subscribePush(String key) async {
       js.dartify(js.callMethod(subscription, 'toJSON', [])) as Map);
 }
 
+Future<void> refreshPushWorker() async {
+  try {
+    final registration = await _registration();
+    await registration?.update().timeout(const Duration(seconds: 8));
+  } catch (_) {}
+}
+
 Future<void> unsubscribePush() async {
   final registration = await _registration();
   final manager = registration?.pushManager;
@@ -141,4 +148,21 @@ Future<void> showPushTest(String title, String body, {String? uid}) async {
     'tag': 'ztracker-test',
     'data': {'target': 'monthly'}
   });
+}
+
+void clearNotificationLink() {
+  try {
+    final uri = Uri.base;
+    final parameters = Map<String, String>.from(uri.queryParameters)
+      ..removeWhere((key, _) =>
+          ['open', 'plan', 'record', 'month', 'notification'].contains(key));
+    html.window.history.replaceState(
+        null,
+        html.document.title,
+        uri
+            .replace(
+                queryParameters: parameters.isEmpty ? null : parameters,
+                query: parameters.isEmpty ? '' : null)
+            .toString());
+  } catch (_) {}
 }

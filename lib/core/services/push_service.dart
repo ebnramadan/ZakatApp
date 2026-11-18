@@ -57,7 +57,8 @@ class PushService {
   Future<void> enable(String uid, String publicKey,
       {required bool monthly,
       required bool zakat,
-      required bool showNames}) async {
+      required bool showNames,
+      bool dailyDuaa = true}) async {
     late final Map<String, dynamic> subscription;
     try {
       subscription = await platform.subscribePush(publicKey);
@@ -80,6 +81,7 @@ class PushService {
         'monthly': monthly,
         'zakat': zakat,
         'showNames': showNames,
+        'dailyDuaa': dailyDuaa,
         'timeZone': clock.deviceTimeZone() ?? 'UTC',
         'createdAt': old.data()?['createdAt'] ?? now,
         'updatedAt': now
@@ -91,7 +93,8 @@ class PushService {
         'enabled': true,
         'monthly': monthly,
         'zakat': zakat,
-        'showNames': showNames
+        'showNames': showNames,
+        'dailyDuaa': dailyDuaa
       });
       if (!confirmed) {
         throw const PushSetupException(
@@ -135,6 +138,8 @@ class PushService {
       try {
         await platform.unsubscribePush();
       } catch (_) {}
+    } else {
+      await platform.refreshPushWorker();
     }
   }
 

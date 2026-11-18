@@ -12,6 +12,7 @@ import '../../core/providers/calculator_provider.dart';
 import '../../core/providers/monthly_provider.dart';
 import '../shared/app_components.dart';
 import '../shared/zakat_balance_summary.dart';
+import '../notifications/notification_bell.dart';
 
 class DashboardScreen extends StatelessWidget {
   final VoidCallback onRecords, onMonthly, onCreate;
@@ -305,6 +306,7 @@ class DashboardScreen extends StatelessWidget {
     return SafeArea(
         child: ListView(padding: EdgeInsets.all(compact ? 20 : 28), children: [
       PageIntro(
+          trailing: const NotificationBell(),
           eyebrow: l(context, "Your giving"),
           title: l(context, "For Allah. One step at a time."),
           description: l(

@@ -2,7 +2,7 @@ const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const {GAP,localDay,validSubscription,lunarEnd,selectReminder,run}=require('../scripts/push-reminders.cjs');
 const now=new Date('2026-11-17T10:00:00Z');
-const subscription={userId:'u',endpoint:'https://web.push.apple.com/test-endpoint',keys:{p256dh:'A'.repeat(87),auth:'A'.repeat(22)},monthly:true,zakat:true,showNames:false,timeZone:'Africa/Cairo'};
+const subscription={userId:'u',endpoint:'https://web.push.apple.com/test-endpoint',keys:{p256dh:'A'.repeat(87),auth:'A'.repeat(22)},monthly:true,zakat:true,dailyDuaa:false,showNames:false,timeZone:'Africa/Cairo'};
 const plan=(id,patch={})=>({id,recipient:'Family '+id,amount:100,currency:'EGP',kind:'sadaqah',startMonth:'2026-01',reminderDay:1,active:true,...patch});
 const record={id:'r',isSubmitted:true,nisabMet:true,totalWealth:10000,createdAt:1,hawlStartDate:Date.parse('2024-03-11T12:00:00Z'),currency:'EGP'};
 const options=patch=>({profile:{language:'ar',defaultRecordId:'r'},subscription,plans:[],records:[],now,...patch});
@@ -61,9 +61,9 @@ test('server sends encrypted-provider payload with no names unless opted in; key
  assert.equal(f.state.get('appConfig/push').privateKey,undefined);assert.equal(f.state.get('_system/webPushKeys').privateKey,'test-private');
  assert.equal(f.state.get('appConfig/push').scheduledAt,now.getTime());
 });
-test('overlapping runs and retries produce one reminder, then wait four days',async()=>{
+test('overlapping runs and retries produce one reminder per local day',async()=>{
  const f=fixture();await Promise.all([run(f),run(f)]);assert.equal(f.messages.length,1);
- await run({...f,now:new Date(now.getTime()+3*86400000)});assert.equal(f.messages.length,1);
+ await run({...f,now:new Date(now.getTime()+3600000)});assert.equal(f.messages.length,1);
  await run({...f,now:new Date(now.getTime()+GAP)});assert.equal(f.messages.length,2);
 });
 test('paid months, unverified accounts and dry runs do not send; manual runs do not claim scheduler readiness',async()=>{
@@ -102,4 +102,64 @@ test('device tests stay visible without reminder opt-in, but are cleared on acco
  const sync=async uid=>{let work;handlers.message({data:{type:'push-session',uid},ports:[],waitUntil:p=>work=p});await work;};
  await sync('u');assert.equal(testsClosed,0);assert.equal(remindersClosed,1);
  await sync('other');assert.equal(testsClosed,1);
+});
+
+test('daily duaa rotates, supports opt-out, and legacy devices default to daily duaa',()=>{
+ const legacy={...subscription};delete legacy.dailyDuaa;
+ const one=selectReminder(options({subscription:legacy}));
+ assert.equal(one.kind,'duaa');assert.match(one.body,/اللهم/);
+ const next=selectReminder(options({subscription:legacy,now:new Date(now.getTime()+86400000)}));
+ assert.notEqual(one.body,next.body);
+ assert.equal(selectReminder(options({subscription:{...legacy,dailyDuaa:false}})),null);
+});
+test('personalized daily monthly reminder has an exact plan/month target and includes a duaa',()=>{
+ const message=selectReminder(options({plans:[plan('p')],subscription:{...subscription,dailyDuaa:true,showNames:true}}));
+ assert.equal(message.planId,'p');assert.equal(message.month,'2026-11');
+ assert.match(message.body,/Family p/);assert.match(message.body,/اللهم/);
+ assert.equal(message.genericBody.includes('Family'),false);
+ const zakat=selectReminder(options({records:[record],subscription:{...subscription,dailyDuaa:true}}));
+ assert.equal(zakat.recordId,'r');assert.match(zakat.body,/اللهم/);
+});
+test('accepted notifications create private history once per user/day/action across devices',async()=>{
+ const f=fixture();f.state.set('users/u/pushSubscriptions/second',structuredClone(subscription));
+ await run(f);
+ const history=[...f.state.entries()].filter(([k])=>k.startsWith('users/u/notifications/'));
+ assert.equal(f.messages.length,2);assert.equal(history.length,1);
+ assert.equal(history[0][1].status,'accepted');assert.equal(history[0][1].readAt,null);
+ assert.equal(history[0][1].planId,'p');
+ assert.equal(f.messages[0].notificationId,history[0][0].split('/').at(-1));
+ assert.equal(history[0][1].body.includes('Family'),false);
+});
+test('failed provider requests and dry runs never create sent notification history',async()=>{
+ for(const failed of [false,true]){
+  const f=fixture();if(failed)f.webPush.sendNotification=async()=>{throw {statusCode:500};};
+  if(failed)await assert.rejects(run(f));else await run({...f,dryRun:true});
+  assert.equal([...f.state.keys()].some(k=>k.startsWith('users/u/notifications/')),false);
+ }
+});
+test('notification click opens only a same-origin action with the exact recipient, month and inbox ID',async()=>{
+ const vm=require('node:vm'),{readFileSync}=require('node:fs');
+ const handlers={},opened=[];
+ const context=vm.createContext({self:{addEventListener:(kind,fn)=>handlers[kind]=fn,location:{origin:'https://ztracker.web.app'},clients:{matchAll:async()=>[],openWindow:async url=>opened.push(url)}},URL});
+ vm.runInContext(readFileSync('web/push-worker.js','utf8'),context);
+ let work;handlers.notificationclick({notification:{data:{target:'monthly',planId:'p',month:'2026-11',notificationId:'inbox-id'},close(){}},waitUntil:p=>work=p});await work;
+ const url=new URL(opened[0]);assert.equal(url.origin,'https://ztracker.web.app');
+ assert.equal(url.searchParams.get('plan'),'p');assert.equal(url.searchParams.get('month'),'2026-11');assert.equal(url.searchParams.get('notification'),'inbox-id');
+ handlers.notificationclick({notification:{data:{target:'https://evil.example/',recordId:'../../other'},close(){}},waitUntil:p=>work=p});await work;
+ const invalid=new URL(opened[1]);assert.equal(invalid.origin,'https://ztracker.web.app');assert.equal(invalid.searchParams.get('open'),'home');assert.equal(invalid.searchParams.has('record'),false);
+});
+test('worker daily-duaa opt-out blocks queued duaa while allowing opted-in reminders',async()=>{
+ const vm=require('node:vm'),{readFileSync}=require('node:fs');const handlers={},shown=[];
+ const context=vm.createContext({self:{addEventListener:(kind,fn)=>handlers[kind]=fn,registration:{showNotification:async(title,options)=>shown.push(options)}},URL});
+ vm.runInContext(readFileSync('web/push-worker.js','utf8'),context);
+ vm.runInContext("stateStore=async()=>({uid:'u',enabled:true,dailyDuaa:false,monthly:true,zakat:true,showNames:false})",context);
+ let work;handlers.push({data:{json:()=>({uid:'u',kind:'duaa',title:'Duaa',body:'Duaa',genericBody:'Duaa'})},waitUntil:p=>work=p});await work;
+ assert.equal(shown.length,0);
+ handlers.push({data:{json:()=>({uid:'u',kind:'monthly',title:'Monthly',body:'Name',genericBody:'Generic',planId:'p',month:'2026-11',notificationId:'i'})},waitUntil:p=>work=p});await work;
+ assert.equal(shown.length,1);assert.equal(shown[0].body,'Generic');assert.equal(shown[0].data.planId,'p');
+});
+test('English reminders keep recipient names, duaa and exact action while generic text stays private',()=>{
+ const message=selectReminder(options({profile:{language:'en'},plans:[plan('p')],subscription:{...subscription,dailyDuaa:true,showNames:true}}));
+ assert.match(message.title,/Monthly giving/);assert.match(message.body,/Family p is waiting/);assert.match(message.body,/O Allah/);assert.equal(message.planId,'p');
+ assert.equal(message.genericBody.includes('Family p'),false);
 });

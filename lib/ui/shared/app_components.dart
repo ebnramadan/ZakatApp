@@ -13,26 +13,31 @@ String money(double value, String? currency) => currency == null
 
 class PageIntro extends StatelessWidget {
   final String eyebrow, title, description;
-  final Widget? action;
+  final Widget? action, trailing;
   const PageIntro(
       {super.key,
       required this.eyebrow,
       required this.title,
       required this.description,
-      this.action});
+      this.action,
+      this.trailing});
   @override
   Widget build(BuildContext context) => Padding(
         padding: const EdgeInsets.only(bottom: 20),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(l(context, eyebrow.toUpperCase()),
-              style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing:
-                      Localizations.localeOf(context).languageCode == 'ar'
-                          ? 0
-                          : 1.4,
-                  color: kPrimaryGreen)),
+          Row(children: [
+            Expanded(
+                child: Text(l(context, eyebrow.toUpperCase()),
+                    style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing:
+                            Localizations.localeOf(context).languageCode == 'ar'
+                                ? 0
+                                : 1.4,
+                        color: kPrimaryGreen))),
+            if (trailing != null) trailing!
+          ]),
           const SizedBox(height: 8),
           Text(l(context, title),
               style: Theme.of(context)

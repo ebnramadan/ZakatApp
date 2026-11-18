@@ -1,3 +1,4 @@
+import '../notifications/notification_bell.dart';
 import '../../core/localization/strings.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -71,11 +72,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
       appBar: AppBar(
         title: Text(l(context, "Profile")),
         actions: [
-          TextButton(
-            onPressed: auth.signOut,
-            child: Text(l(context, "Sign out"),
-                style: const TextStyle(color: kPrimaryGreen)),
-          ),
+          if (MediaQuery.sizeOf(context).width < 360 ||
+              MediaQuery.textScalerOf(context).scale(14) > 20)
+            IconButton(
+                tooltip: l(context, 'Sign out'),
+                onPressed: auth.signOut,
+                icon: const Icon(Icons.logout))
+          else
+            TextButton(
+              onPressed: auth.signOut,
+              child: Text(l(context, "Sign out"),
+                  style: const TextStyle(color: kPrimaryGreen)),
+            ),
+          const NotificationBell(),
         ],
       ),
       body: ListView(

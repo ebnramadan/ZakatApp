@@ -1,7 +1,7 @@
 name: Web push giving reminders
 on:
   schedule:
-    - cron: '*/15 * * * *'
+    - cron: '7,22,37,52 * * * *'
   push:
     branches: ['claude/zakat-app-build-0NR5K', 'main']
     paths: ['scripts/push-reminders.cjs', '.github/workflows/push-reminders.yml']

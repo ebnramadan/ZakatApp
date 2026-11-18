@@ -9,14 +9,17 @@ import '../../core/providers/calculator_provider.dart';
 import '../../core/providers/tracker_provider.dart';
 import 'add_payment_sheet.dart';
 import '../shared/zakat_balance_summary.dart';
+import '../notifications/notification_bell.dart';
 import '../calculator/entry_mode_screen.dart';
 import '../calculator/one_pager_screen.dart';
 import '../home/recycle_bin_screen.dart';
 
 class TrackerScreen extends StatefulWidget {
+  final String? recordId;
   final VoidCallback? onOpenMonthly;
   final VoidCallback? onOpenRecords;
-  const TrackerScreen({super.key, this.onOpenMonthly, this.onOpenRecords});
+  const TrackerScreen(
+      {super.key, this.onOpenMonthly, this.onOpenRecords, this.recordId});
 
   @override
   State<TrackerScreen> createState() => _TrackerScreenState();
@@ -44,7 +47,12 @@ class _TrackerScreenState extends State<TrackerScreen> {
     final auth = context.read<AuthProvider>();
     final calc = context.read<CalculatorProvider>();
     final tracker = context.read<TrackerProvider>();
-    final record = calc.defaultRecord(auth.profile?.defaultRecordId);
+    final matches = calc.records.where((r) => r.id == widget.recordId);
+    final record = widget.recordId == null
+        ? calc.defaultRecord(auth.profile?.defaultRecordId)
+        : matches.isEmpty
+            ? null
+            : matches.first;
     if (record == null || !record.isSubmitted) {
       if (tracker.selectedRecord != null) tracker.clearSelection();
     } else if (tracker.selectedRecord?.id != record.id) {
@@ -76,8 +84,13 @@ class _TrackerScreenState extends State<TrackerScreen> {
     final tracker = context.watch<TrackerProvider>();
     final currency = tracker.selectedRecord?.currency;
     final submitted = calc.records.where((r) => r.isSubmitted).toList();
-    final current = calc
-        .defaultRecord(context.watch<AuthProvider>().profile?.defaultRecordId);
+    final matches = calc.records.where((r) => r.id == widget.recordId);
+    final current = widget.recordId == null
+        ? calc.defaultRecord(
+            context.watch<AuthProvider>().profile?.defaultRecordId)
+        : matches.isEmpty
+            ? null
+            : matches.first;
     if ((current?.isSubmitted == true ? current?.id : null) !=
         tracker.selectedRecord?.id) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -100,23 +113,30 @@ class _TrackerScreenState extends State<TrackerScreen> {
               icon: const Icon(Icons.folder_open_outlined),
               tooltip: l(context, "Records in Home"),
               onPressed: widget.onOpenRecords),
+          const NotificationBell(),
         ],
       ),
       body: calc.recordsLoading && tracker.selectedRecord == null
           ? const Center(child: CircularProgressIndicator())
           : tracker.selectedRecord == null
-              ? _EmptyState(
-                  draftName: current?.name,
-                  onSetup: () {
-                    if (current != null && !current.isSubmitted) {
-                      calc.resumeRecord(current);
-                      Navigator.of(context).push(MaterialPageRoute(
-                          builder: (_) => const OnePagerScreen()));
-                    } else {
-                      Navigator.of(context).push(MaterialPageRoute(
-                          builder: (_) => const EntryModeScreen()));
-                    }
-                  })
+              ? widget.recordId != null
+                  ? Center(
+                      child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Text(l(context,
+                              'This Zakat record is no longer available. Check your records or recycle bin.'))))
+                  : _EmptyState(
+                      draftName: current?.name,
+                      onSetup: () {
+                        if (current != null && !current.isSubmitted) {
+                          calc.resumeRecord(current);
+                          Navigator.of(context).push(MaterialPageRoute(
+                              builder: (_) => const OnePagerScreen()));
+                        } else {
+                          Navigator.of(context).push(MaterialPageRoute(
+                              builder: (_) => const EntryModeScreen()));
+                        }
+                      })
               : CustomScrollView(
                   slivers: [
                     SliverToBoxAdapter(

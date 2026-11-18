@@ -10,6 +10,7 @@ class TrackerProvider extends ChangeNotifier {
   final FirestoreService _fs;
   TrackerProvider({FirestoreService? store})
       : _fs = store ?? FirestoreService();
+  TrackerProvider fork() => TrackerProvider(store: _fs);
   bool _disposed = false;
   String? _pendingPaymentId;
   int _selection = 0;

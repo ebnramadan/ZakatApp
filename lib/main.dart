@@ -18,6 +18,8 @@ import 'core/providers/auth_provider.dart';
 import 'core/providers/calculator_provider.dart';
 import 'core/providers/tracker_provider.dart';
 import 'core/providers/monthly_provider.dart';
+import 'core/notifications/notification_provider.dart';
+import 'core/notifications/notification_target.dart';
 import 'ui/auth/login_screen.dart';
 import 'ui/shared/warm_loading_screen.dart';
 import 'ui/auth/verify_email_screen.dart';
@@ -104,6 +106,8 @@ class ZakatApp extends StatelessWidget {
                             create: (_) => TrackerProvider()),
                         ChangeNotifierProvider(
                             create: (_) => MonthlyProvider()),
+                        ChangeNotifierProvider(
+                            create: (_) => NotificationProvider()),
                       ],
                       child: MaterialApp(
                           title: auth.language == 'ar'
@@ -185,6 +189,12 @@ class _AuthGate extends StatelessWidget {
     if (!auth.profile!.onboardingCompleted) return const OnboardingScreen();
     final target = Uri.base.queryParameters['open'];
     return HomeScreen(
+        notificationTarget:
+            Uri.base.queryParameters.containsKey('notification') ||
+                    Uri.base.queryParameters.containsKey('plan') ||
+                    Uri.base.queryParameters.containsKey('record')
+                ? NotificationTarget.fromUri(Uri.base)
+                : null,
         initialTab: target == 'monthly'
             ? 2
             : target == 'tracker'
