@@ -7,11 +7,13 @@ test('monthly sheet dates clamp month end, require opt-in, and reject reset/inva
  for(const patch of [{sharingEnabled:false},{shareDay:0},{shareDay:32},{shareRecipients:[]},{shareRecipients:['bad\n@example.com']}])assert.equal(eligible({...base,...patch},now),false);
 });
 test('workbook has useful tabs, separates currencies and Sadaqah, excludes recycled history, and stores text as text',async()=>{
- const data={records:[{id:'r',name:'=SUM(1,2)',currency:'EGP',totalWealth:10000,nisabMet:true,isSubmitted:true,hawlStartDate:1},{id:'trash',name:'Hidden',deletedAt:1,isSubmitted:true,totalWealth:99999,currency:'EGP'}],payments:[{zakatRecordId:'r',amount:100,date:1,recipient:'Family'},{zakatRecordId:'trash',amount:999,date:1}],monthlyPayments:[{kind:'sadaqah',month:'2026-02',currency:'USD',amount:20,recipient:'Friend',paidAt:1}],defaultRecordId:'r'};
+ const data={records:[{id:'r',name:'=SUM(1,2)',currency:'EGP',totalWealth:10000,nisabMet:true,isSubmitted:true,hawlStartDate:1},{id:'trash',name:'Hidden',deletedAt:1,isSubmitted:true,totalWealth:99999,currency:'EGP'}],payments:[{zakatRecordId:'r',amount:100,date:1,name:'Support',recipient:'Family'},{zakatRecordId:'trash',amount:999,date:1}],monthlyPayments:[{kind:'sadaqah',month:'2026-02',currency:'USD',amount:20,recipient:'Friend',paidAt:1}],defaultRecordId:'r'};
  const buffer=await buildWorkbook(data,now), book=new ExcelJS.Workbook();await book.xlsx.load(buffer);
  assert.equal(book.worksheets.length,5);
  const records=book.getWorksheet('Zakat records');assert.equal(records.rowCount,2);assert.equal(records.getCell('A2').value,'=SUM(1,2)');assert.equal(records.getCell('F2').value,250);assert.equal(records.getCell('H2').value,150);
  assert.equal(book.getWorksheet('Zakat payments').rowCount,2);
+ assert.equal(book.getWorksheet('Zakat payments').getCell('C1').value,'Name');
+ assert.equal(book.getWorksheet('Zakat payments').getCell('C2').value,'Support Family');
  const overview=book.getWorksheet('Overview');assert.equal(overview.getCell('A2').value,'EGP');assert.equal(overview.getCell('E2').value,0);assert.equal(overview.getCell('A3').value,'USD');assert.equal(overview.getCell('E3').value,20);
 });
 test('scheduler dry run sends nothing; actual sends attach sheets and dedupe each recipient monthly',async()=>{

@@ -8,6 +8,7 @@ import '../../core/providers/auth_provider.dart';
 import '../../core/providers/calculator_provider.dart';
 import '../../core/providers/tracker_provider.dart';
 import 'add_payment_sheet.dart';
+import '../shared/zakat_balance_summary.dart';
 import '../calculator/entry_mode_screen.dart';
 import '../calculator/one_pager_screen.dart';
 import '../home/recycle_bin_screen.dart';
@@ -109,50 +110,53 @@ class _TrackerScreenState extends State<TrackerScreen> {
                           builder: (_) => const EntryModeScreen()));
                     }
                   })
-              : Column(
-                  children: [
-                    if (tracker.error != null)
-                      TextButton(
-                          onPressed: tracker.reload,
-                          child: Text(
-                              l(context, "{0} Tap to retry.", [tracker.error!]),
-                              style: const TextStyle(color: Colors.red))),
-                    if (tracker.selectedRecord!.currency == null)
-                      Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Text(l(context,
-                              "This older record has no saved currency. Amounts are shown without a currency; adding payments is disabled."))),
-                    _Header(tracker: tracker, currency: currency),
-                    const Divider(height: 1),
-                    _SearchBar(
-                      controller: _searchCtrl,
-                      onChanged: (q) => setState(() => _query = q),
-                    ),
-                    Expanded(
-                      child: _PaymentList(
-                        payments: tracker.search(_query),
-                        searching: _query.trim().isNotEmpty,
-                        onOpenMonthly: widget.onOpenMonthly,
-                        currency: currency,
-                        onEdit: (p) => showModalBottomSheet(
-                          context: context,
-                          isScrollControlled: true,
-                          shape: const RoundedRectangleBorder(
-                              borderRadius: BorderRadius.vertical(
-                                  top: Radius.circular(20))),
-                          builder: (_) => AddPaymentSheet(existing: p),
-                        ),
-                        onDelete: (p) =>
-                            _confirmDelete(context, p, auth.user!.uid, tracker),
+              : CustomScrollView(
+                  slivers: [
+                    SliverToBoxAdapter(
+                        child: Column(children: [
+                      if (tracker.error != null)
+                        TextButton(
+                            onPressed: tracker.reload,
+                            child: Text(
+                                l(context, "{0} Tap to retry.",
+                                    [tracker.error!]),
+                                style: const TextStyle(color: Colors.red))),
+                      if (tracker.selectedRecord!.currency == null)
+                        Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Text(l(context,
+                                "This older record has no saved currency. Amounts are shown without a currency; adding payments is disabled."))),
+                      _Header(tracker: tracker, currency: currency),
+                      const Divider(height: 1),
+                      _SearchBar(
+                        controller: _searchCtrl,
+                        onChanged: (q) => setState(() => _query = q),
                       ),
+                    ])),
+                    _PaymentList(
+                      payments: tracker.search(_query),
+                      searching: _query.trim().isNotEmpty,
+                      onOpenMonthly: widget.onOpenMonthly,
+                      currency: currency,
+                      onEdit: (p) => showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.vertical(
+                                top: Radius.circular(20))),
+                        builder: (_) => AddPaymentSheet(existing: p),
+                      ),
+                      onDelete: (p) =>
+                          _confirmDelete(context, p, auth.user!.uid, tracker),
                     ),
                   ],
                 ),
       floatingActionButton: tracker.selectedRecord?.currency != null
-          ? FloatingActionButton(
+          ? FloatingActionButton.extended(
               heroTag: 'add-payment',
               onPressed: _openAddSheet,
-              child: const Icon(Icons.add),
+              icon: const Icon(Icons.add),
+              label: Text(l(context, "Add Payment")),
             )
           : null,
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
@@ -165,8 +169,8 @@ class _TrackerScreenState extends State<TrackerScreen> {
       context: ctx,
       builder: (_) => AlertDialog(
         title: Text(l(context, "Delete Payment")),
-        content: Text(
-            l(context, "Delete \"{0}\"? This cannot be undone.", [p.name])),
+        content: Text(l(context, "Delete \"{0}\"? This cannot be undone.",
+            [p.displayName])),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
@@ -194,17 +198,7 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fmt = currency == null
-        ? NumberFormat('#,##0.00')
-        : NumberFormat.currency(
-            name: currency,
-            symbol: currencySymbol(currency!),
-            decimalDigits: currencyDecimals(currency!));
     final r = tracker.selectedRecord!;
-    final pct = tracker.totalDue > 0
-        ? (tracker.totalPaid / tracker.totalDue).clamp(0.0, 1.0)
-        : 0.0;
-
     return Container(
       color: kPrimaryGreen,
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
@@ -237,69 +231,9 @@ class _Header extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 14),
-          Wrap(
-            spacing: 24,
-            runSpacing: 16,
-            children: [
-              _StatColumn(
-                  label: l(context, "Paid"),
-                  value: fmt.format(tracker.totalPaid)),
-              _StatColumn(
-                  label: r.hawlComplete
-                      ? l(context, "Due")
-                      : l(context, "Estimate"),
-                  value: fmt.format(tracker.totalDue)),
-              _StatColumn(
-                  label: l(context, "Remaining"),
-                  value: fmt.format(tracker.remaining),
-                  highlight: tracker.remaining == 0),
-            ],
-          ),
-          const SizedBox(height: 12),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: pct,
-              backgroundColor: Colors.white30,
-              valueColor: const AlwaysStoppedAnimation<Color>(kGold),
-              minHeight: 8,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            l(context, "{0}% paid", [(pct * 100).toStringAsFixed(0)]),
-            style: const TextStyle(color: Colors.white70, fontSize: 11),
-          ),
+          ZakatBalanceSummary(record: r, paid: tracker.totalPaid),
         ],
       ),
-    );
-  }
-}
-
-class _StatColumn extends StatelessWidget {
-  final String label;
-  final String value;
-  final bool highlight;
-
-  const _StatColumn(
-      {required this.label, required this.value, this.highlight = false});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(l(context, label),
-            style: const TextStyle(color: Colors.white60, fontSize: 11)),
-        const SizedBox(height: 2),
-        Text(
-          l(context, value),
-          style: TextStyle(
-              color: highlight ? kGold : Colors.white,
-              fontSize: 14,
-              fontWeight: FontWeight.bold),
-        ),
-      ],
     );
   }
 }
@@ -364,31 +298,37 @@ class _PaymentList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (payments.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-                searching
-                    ? Icons.search_off
-                    : Icons.volunteer_activism_outlined,
-                size: 48,
-                color: Colors.grey),
-            const SizedBox(height: 12),
-            Text(
-                searching
-                    ? l(context, "No matching payments")
-                    : l(context, "No payments yet"),
-                style: const TextStyle(color: Colors.grey)),
-            const SizedBox(height: 4),
-            Text(
-                searching
-                    ? l(context, "Try a different name or recipient.")
-                    : l(context, "Tap + to record a payment"),
-                style: const TextStyle(color: Colors.grey, fontSize: 12)),
-          ],
-        ),
-      );
+      return SliverFillRemaining(
+          hasScrollBody: false,
+          child: Center(
+              child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 24, 20, 100),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                    searching
+                        ? Icons.search_off
+                        : Icons.volunteer_activism_outlined,
+                    size: 48,
+                    color: Colors.grey),
+                const SizedBox(height: 12),
+                Text(
+                    searching
+                        ? l(context, "No matching payments")
+                        : l(context, "No payments yet"),
+                    style: const TextStyle(color: Colors.grey)),
+                const SizedBox(height: 4),
+                Text(
+                    searching
+                        ? l(context, "Try a different name.")
+                        : l(context,
+                            "Tap Add Payment after you give the money"),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.grey, fontSize: 12)),
+              ],
+            ),
+          )));
     }
 
     final fmt = currency == null
@@ -399,10 +339,10 @@ class _PaymentList extends StatelessWidget {
             decimalDigits: currencyDecimals(currency!));
     final dateFmt = DateFormat('d MMM yyyy');
 
-    return ListView.builder(
+    return SliverPadding(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 100),
-      itemCount: payments.length,
-      itemBuilder: (ctx, i) {
+      sliver: SliverList(
+          delegate: SliverChildBuilderDelegate((ctx, i) {
         final p = payments[i];
         final month = p.monthlyPaymentId?.split('_').last;
         final period = month == null ? null : DateTime.tryParse('$month-01');
@@ -431,11 +371,7 @@ class _PaymentList extends StatelessWidget {
                     color: kGold, size: 20),
               ),
               title: Text(
-                  p.isMonthly
-                      ? p.recipient
-                      : p.name.isEmpty
-                          ? l(context, "Payment")
-                          : p.name,
+                  p.displayName.isEmpty ? l(context, 'Payment') : p.displayName,
                   style: const TextStyle(fontWeight: FontWeight.w600)),
               subtitle: Text(
                 p.isMonthly
@@ -448,7 +384,7 @@ class _PaymentList extends StatelessWidget {
                                 ?.monthlyGivingLabel ??
                             'Monthly Giving'
                       ])
-                    : '${dateFmt.format(p.date)}${p.recipient.isNotEmpty ? ' · ${p.recipient}' : ''}',
+                    : dateFmt.format(p.date),
                 style: const TextStyle(fontSize: 12),
               ),
               trailing: Row(
@@ -494,7 +430,7 @@ class _PaymentList extends StatelessWidget {
             ),
           ),
         );
-      },
+      }, childCount: payments.length)),
     );
   }
 }

@@ -72,7 +72,9 @@ class AppTheme {
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
         backgroundColor: kPrimaryGreen,
         foregroundColor: Colors.white,
-        elevation: 2,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(14))),
       ),
       filledButtonTheme: FilledButtonThemeData(
           style: FilledButton.styleFrom(
@@ -140,9 +142,10 @@ class AppTheme {
         style: ElevatedButton.styleFrom(
           backgroundColor: kPrimaryGreen,
           foregroundColor: Colors.white,
+          elevation: 0,
           minimumSize: const Size(0, 48),
           shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           textStyle: TextStyle(
               fontFamily: family,
               fontFamilyFallback: fallback,
@@ -157,7 +160,7 @@ class AppTheme {
           side: const BorderSide(color: kPrimaryGreen),
           minimumSize: const Size(0, 48),
           shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           textStyle: TextStyle(
               fontFamily: family,
               fontFamilyFallback: fallback,

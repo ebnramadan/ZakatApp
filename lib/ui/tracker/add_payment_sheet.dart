@@ -21,7 +21,6 @@ class AddPaymentSheet extends StatefulWidget {
 class _AddPaymentSheetState extends State<AddPaymentSheet> {
   final _amountCtrl = TextEditingController();
   final _nameCtrl = TextEditingController();
-  final _recipientCtrl = TextEditingController();
   DateTime _date = DateTime.now();
   bool _saving = false;
 
@@ -32,8 +31,7 @@ class _AddPaymentSheetState extends State<AddPaymentSheet> {
     super.initState();
     if (_isEdit) {
       _amountCtrl.text = widget.existing!.amount.toStringAsFixed(2);
-      _nameCtrl.text = widget.existing!.name;
-      _recipientCtrl.text = widget.existing!.recipient;
+      _nameCtrl.text = widget.existing!.displayName;
       _date = widget.existing!.date;
     }
   }
@@ -42,7 +40,6 @@ class _AddPaymentSheetState extends State<AddPaymentSheet> {
   void dispose() {
     _amountCtrl.dispose();
     _nameCtrl.dispose();
-    _recipientCtrl.dispose();
     super.dispose();
   }
 
@@ -57,9 +54,6 @@ class _AddPaymentSheetState extends State<AddPaymentSheet> {
     if (picked != null) setState(() => _date = picked);
   }
 
-  String _defaultName(BuildContext context) => l(context, 'Payment {0}',
-      [context.read<TrackerProvider>().payments.length + 1]);
-
   Future<void> _save() async {
     if (widget.existing?.isMonthly == true) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -72,6 +66,12 @@ class _AddPaymentSheetState extends State<AddPaymentSheet> {
           SnackBar(content: Text(l(context, "Enter a valid amount"))));
       return;
     }
+    if (_nameCtrl.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(l(context, 'Enter a name'))));
+      return;
+    }
+    FocusManager.instance.primaryFocus?.unfocus();
     setState(() => _saving = true);
     final auth = context.read<AuthProvider>();
     final tracker = context.read<TrackerProvider>();
@@ -82,11 +82,9 @@ class _AddPaymentSheetState extends State<AddPaymentSheet> {
         zakatRecordId: widget.existing!.zakatRecordId,
         userId: widget.existing!.userId,
         amount: amount,
-        name: _nameCtrl.text.trim().isEmpty
-            ? _defaultName(context)
-            : _nameCtrl.text.trim(),
+        name: _nameCtrl.text.trim(),
         date: _date,
-        recipient: _recipientCtrl.text.trim(),
+        recipient: '',
         createdAt: widget.existing!.createdAt,
       );
       await tracker.updatePayment(updated);
@@ -94,11 +92,9 @@ class _AddPaymentSheetState extends State<AddPaymentSheet> {
       await tracker.addPayment(
         uid: auth.user!.uid,
         amount: amount,
-        name: _nameCtrl.text.trim().isEmpty
-            ? _defaultName(context)
-            : _nameCtrl.text.trim(),
+        name: _nameCtrl.text.trim(),
         date: _date,
-        recipient: _recipientCtrl.text.trim(),
+        recipient: '',
       );
     }
 
@@ -176,18 +172,11 @@ class _AddPaymentSheetState extends State<AddPaymentSheet> {
 
               TextField(
                   controller: _nameCtrl,
+                  textInputAction: TextInputAction.done,
                   decoration: InputDecoration(
-                      labelText: l(context, "Payment name (optional)"),
-                      hintText: _defaultName(context))),
-              if (tracker.payeeNames.isNotEmpty)
-                Wrap(
-                    spacing: 6,
-                    children: tracker.payeeNames
-                        .take(5)
-                        .map((name) => ActionChip(
-                            label: Text(l(context, name)),
-                            onPressed: () => _nameCtrl.text = name))
-                        .toList()),
+                      labelText: l(context, 'Name'),
+                      hintText:
+                          l(context, 'Who or what is this payment for?'))),
               const SizedBox(height: 12),
 
               // Date
@@ -203,15 +192,9 @@ class _AddPaymentSheetState extends State<AddPaymentSheet> {
               ),
               const SizedBox(height: 12),
 
-              // Recipient
-              TextField(
-                controller: _recipientCtrl,
-                decoration: InputDecoration(
-                    labelText: l(context, "Recipient (optional)")),
-              ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 8),
 
-              ElevatedButton(
+              FilledButton(
                 onPressed: _saving ? null : _save,
                 child: _saving
                     ? const SizedBox(

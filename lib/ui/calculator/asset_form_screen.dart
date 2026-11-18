@@ -1,3 +1,4 @@
+import 'dart:convert';
 import '../../core/localization/amount_formatter.dart';
 import '../../core/localization/strings.dart';
 import 'package:flutter/material.dart';
@@ -29,10 +30,33 @@ class _AssetFormScreenState extends State<AssetFormScreen> {
   int _sequence = 0;
   bool _saving = false;
   bool _allowPop = false;
+  late String _savedInput;
+
+  String _inputSnapshot() {
+    final d = context.read<CalculatorProvider>().draft;
+    if (d == null) return '';
+    return jsonEncode({
+      'name': d.name,
+      'currency': d.currency,
+      'hawl': d.hawlStartDate.millisecondsSinceEpoch,
+      'hijri': d.isHijriCalendar,
+      'cash': d.cashLocal,
+      'manualPrice': d.manualNisabPrice ? d.goldPricePerGram24k : null,
+      'foreign': d.foreignCash
+          .map((e) =>
+              [e.currency, e.amount, e.isManualRate ? e.exchangeRate : null])
+          .toList(),
+      'gold': d.goldEntries
+          .map((e) =>
+              [e.carat, e.grams, e.isManualPrice ? e.pricePerGram24k : null])
+          .toList(),
+    });
+  }
 
   @override
   void initState() {
     super.initState();
+    _savedInput = _inputSnapshot();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final calc = context.read<CalculatorProvider>();
@@ -94,6 +118,7 @@ class _AssetFormScreenState extends State<AssetFormScreen> {
     final ok = await calc.saveDraft();
     if (!mounted) return ok;
     if (ok && calc.draft != null) {
+      _savedInput = _inputSnapshot();
       context
           .read<AuthProvider>()
           .updateProfileFields(defaultRecordId: defaultId)
@@ -114,6 +139,8 @@ class _AssetFormScreenState extends State<AssetFormScreen> {
 
   Future<bool> _leave() async {
     if (_saving) return false;
+    if (_inputSnapshot() == _savedInput) return true;
+    FocusManager.instance.primaryFocus?.unfocus();
     final answer = await showDialog<String>(
         context: context,
         builder: (ctx) => AlertDialog(
