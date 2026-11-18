@@ -8,6 +8,7 @@ import '../../core/constants.dart';
 import '../../core/models/payment.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/providers/tracker_provider.dart';
+import '../../core/providers/calculator_provider.dart';
 
 class AddPaymentSheet extends StatefulWidget {
   final Payment? existing;
@@ -23,6 +24,7 @@ class _AddPaymentSheetState extends State<AddPaymentSheet> {
   final _nameCtrl = TextEditingController();
   DateTime _date = DateTime.now();
   bool _saving = false;
+  bool _submitted = false;
 
   bool get _isEdit => widget.existing != null;
 
@@ -55,6 +57,7 @@ class _AddPaymentSheetState extends State<AddPaymentSheet> {
   }
 
   Future<void> _save() async {
+    if (_saving || _submitted) return;
     if (widget.existing?.isMonthly == true) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(l(context, "Manage this payment in شهريات."))));
@@ -88,25 +91,40 @@ class _AddPaymentSheetState extends State<AddPaymentSheet> {
         createdAt: widget.existing!.createdAt,
       );
       await tracker.updatePayment(updated);
+      if (tracker.error == null && mounted) {
+        context.read<CalculatorProvider?>()?.confirmPayment(updated);
+      }
     } else {
-      await tracker.addPayment(
+      final saved = await tracker.addPayment(
         uid: auth.user!.uid,
         amount: amount,
         name: _nameCtrl.text.trim(),
         date: _date,
         recipient: '',
       );
+      if (!mounted) return;
+      if (saved == null && tracker.error == null) {
+        setState(() => _saving = false);
+        return;
+      }
+      if (saved != null) {
+        context.read<CalculatorProvider?>()?.confirmPayment(saved);
+      }
     }
 
     if (!mounted) return;
-    setState(() => _saving = false);
     if (tracker.error == null) {
+      setState(() {
+        _saving = false;
+        _submitted = true;
+      });
       if (!_isEdit) {
         await showGivingCelebration(context);
         if (!mounted) return;
       }
-      Navigator.of(context).pop();
+      Navigator.of(context).pop(true);
     } else {
+      setState(() => _saving = false);
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(l(context, tracker.error!))));
     }
@@ -195,7 +213,7 @@ class _AddPaymentSheetState extends State<AddPaymentSheet> {
               const SizedBox(height: 8),
 
               FilledButton(
-                onPressed: _saving ? null : _save,
+                onPressed: _saving || _submitted ? null : _save,
                 child: _saving
                     ? const SizedBox(
                         height: 20,

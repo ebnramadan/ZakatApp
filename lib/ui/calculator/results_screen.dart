@@ -70,7 +70,7 @@ class ResultsScreen extends StatelessWidget {
                   valueColor: d.nisabMet ? Colors.green : Colors.orange),
               const Divider(),
               _Row(
-                d.hawlComplete ? 'Zakat Due (2.5%)' : 'Estimated Zakat (2.5%)',
+                'Total Zakat (2.5%)',
                 fmt.format(d.estimatedZakat),
                 bold: true,
                 valueColor: kPrimaryGreen,
@@ -81,7 +81,7 @@ class ResultsScreen extends StatelessWidget {
           const SizedBox(height: 24),
           if (!d.hawlComplete)
             Text(l(context,
-                "Your lunar Hawl has not completed. This estimate is not currently due. Payments recorded now are advance payments.")),
+                "Your Zakat date has not arrived yet. Payments recorded now count as advance payments.")),
           Text(l(context,
               "This calculation assumes your wealth remained eligible throughout the Hawl. Cash and gold only; no debt deductions.")),
 

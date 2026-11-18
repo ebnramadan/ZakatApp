@@ -376,7 +376,7 @@ class _RecordsTabState extends State<_RecordsTab> {
                 Text(
                     r.hawlComplete
                         ? l(context, "Calculated Zakat")
-                        : l(context, "Estimate until Hawl is complete"),
+                        : l(context, "Your Zakat date has not arrived yet"),
                     style:
                         const TextStyle(fontSize: 13, color: Color(0xFF52655F)))
               ],

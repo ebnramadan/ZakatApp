@@ -288,7 +288,7 @@
   "Only mark payments after you have given the money.": "سجّل الدفع فقط بعد إعطاء المال.",
   "Open payment tracker": "فتح متابعة الدفعات",
   "Open the verification link sent to {0}. Then return here to continue.": "افتح رابط التأكيد المرسل إلى {0}، ثم عد إلى هنا للمتابعة.",
-  "Paid": "مدفوع",
+  "Paid": "المدفوع",
   "Paid on {0}": "دُفع في {0}",
   "Password": "كلمة المرور",
   "Password confirmed. Now choose the Google identity you own. Both sign-in methods will open your existing records.": "تأكدت كلمة المرور. اختار الآن حساب Google الذي تملكه. ستفتح الطريقتان سجلاتك الحالية نفسها.",
@@ -710,5 +710,13 @@
   "Add your cash and gold to calculate Zakat. You can add monthly Sadaqah at any time.": "ضيف فلوسك ودهبك عشان تحسب زكاتك. وتقدر تضيف صدقة شهرية في أي وقت.",
   "Calculate your Zakat on one page. You can save and continue a draft later.": "احسب زكاتك في صفحة واحدة. وتقدر تحفظ مسودة وتكمّلها بعدين.",
   "Add your cash and gold, then review your results.": "ضيف فلوسك ودهبك، وبعدين راجع النتيجة.",
-  "Zakat is due": "ميعاد الزكاة جه"
+  "Zakat is due": "ميعاد الزكاة جه",
+  "Still To Pay": "الباقي عليك",
+  "Still To Pay = Total Zakat − Paid": "الباقي عليك = إجمالي الزكاة − المدفوع",
+  "Your Zakat date is {0}. Payments made before that date count as advance payments.": "ميعاد زكاتك يوم {0}. أي مبلغ تدفعه قبل الميعاد ده بيتحسب دفعة مقدّمة.",
+  "This Zakat amount is fully covered by advance payments. Your Zakat date has not arrived yet.": "دفعاتك المقدّمة غطّت مبلغ الزكاة بالكامل. ميعاد الزكاة لسه ما جاش.",
+  "Total Zakat (2.5%)": "إجمالي الزكاة (٢٫٥٪)",
+  "Your Zakat date has not arrived yet. Payments recorded now count as advance payments.": "ميعاد الزكاة لسه ما جاش. الدفعات اللي بتسجّلها دلوقتي بتتحسب دفعات مقدّمة.",
+  "Your Zakat date has not arrived yet": "ميعاد الزكاة لسه ما جاش",
+  "Uses 85g pure gold Nisab and a 2.5% lunar-year rate. Includes cash and gold only, with no debt deductions. Confirm that wealth remained eligible throughout the Hawl. Amounts before your Zakat date are not currently due.": "الحساب على نصاب ٨٥ جرام دهب خالص ونسبة ٢٫٥٪ للسنة الهجرية. بيشمل الفلوس والدهب بس، من غير خصم ديون. اتأكد إن المال فضل مستوفي شروط الزكاة طول الحول. المبالغ قبل ميعاد الزكاة مش مستحقة دلوقتي."
 }

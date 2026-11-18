@@ -198,10 +198,10 @@ class FirestoreService {
   Stream<List<Payment>> paymentsStream(String uid, String recordId) {
     return _payments(uid)
         .where('zakatRecordId', isEqualTo: recordId)
-        .orderBy('date', descending: true)
         .snapshots()
         .map((snap) =>
-            snap.docs.map((d) => Payment.fromMap(d.id, d.data())).toList());
+            snap.docs.map((d) => Payment.fromMap(d.id, d.data())).toList()
+              ..sort((a, b) => b.date.compareTo(a.date)));
   }
 
   Future<List<String>> previousPayeeNames(String uid) async {

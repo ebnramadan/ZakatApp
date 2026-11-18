@@ -196,7 +196,7 @@ class DashboardScreen extends StatelessWidget {
                                   context,
                                   current.hawlComplete
                                       ? 'This Zakat amount is fully paid. May Allah accept your giving.'
-                                      : 'This estimate is fully covered by advance payments. Your Hawl is still in progress.'),
+                                      : 'This Zakat amount is fully covered by advance payments. Your Zakat date has not arrived yet.'),
                               style: const TextStyle(color: Color(0xFFD6E9E1))),
                           const SizedBox(height: 12),
                           FilledButton.icon(
