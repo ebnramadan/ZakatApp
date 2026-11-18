@@ -24,7 +24,7 @@ test('delivery test uses verified Auth address, contains no financial data and h
 test('every trigger processes requested, scheduled and reminder emails with the same dry-run setting', async () => {
   for (const dryRun of [true, false]) {
     const calls = [];
-    const options = {dryRun, now: new Date(), db: {}, auth: {}};
+    const options = {dryRun, now: new Date('2026-11-18T09:00:00Z'), db: {}, auth: {}};
     await deliverEmail(options, {
       sendProgressSheets: async o => calls.push([o.manualOnly ? 'requested' : 'scheduled', o]),
       sendReminders: async o => calls.push(['reminders', o]),
@@ -40,7 +40,7 @@ test('every trigger processes requested, scheduled and reminder emails with the 
 
 test('one broken mail task does not starve the others, but fails the run without leaking provider errors', async () => {
   const calls = [], logs = [];
-  await assert.rejects(deliverEmail({log: s => logs.push(s)}, {
+  await assert.rejects(deliverEmail({now: new Date('2026-11-18T09:00:00Z'), log: s => logs.push(s)}, {
     sendProgressSheets: async o => {
       calls.push(o.manualOnly ? 'requested' : 'scheduled');
       if (o.manualOnly) throw Error('private email and provider details');
@@ -50,4 +50,15 @@ test('one broken mail task does not starve the others, but fails the run without
   assert.deepEqual(calls, ['requested', 'scheduled', 'reminders']);
   assert.equal(logs.length, 1);
   assert.ok(!logs[0].includes('private email'));
+});
+
+test('manual sheets run at any hour while scheduled messages retain their UTC start times', async () => {
+  for (const [hour, expected] of [[7, ['requested']], [8, ['requested', 'reminders']], [9, ['requested', 'scheduled', 'reminders']]]) {
+    const calls = [];
+    await deliverEmail({now: new Date(Date.UTC(2026, 10, 18, hour))}, {
+      sendProgressSheets: async o => calls.push(o.manualOnly ? 'requested' : 'scheduled'),
+      sendReminders: async () => calls.push('reminders'),
+    });
+    assert.deepEqual(calls, expected);
+  }
 });

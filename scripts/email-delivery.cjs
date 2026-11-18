@@ -19,11 +19,13 @@ async function sendDeliveryTest(options, makeSender = createSender) {
 
 async function deliverEmail(options, handlers = {sendReminders, sendProgressSheets}) {
   const failures = [];
-  for (const [task, send] of [
+  const hour = (options.now || new Date()).getUTCHours();
+  const tasks = [
     ['requested sheets', () => handlers.sendProgressSheets({...options, manualOnly: true})],
-    ['scheduled sheets', () => handlers.sendProgressSheets({...options, manualOnly: false})],
-    ['monthly reminders', () => handlers.sendReminders(options)],
-  ]) {
+    ...(hour >= 9 ? [['scheduled sheets', () => handlers.sendProgressSheets({...options, manualOnly: false})]] : []),
+    ...(hour >= 8 ? [['monthly reminders', () => handlers.sendReminders(options)]] : []),
+  ];
+  for (const [task, send] of tasks) {
     try { await send(); }
     catch (_) {
       failures.push(task);
