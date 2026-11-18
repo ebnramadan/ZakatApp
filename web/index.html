@@ -50,6 +50,8 @@
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon-v4.png"/>
 
+  <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+  <link rel="dns-prefetch" href="https://firestore.googleapis.com">
   <style>
     html, body { margin:0; width:100%; height:100%; height:100dvh; overflow:hidden; position:fixed; background:#FBF5E9; overscroll-behavior:none; }
     #app-loading { position:fixed; inset:0; display:grid; place-items:center; background:#FBF5E9; z-index:10; }
@@ -57,6 +59,10 @@
     .giving-intro svg { display:block; width:180px; height:160px; margin:0 auto 18px; animation:give-float 2.4s ease-in-out infinite; }
     .giving-heart { transform-origin:90px 75px; animation:give-heart 2.4s ease-in-out infinite; }
     .giving-intro strong { display:block; margin-bottom:8px; font-size:16px; font-weight:600; color:#146356; }
+    .startup-progress { margin:18px 0 8px; width:100%; height:6px; accent-color:#146356; }
+    #startup-percent { display:block; font-size:12px; margin-bottom:8px; }
+    #startup-duaa { display:block; min-height:64px; margin-top:18px; font-size:15px; line-height:1.6; color:#594333; }
+    #startup-retry { margin-top:12px; min-height:44px; padding:8px 20px; border:1px solid #146356; border-radius:12px; color:#146356; background:#FFFCF7; font:inherit; cursor:pointer; }
     @keyframes give-float { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-3px); } }
     @keyframes give-heart { 0%,100% { transform:translateY(3px) scale(.96); opacity:.8; } 50% { transform:translateY(-3px) scale(1); opacity:1; } }
     @media (prefers-reduced-motion:reduce) { .giving-intro svg,.giving-heart { animation:none; } }
@@ -78,20 +84,52 @@
         <path d="M50 113L70 125Q90 137 110 125L130 113" fill="none" stroke="#146356" stroke-width="2.6" stroke-linecap="round"/>
       </svg>
       <strong id="giving-title">Small acts. Lasting good.</strong>
-      <span id="giving-caption">Preparing your space for giving</span>
+      <span id="giving-caption">Downloading the app…</span>
+      <progress id="startup-progress" class="startup-progress" max="4" value="0" aria-label="Startup steps completed"></progress>
+      <span id="startup-percent">0% · 0 of 4 startup steps</span>
+      <span id="startup-duaa">O Allah, accept our giving and bless what You have provided.</span>
+      <button id="startup-retry" hidden type="button" onclick="location.reload()">Try again</button>
     </div>
   </div>
   <script>
-    try {
-      if (JSON.parse(localStorage.getItem('flutter.language') || 'null') === 'ar') {
-        document.getElementById('app-loading').dir = 'rtl';
-        document.getElementById('app-loading').setAttribute('aria-label', 'بنجهّزلك مساحة للخير');
-        document.getElementById('giving-title').textContent = 'خير بسيط، وأثره كبير.';
-        document.getElementById('giving-caption').textContent = 'بنجهّزلك مساحة للخير';
+    (() => {
+      let ar = false;
+      try { ar = JSON.parse(localStorage.getItem('flutter.language') || 'null') === 'ar'; } catch (_) {}
+      const box = document.getElementById('app-loading');
+      const captions = ar
+        ? ['بنحمّل التطبيق…', 'بنجهّز العرض…', 'بنوصل حسابك بأمان…', 'بنفتح حسابك…', 'جاهز']
+        : ['Downloading the app…', 'Preparing the display…', 'Connecting securely…', 'Opening your account…', 'Ready'];
+      const duaas = ar ? [
+        'اللهم تقبّل منا وبارك لنا فيما رزقتنا.',
+        'اللهم ارزقنا قلبًا رحيمًا ويسّر لنا أبواب الخير.',
+        'اللهم اجعل عطاءنا خالصًا لوجهك، وبارك لمن نعطيهم.'
+      ] : [
+        'O Allah, accept our giving and bless what You have provided.',
+        'O Allah, grant us a compassionate heart and open the doors of goodness.',
+        'O Allah, make our giving sincerely for You, and bless those we give to.'
+      ];
+      if (ar) { box.dir = 'rtl'; box.setAttribute('aria-label', 'بنجهّزلك مساحة للخير'); document.getElementById('giving-title').textContent = 'خير بسيط، وأثره كبير.'; }
+      let completed = 0, duaa = 0;
+      function render() {
+        const caption = document.getElementById('giving-caption');
+        if (!caption) return;
+        caption.textContent = captions[completed];
+        document.getElementById('startup-progress').value = completed;
+        document.getElementById('startup-percent').textContent = ar
+          ? `${(completed * 25).toLocaleString('ar-EG')}٪ · خلّصنا ${completed.toLocaleString('ar-EG')} من ٤ خطوات`
+          : `${completed * 25}% · ${completed} of 4 startup steps`;
+        document.getElementById('startup-duaa').textContent = duaas[duaa];
       }
-    } catch (_) {}
+      window.zakatStartup = {
+        complete(stage) { completed = Math.max(completed, Math.min(4, stage)); render(); },
+        fail() { const button = document.getElementById('startup-retry'); if (button) { button.hidden = false; button.textContent = ar ? 'جرّب تاني' : 'Try again'; } }
+      };
+      render();
+      const rotate = setInterval(() => { duaa = (duaa + 1) % duaas.length; render(); }, 5000);
+      const slow = setTimeout(() => window.zakatStartup.fail(), 15000);
+      window.addEventListener('flutter-first-frame', () => { clearInterval(rotate); clearTimeout(slow); box.remove(); }, {once: true});
+    })();
   </script>
-  <script>window.addEventListener("flutter-first-frame", function () { document.getElementById("app-loading")?.remove(); });</script>
   <noscript>Zakat Tracker needs JavaScript enabled to open your private account.</noscript>
   <script>
     // Fetch a fresh loader online: an old Flutter cache must not pin an old app version.

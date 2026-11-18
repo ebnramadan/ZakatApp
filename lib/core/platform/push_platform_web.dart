@@ -92,12 +92,19 @@ Object pushSubscriptionOptions(String key) {
   return options;
 }
 
+Future<String> requestPushPermission() async {
+  if (pushSupport != 'supported') return 'unsupported';
+  return html.Notification.requestPermission();
+}
+
 Future<Map<String, dynamic>> subscribePush(String key) async {
   if (pushSupport != 'supported') {
     throw StateError('Push is not supported here.');
   }
   // Permission must be requested directly from the user's tap (required by iOS).
-  final permission = await html.Notification.requestPermission();
+  final permission = pushPermission == 'granted'
+      ? 'granted'
+      : await html.Notification.requestPermission();
   if (permission != 'granted') {
     throw StateError('Notification permission was not granted.');
   }
@@ -134,7 +141,9 @@ Future<void> showPushTest(String title, String body, {String? uid}) async {
     throw StateError('Push is not supported here.');
   }
   // Local testing needs OS permission, but no account settings or VAPID subscription.
-  final permission = await html.Notification.requestPermission();
+  final permission = pushPermission == 'granted'
+      ? 'granted'
+      : await html.Notification.requestPermission();
   if (permission != 'granted') {
     throw StateError('Notification permission was not granted.');
   }

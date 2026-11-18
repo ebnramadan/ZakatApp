@@ -7,6 +7,8 @@ import '../widgets/searchable_picker.dart';
 import '../widgets/location_currency_button.dart';
 import '../notifications/push_reminder_card.dart';
 import '../../core/services/push_service.dart';
+import '../../core/providers/calculator_provider.dart';
+import '../calculator/one_pager_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
   final bool review;
@@ -19,15 +21,16 @@ class OnboardingScreen extends StatefulWidget {
 
 class _OnboardingScreenState extends State<OnboardingScreen> {
   int step = 0;
-  late String currency, language, monthlyKind;
+  late String currency, language;
+  final _notificationKey = GlobalKey<PushReminderCardState>();
   final _scroll = ScrollController();
   bool busy = false;
+  String? _error;
 
   @override
   void initState() {
     super.initState();
     final p = context.read<AuthProvider>().profile!;
-    monthlyKind = p.monthlyDefaultKind;
     currency = p.onboardingCompleted ? p.currency : 'EGP';
     language = p.language;
   }
@@ -41,28 +44,57 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   void _go(int next) {
     FocusManager.instance.primaryFocus?.unfocus();
     if (_scroll.hasClients) _scroll.jumpTo(0);
-    setState(() => step = next);
+    setState(() {
+      step = next;
+      _error = null;
+    });
   }
 
   Future<void> _next() async {
-    if (step < 3) {
+    if (busy) return;
+    if (step < 2) {
       _go(step + 1);
       return;
     }
-    setState(() => busy = true);
+    if (step == 2) {
+      setState(() => busy = true);
+      final enabled =
+          await _notificationKey.currentState?.enableFromOnboarding() ?? false;
+      if (!mounted) return;
+      setState(() => busy = false);
+      if (enabled) _go(3);
+      return;
+    }
     final auth = context.read<AuthProvider>();
-    final ok = await auth.updateProfileFields(
-        monthlyDefaultKind: monthlyKind,
+    final navigator = Navigator.of(context);
+    final calc = widget.review ? null : context.read<CalculatorProvider>();
+    setState(() {
+      busy = true;
+      _error = null;
+    });
+    final ok = await auth.completeOnboarding(
         currency: currency,
         language: language,
-        onboardingCompleted: true);
-    if (!mounted) return;
-    setState(() => busy = false);
-    if (ok && widget.review) {
-      Navigator.pop(context);
-    } else if (!ok) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(l(context, auth.error!))));
+        monthlyDefaultKind:
+            widget.review ? auth.profile!.monthlyDefaultKind : 'sadaqah');
+    if (!navigator.mounted) return;
+    if (!ok) {
+      if (mounted) {
+        setState(() {
+          busy = false;
+          _error = auth.error;
+        });
+      }
+      return;
+    }
+    if (widget.review) {
+      if (mounted) navigator.pop();
+    } else {
+      calc!.startNewRecord(auth.user!.uid, currency,
+          language: language,
+          previousDefaultRecordId:
+              calc.defaultRecord(auth.profile?.defaultRecordId)?.id);
+      navigator.push(MaterialPageRoute(builder: (_) => const OnePagerScreen()));
     }
   }
 
@@ -108,8 +140,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                     [
                                       Icons.mosque_outlined,
                                       Icons.tune,
-                                      Icons.volunteer_activism_outlined,
-                                      Icons.notifications_outlined
+                                      Icons.notifications_outlined,
+                                      Icons.calculate_outlined
                                     ][step],
                                     size: 32,
                                     color: kPrimaryGreen)),
@@ -122,8 +154,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                             [
                                               'Give for Allah, with intention.',
                                               'Make it feel like yours.',
-                                              'A simple rhythm for giving.',
-                                              'A gentle nudge to give.'
+                                              'A gentle nudge to give.',
+                                              'Let’s calculate your Zakat.'
                                             ][step]),
                                         style: Theme.of(context)
                                             .textTheme
@@ -186,34 +218,47 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             style: Theme.of(context).textTheme.bodySmall),
                       ],
                       if (step == 2) ...[
-                        Text(l(context, 'Default for monthly giving'),
-                            style: Theme.of(context).textTheme.titleMedium),
-                        const SizedBox(height: 12),
-                        SegmentedButton<String>(
-                            segments: [
-                              ButtonSegment(
-                                  value: 'sadaqah',
-                                  label: Text(l(context, 'Sadaqah'))),
-                              ButtonSegment(
-                                  value: 'zakat',
-                                  label: Text(l(context, 'Zakat'))),
-                            ],
-                            selected: {
-                              monthlyKind
-                            },
-                            onSelectionChanged: (v) =>
-                                setState(() => monthlyKind = v.single)),
-                        const SizedBox(height: 12),
-                        Text(l(
-                            context,
-                            monthlyKind == 'sadaqah'
-                                ? 'Extra giving, separate from Zakat. You can choose differently for each recipient.'
-                                : 'Counts toward the Zakat record you choose, only after you confirm payment.')),
-                        SizedBox(height: gap),
                         Text(
                             l(context,
-                                'Add a recipient and amount in Monthly Giving. Mark payments after you give.'),
+                                'Tap Next to allow notifications. You can also set them up later from Profile.'),
                             style: Theme.of(context).textTheme.bodySmall),
+                        const SizedBox(height: 8),
+                        PushReminderCard(
+                            key: _notificationKey,
+                            compact: true,
+                            showEnableButton: false,
+                            service: widget.notificationService),
+                        TextButton(
+                            key: const Key('onboarding-skip-notifications'),
+                            onPressed: busy ? null : () => _go(3),
+                            child: Text(l(context, 'Not now'))),
+                      ],
+                      if (step == 3) ...[
+                        if (_error != null)
+                          Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: Text(l(context, _error!),
+                                  style: TextStyle(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .error))),
+                        Text(l(context,
+                            'Add your cash and gold on one page, then review your Zakat.')),
+                        SizedBox(height: gap),
+                        _Benefit(
+                            icon: Icons.calculate_outlined,
+                            title: l(context, 'Your first Zakat calculation'),
+                            detail: l(context,
+                                'Your calculation appears on Home after you save it.')),
+                        SizedBox(height: gap),
+                        _Benefit(
+                            icon: Icons.calendar_month_outlined,
+                            title: l(context, 'Monthly giving'),
+                            detail: l(
+                                context,
+                                widget.review
+                                    ? 'Change your monthly giving default anytime in Profile.'
+                                    : 'Monthly giving defaults to Sadaqah. You can change it anytime in Profile.')),
                         SizedBox(height: gap),
                         Text(
                             l(context,
@@ -224,15 +269,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                 ?.copyWith(
                                     color: kPrimaryGreen,
                                     fontWeight: FontWeight.w600)),
-                      ],
-                      if (step == 3) ...[
-                        Text(
-                            l(context,
-                                'Optional. Enable reminders now, or later from Profile.'),
-                            style: Theme.of(context).textTheme.bodySmall),
-                        const SizedBox(height: 8),
-                        PushReminderCard(
-                            compact: true, service: widget.notificationService),
                       ],
                     ]),
               );
@@ -257,9 +293,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           key: const Key('onboarding-next'),
                           onPressed: busy ? null : _next,
                           child: Text(busy
-                              ? l(context, 'Saving…')
+                              ? l(context, step == 2 ? 'Enabling…' : 'Saving…')
                               : step == 3
-                                  ? l(context, 'Start tracking')
+                                  ? l(
+                                      context,
+                                      widget.review
+                                          ? 'Done'
+                                          : 'Calculate my Zakat')
                                   : l(context, 'Next')))),
                 ])),
           ]),

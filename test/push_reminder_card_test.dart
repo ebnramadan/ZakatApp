@@ -13,6 +13,8 @@ import 'package:zakat_app/ui/notifications/push_reminder_card.dart';
 class TestPushService extends PushService {
   bool configFails = false, settingsFail = false;
   String? registrationError;
+  String permissionResult = 'granted';
+  int permissionRequests = 0;
   int testsShown = 0, registrations = 0;
   bool schedulingConfirmed = true;
   bool? lastShowNames, lastDailyDuaa;
@@ -21,6 +23,12 @@ class TestPushService extends PushService {
   String get support => 'supported';
   @override
   String get permission => 'granted';
+  @override
+  Future<String> requestPermission() async {
+    permissionRequests++;
+    return permissionResult;
+  }
+
   @override
   Future<Map<String, dynamic>> configuration() async {
     if (configFails) throw StateError('Simulated connection failure');

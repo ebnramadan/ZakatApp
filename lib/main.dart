@@ -22,6 +22,7 @@ import 'core/notifications/notification_provider.dart';
 import 'core/notifications/notification_target.dart';
 import 'ui/auth/login_screen.dart';
 import 'ui/shared/warm_loading_screen.dart';
+import 'core/platform/startup_progress.dart' as startup;
 import 'ui/auth/verify_email_screen.dart';
 import 'ui/home/home_screen.dart';
 import 'ui/onboarding/onboarding_screen.dart';
@@ -29,7 +30,7 @@ import 'ui/auth/account_reset_card.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await initializeDateFormatting('ar');
+  final datesReady = initializeDateFormatting('ar');
   try {
     const emulatorMode = bool.fromEnvironment('USE_FIREBASE_EMULATORS');
     if (emulatorMode && !kDebugMode) {
@@ -46,11 +47,12 @@ void main() async {
     if (options.apiKey == 'REPLACE_ME') {
       throw StateError('Firebase is not configured');
     }
-    await Firebase.initializeApp(options: options);
+    await Future.wait([datesReady, Firebase.initializeApp(options: options)]);
     if (emulatorMode) {
       await FirebaseAuth.instance.useAuthEmulator('127.0.0.1', 9099);
       FirebaseFirestore.instance.useFirestoreEmulator('127.0.0.1', 8080);
     }
+    startup.completeStartupStage(3);
     runApp(const ZakatApp());
   } catch (_) {
     String language = 'en';
@@ -158,9 +160,13 @@ class _AuthGate extends StatelessWidget {
     final auth = context.watch<AuthProvider>();
     if (auth.user == null) {
       if (auth.isLoading) return const WarmLoadingScreen();
+      startup.completeStartupStage(4);
       return const LoginScreen();
     }
-    if (!auth.isVerified) return const VerifyEmailScreen();
+    if (!auth.isVerified) {
+      startup.completeStartupStage(4);
+      return const VerifyEmailScreen();
+    }
     if (auth.profile == null) {
       if (auth.isLoading) return const WarmLoadingScreen();
       return Scaffold(
@@ -180,6 +186,7 @@ class _AuthGate extends StatelessWidget {
                       ],
                     )));
     }
+    startup.completeStartupStage(4);
     if (auth.profile!.resetInProgress) {
       return Scaffold(
           appBar: AppBar(title: Text(l(context, 'Finish resetting your app'))),

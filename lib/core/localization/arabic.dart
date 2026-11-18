@@ -953,5 +953,24 @@ const Map<String, String> arabic = {
   "This recipient is no longer available for this month.":
       "المستفيد ده مش متاح للشهر ده دلوقتي.",
   "This recipient is paused. Review your monthly giving before recording a payment.":
-      "المستفيد ده متوقف مؤقتًا. راجع شهرياتك قبل ما تسجّل دفعة."
+      "المستفيد ده متوقف مؤقتًا. راجع شهرياتك قبل ما تسجّل دفعة.",
+  "Tap Next to allow notifications. You can also set them up later from Profile.":
+      "اضغط التالي عشان تسمح بالإشعارات. وتقدر تفعّلها بعدين من حسابك.",
+  "Not now": "مش دلوقتي",
+  "Enabling…": "بنفعّل الإشعارات…",
+  "Your first Zakat calculation": "أول حساب لزكاتك",
+  "Your calculation appears on Home after you save it.":
+      "حساب زكاتك هيظهر في الرئيسية بعد ما تحفظه.",
+  "Change your monthly giving default anytime in Profile.":
+      "تقدر تغيّر نوع شهرياتك الافتراضي في أي وقت من حسابك.",
+  "Monthly giving defaults to Sadaqah. You can change it anytime in Profile.":
+      "شهرياتك بتبدأ كصدقة. وتقدر تغيّر النوع الافتراضي في أي وقت من حسابك.",
+  "Opening your account…": "بنفتح حسابك…",
+  "75% · 3 of 4 startup steps": "٧٥٪ · خلّصنا ٣ من ٤ خطوات",
+  "O Allah, accept our giving and bless what You have provided.":
+      "اللهم تقبّل منا وبارك لنا فيما رزقتنا.",
+  "O Allah, grant us a compassionate heart and open the doors of goodness.":
+      "اللهم ارزقنا قلبًا رحيمًا ويسّر لنا أبواب الخير.",
+  "O Allah, make our giving sincerely for You, and bless those we give to.":
+      "اللهم اجعل عطاءنا خالصًا لوجهك، وبارك لمن نعطيهم."
 };
