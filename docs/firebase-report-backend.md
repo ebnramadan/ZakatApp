@@ -21,3 +21,9 @@ After setup, run **Actions → Deploy Firebase report delivery**, first with Dep
 After deployment, the workflow wakes non-expired queued requests and expires requests older than 24 hours. A manual retry in the app also works: the Firestore event starts delivery without waiting for GitHub cron. Provider acceptance is shown in the profile; inbox placement is still controlled by the recipient's email provider.
 
 `node scripts/build-mail-function.cjs` copies the shared, tested sender and translation catalog into the function package before deployment. `functions/lib` is generated. SMTP acceptance and a lost delivery receipt can still leave a retry ambiguous; no SMTP integration can promise exactly-once delivery in that failure window.
+
+## GitHub-only delivery (Spark plan)
+
+The three email workflows now invoke `scripts/email-delivery.cjs`. Every trigger processes queued requests, due monthly sheets, and due monthly reminders in that order. They share one concurrency group to avoid parallel sends. GitHub can replace an older pending run, so every replacement must drain the same work rather than only one type of email. Each task runs even if another fails; a failed task still fails the overall run. Existing consent, verified-account checks, and per-recipient delivery receipts remain in force.
+
+The queue schedule uses quarter-hour offsets away from the top of the hour. GitHub schedules remain best effort and may run late; Send now saves a request rather than directly waking a worker. For a supervised test, save recipient addresses in Profile, queue Send now, then manually run any email workflow with `dry_run=false`. Check the accepted count and request status; a green run with zero eligible accounts proves no message was sent. Provider acceptance does not prove inbox placement. No Blaze plan is required for this path.
