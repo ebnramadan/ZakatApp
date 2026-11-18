@@ -75,10 +75,12 @@ class _PushReminderCardState extends State<PushReminderCard> {
     });
     try {
       await action();
-    } catch (_) {
+    } catch (error) {
       _error = _service.permission == 'denied'
           ? 'Notifications are blocked. Allow them in your browser or iPhone notification settings.'
-          : 'Could not update notifications. Check your connection and retry.';
+          : error is PushSetupException
+              ? error.message
+              : 'Could not update notifications. Check your connection and retry.';
     }
     if (mounted) setState(() => _busy = false);
   }
@@ -176,9 +178,11 @@ class _PushReminderCardState extends State<PushReminderCard> {
                     child: Text(
                         l(
                             context,
-                            widget.compact
-                                ? 'Automatic delivery is still being verified.'
-                                : 'Automatic notification scheduling has not been confirmed yet. You can set up this device; reminders will start once scheduling is active.'),
+                            scheduledAt is num && scheduledAt > 0
+                                ? 'Automatic reminders may be delayed. Check Home for anything due.'
+                                : widget.compact
+                                    ? 'Automatic delivery is still being verified.'
+                                    : 'Automatic notification scheduling has not been confirmed yet. You can set up this device; reminders will start once scheduling is active.'),
                         style: Theme.of(context).textTheme.bodySmall)),
               SwitchListTile(
                   dense: widget.compact,

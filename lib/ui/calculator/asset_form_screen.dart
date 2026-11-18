@@ -89,12 +89,14 @@ class _AssetFormScreenState extends State<AssetFormScreen> {
     if (_saving) return false;
     final calc = context.read<CalculatorProvider>();
     setState(() => _saving = true);
+    final auth = context.read<AuthProvider>();
+    final defaultId = calc.defaultIdForDraft(auth.profile?.defaultRecordId);
     final ok = await calc.saveDraft();
     if (!mounted) return ok;
     if (ok && calc.draft != null) {
       context
           .read<AuthProvider>()
-          .updateProfileFields(defaultRecordId: calc.draft!.id)
+          .updateProfileFields(defaultRecordId: defaultId)
           .then((saved) {
         if (!saved && mounted) {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(

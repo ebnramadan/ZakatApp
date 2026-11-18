@@ -81,6 +81,17 @@ Future<html.ServiceWorkerRegistration> _ensureRegistration() async {
   return registration;
 }
 
+/// Native PushManager options. Keep the key as a BufferSource across JS interop.
+Object pushSubscriptionOptions(String key) {
+  // dart:html's dictionary conversion turns Uint8List into a plain JS Array.
+  // PushManager requires a BufferSource; preserve the native typed array.
+  final options = js.newObject();
+  js.setProperty(options, 'userVisibleOnly', true);
+  js.setProperty(options, 'applicationServerKey',
+      Uint8List.fromList(base64Url.decode(base64Url.normalize(key))));
+  return options;
+}
+
 Future<Map<String, dynamic>> subscribePush(String key) async {
   if (pushSupport != 'supported') {
     throw StateError('Push is not supported here.');
@@ -93,11 +104,9 @@ Future<Map<String, dynamic>> subscribePush(String key) async {
   final registration = await _ensureRegistration();
   final existing = await currentPushSubscription();
   if (existing != null) return existing;
-  final subscription = await registration.pushManager!.subscribe({
-    'userVisibleOnly': true,
-    'applicationServerKey':
-        Uint8List.fromList(base64Url.decode(base64Url.normalize(key))),
-  });
+  final options = pushSubscriptionOptions(key);
+  final subscription = await js.promiseToFuture<Object>(
+      js.callMethod(registration.pushManager!, 'subscribe', [options]));
   return normalizePushSubscription(
       js.dartify(js.callMethod(subscription, 'toJSON', [])) as Map);
 }

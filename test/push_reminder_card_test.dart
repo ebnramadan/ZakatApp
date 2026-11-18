@@ -12,6 +12,7 @@ import 'package:zakat_app/ui/notifications/push_reminder_card.dart';
 
 class TestPushService extends PushService {
   bool configFails = false, settingsFail = false;
+  String? registrationError;
   int testsShown = 0, registrations = 0;
   bool schedulingConfirmed = true;
   bool? lastShowNames;
@@ -47,6 +48,7 @@ class TestPushService extends PushService {
       required bool zakat,
       required bool showNames}) async {
     registrations++;
+    if (registrationError != null) throw PushSetupException(registrationError!);
     lastShowNames = showNames;
   }
 }
@@ -75,6 +77,29 @@ void main() {
     addTearDown(auth.dispose);
     return auth;
   }
+
+  testWidgets('registration failures explain the failing step and allow retry',
+      (tester) async {
+    const message =
+        'This device could not register for automatic reminders. Test notifications only check permission. Please retry.';
+    final service = TestPushService()..registrationError = message;
+    await mount(tester, service);
+    await tester
+        .ensureVisible(find.text('Enable notifications on this device'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Enable notifications on this device'));
+    await tester.pumpAndSettle();
+    expect(find.text(message), findsOneWidget);
+    expect(find.text('Save notification preferences'), findsNothing);
+    service.registrationError = null;
+    await tester
+        .ensureVisible(find.text('Enable notifications on this device'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Enable notifications on this device'));
+    await tester.pumpAndSettle();
+    expect(find.text(message), findsNothing);
+    expect(find.text('Save notification preferences'), findsOneWidget);
+  });
 
   testWidgets(
       'first-time users can test notifications without enabling automatic reminders',

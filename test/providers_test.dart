@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:zakat_app/core/models/zakat_record.dart';
+import 'package:zakat_app/core/models/payment.dart';
 import 'package:zakat_app/core/providers/auth_provider.dart';
 import 'package:zakat_app/core/providers/calculator_provider.dart';
 import 'package:zakat_app/core/providers/tracker_provider.dart';
@@ -35,7 +36,102 @@ class OfflineRecordStore extends FirestoreService {
       offline ? Stream.error(StateError('Offline')) : Stream.value([]);
 }
 
+class CountingStore extends FirestoreService {
+  CountingStore() : super(database: FakeFirebaseFirestore());
+  int recordListeners = 0, paymentListeners = 0;
+  final suggestionResult = Completer<List<String>>();
+  @override
+  Stream<List<ZakatRecord>> recordsStream(String uid) {
+    recordListeners++;
+    return super.recordsStream(uid);
+  }
+
+  @override
+  Stream<List<Payment>> allPaymentsStream(String uid) {
+    paymentListeners++;
+    return super.allPaymentsStream(uid);
+  }
+
+  @override
+  Future<List<String>> previousPayeeNames(String uid) =>
+      suggestionResult.future;
+}
+
 void main() {
+  test(
+      'returning Home retains listeners; changing account starts fresh listeners',
+      () async {
+    final store = CountingStore();
+    final calc = CalculatorProvider(store: store);
+    calc.loadRecords('alice');
+    await Future<void>.delayed(Duration.zero);
+    calc.loadRecords('alice');
+    expect(store.recordListeners, 1);
+    expect(store.paymentListeners, 1);
+    calc.loadRecords('bob');
+    await Future<void>.delayed(Duration.zero);
+    expect(store.recordListeners, 2);
+    expect(store.paymentListeners, 2);
+    calc.dispose();
+  });
+  test('payment confirmation does not wait for optional recipient suggestions',
+      () async {
+    final store = CountingStore();
+    final tracker = TrackerProvider(store: store);
+    final record = ZakatRecord(
+        id: 'old',
+        userId: 'alice',
+        name: 'Old',
+        currency: 'EGP',
+        hawlStartDate: DateTime(2023),
+        createdAt: DateTime(2023));
+    tracker.selectRecord('alice', record);
+    await tracker
+        .addPayment(
+            uid: 'alice',
+            amount: 100,
+            name: 'Payment',
+            date: DateTime.now(),
+            recipient: 'Recipient')
+        .timeout(const Duration(seconds: 1));
+    expect(tracker.loading, false);
+    expect(tracker.error, isNull);
+    expect(store.suggestionResult.isCompleted, false);
+    tracker.dispose();
+    store.suggestionResult.complete(['Recipient']);
+  });
+  test('keep default choice survives saving and resuming a new draft',
+      () async {
+    final db = FakeFirebaseFirestore();
+    final store = FirestoreService(database: db);
+    final old = ZakatRecord(
+        id: 'old',
+        userId: 'alice',
+        name: 'Old',
+        currency: 'EGP',
+        hawlStartDate: DateTime(2023),
+        createdAt: DateTime(2023));
+    await store.saveRecord(old);
+    final calc = CalculatorProvider(store: store);
+    calc.loadRecords('alice');
+    await Future<void>.delayed(Duration.zero);
+    calc.startNewRecord('alice', 'EGP', previousDefaultRecordId: 'old');
+    final newId = calc.draft!.id;
+    expect(calc.defaultIdForDraft('old'), newId);
+    calc.setMakeDefault(false);
+    expect(calc.defaultIdForDraft('old'), 'old');
+    expect(await calc.saveDraft(), true);
+    final persisted =
+        (await db.doc('users/alice/zakatRecords/$newId').get()).data()!;
+    calc.resumeRecord(ZakatRecord.fromMap(newId, persisted));
+    expect(calc.draft!.makeDefault, false);
+    // Reverting after an earlier save made the draft default restores the old record.
+    expect(calc.defaultIdForDraft(newId), 'old');
+    calc.setMakeDefault(true);
+    expect(calc.defaultIdForDraft('old'), newId);
+    calc.dispose();
+  });
+
   test(
       'record-load errors clear on a successful retry independently of draft errors',
       () async {
