@@ -7,9 +7,15 @@ import '../../core/providers/calculator_provider.dart';
 import 'wizard_screen.dart';
 import 'one_pager_screen.dart';
 
-class EntryModeScreen extends StatelessWidget {
+class EntryModeScreen extends StatefulWidget {
   const EntryModeScreen({super.key});
 
+  @override
+  State<EntryModeScreen> createState() => _EntryModeScreenState();
+}
+
+class _EntryModeScreenState extends State<EntryModeScreen> {
+  bool _makeDefault = true;
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -34,7 +40,33 @@ class EntryModeScreen extends StatelessWidget {
               style: const TextStyle(color: Colors.grey),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 40),
+            const SizedBox(height: 20),
+            Text(
+                l(
+                    context,
+                    _makeDefault
+                        ? 'When saved or submitted, this becomes your default record for Home and Tracker.'
+                        : 'Your current default will stay on Home and Tracker.'),
+                textAlign: TextAlign.center),
+            const SizedBox(height: 6),
+            Text(
+                l(context,
+                    'To change it later: Home → View all records → Set as default.'),
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodySmall),
+            if (context.read<CalculatorProvider>().records.isNotEmpty)
+              TextButton(
+                  style: TextButton.styleFrom(
+                      foregroundColor: Colors.brown,
+                      textStyle: const TextStyle(fontSize: 12),
+                      minimumSize: const Size(0, 44)),
+                  onPressed: () => setState(() => _makeDefault = !_makeDefault),
+                  child: Text(l(
+                      context,
+                      _makeDefault
+                          ? 'Keep my current default instead'
+                          : 'Use the new record as default'))),
+            const SizedBox(height: 24),
             _ModeCard(
               title: l(context, "Guided Wizard"),
               subtitle: l(context,
@@ -60,7 +92,10 @@ class EntryModeScreen extends StatelessWidget {
     final auth = context.read<AuthProvider>();
     final calc = context.read<CalculatorProvider>();
     calc.startNewRecord(auth.user!.uid, auth.profile!.currency,
-        language: auth.language);
+        language: auth.language,
+        previousDefaultRecordId:
+            calc.defaultRecord(auth.profile?.defaultRecordId)?.id);
+    calc.setMakeDefault(_makeDefault);
 
     Navigator.of(context).push(MaterialPageRoute(
       builder: (_) => wizard ? const WizardScreen() : const OnePagerScreen(),

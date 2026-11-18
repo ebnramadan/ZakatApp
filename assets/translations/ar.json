@@ -679,5 +679,18 @@
   "Notifications enabled on this device.": "الإشعارات اتفعّلت على الجهاز ده.",
   "A clear Home screen focused on your current Zakat.": "رئيسية بسيطة تركز على زكاتك الحالية.",
   "Draft saved. Open records from Home and choose Set as default to update Home.": "تم حفظ المسودة. اختار «تعيين كافتراضي» من السجلات لتحديث الرئيسية.",
-  "Records in Home": "السجلات في الرئيسية"
+  "Records in Home": "السجلات في الرئيسية",
+  "When saved or submitted, this becomes your default record for Home and Tracker.": "لما تحفظ أو تأكّد السجل ده، هيبقى السجل الأساسي في الرئيسية والمتابعة.",
+  "Your current default will stay on Home and Tracker.": "سجلك الأساسي الحالي هيفضل ظاهر في الرئيسية والمتابعة.",
+  "To change it later: Home → View all records → Set as default.": "تقدر تغيّره بعدين من الرئيسية ← عرض كل السجلات ← تعيين كأساسي.",
+  "Keep my current default instead": "خلّي سجلي الحالي هو الأساسي",
+  "Use the new record as default": "خلّي السجل الجديد هو الأساسي",
+  "Record saved. Open records from Home and choose Set as default to update Home.": "السجل اتحفظ. افتح السجلات من الرئيسية واختار تعيين كأساسي عشان يظهر في الرئيسية.",
+  "Calculate new Zakat": "احسب زكاة جديدة",
+  "This Zakat amount is fully paid. May Allah accept your giving.": "دفعت مبلغ الزكاة كله. تقبّل الله منك وبارك لك.",
+  "This estimate is fully covered by advance payments. Your Hawl is still in progress.": "دفعاتك المقدّمة غطّت التقدير ده بالكامل. الحول لسه ما اكتملش.",
+  "This device could not register for automatic reminders. Test notifications only check permission. Please retry.": "الجهاز ما قدرش يشترك في التذكيرات التلقائية. إشعار التجربة بيتأكد من الإذن بس. جرّب تاني.",
+  "Preferences were saved, but this device could not confirm reminders. Please retry.": "إعداداتك اتحفظت، بس الجهاز ما أكّدش تشغيل التذكيرات. جرّب تاني.",
+  "Could not save reminder preferences to your account. Check your connection and retry.": "ما قدرناش نحفظ إعدادات التذكيرات في حسابك. اتأكد من الإنترنت وجرّب تاني.",
+  "Automatic reminders may be delayed. Check Home for anything due.": "التذكيرات التلقائية ممكن تتأخر. راجع الرئيسية عشان تشوف اللي ميعاده جه."
 }

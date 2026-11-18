@@ -70,6 +70,7 @@ class TrackerProvider extends ChangeNotifier {
   }
 
   Future<void> _loadPayeeNames(String uid) async {
+    if (_selectedRecord?.userId != uid) return;
     final selection = _selection;
     try {
       final names = await _fs.previousPayeeNames(uid);
@@ -112,7 +113,8 @@ class TrackerProvider extends ChangeNotifier {
       );
       await _fs.addPayment(payment);
       _pendingPaymentId = null;
-      await _loadPayeeNames(uid);
+      // Refresh optional autocomplete without delaying the payment confirmation.
+      unawaited(_loadPayeeNames(uid));
     } catch (e) {
       _error = 'Failed to save payment.';
     }

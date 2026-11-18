@@ -18,6 +18,8 @@ jobs:
       - run: dart format --output=none --set-exit-if-changed lib test
       - run: flutter analyze
       - run: flutter test
+      - name: Verify native browser push registration options
+        run: flutter test --platform chrome test/browser
       - run: flutter build web --release
   firestore-rules:
     runs-on: ubuntu-24.04

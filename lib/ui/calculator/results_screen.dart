@@ -94,23 +94,62 @@ class ResultsScreen extends StatelessWidget {
             ),
 
           if (!d.isSubmitted) ...[
+            Text(l(
+                context,
+                d.makeDefault
+                    ? 'When saved or submitted, this becomes your default record for Home and Tracker.'
+                    : 'Your current default will stay on Home and Tracker.')),
+            const SizedBox(height: 6),
+            Text(
+                l(context,
+                    'To change it later: Home → View all records → Set as default.'),
+                style: Theme.of(context).textTheme.bodySmall),
+            if (calc.records.any((r) => r.id != d.id))
+              Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: TextButton(
+                      style: TextButton.styleFrom(
+                          foregroundColor: Colors.brown,
+                          textStyle: const TextStyle(fontSize: 12),
+                          minimumSize: const Size(0, 44)),
+                      onPressed: calc.loading
+                          ? null
+                          : () => calc.setMakeDefault(!d.makeDefault),
+                      child: Text(l(
+                          context,
+                          d.makeDefault
+                              ? 'Keep my current default instead'
+                              : 'Use the new record as default')))),
+            const SizedBox(height: 12),
             ElevatedButton(
               onPressed: calc.loading
                   ? null
                   : () async {
+                      final defaultId =
+                          calc.defaultIdForDraft(auth.profile?.defaultRecordId);
                       final saved = await calc.submitDraft(auth.user!.uid);
                       if (context.mounted && saved != null) {
-                        await auth.updateProfileFields(
-                            defaultRecordId: saved.id);
+                        final updated = await auth.updateProfileFields(
+                            defaultRecordId: defaultId);
                         if (!context.mounted) return;
                         await showGivingCelebration(context, planReady: true);
                         if (!context.mounted) return;
-                        context
-                            .read<TrackerProvider>()
-                            .selectRecord(auth.user!.uid, saved);
+                        if (updated && defaultId == saved.id) {
+                          context
+                              .read<TrackerProvider>()
+                              .selectRecord(auth.user!.uid, saved);
+                        }
+                        if (!updated) {
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                              content: Text(l(context,
+                                  'Record saved. Open records from Home and choose Set as default to update Home.'))));
+                        }
                         Navigator.of(context).pushAndRemoveUntil(
                           MaterialPageRoute(
-                              builder: (_) => const HomeScreen(initialTab: 1)),
+                              builder: (_) => HomeScreen(
+                                  initialTab: updated && defaultId == saved.id
+                                      ? 1
+                                      : 0)),
                           (_) => false,
                         );
                       }

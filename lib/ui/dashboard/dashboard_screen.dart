@@ -229,6 +229,25 @@ class DashboardScreen extends StatelessWidget {
                               style: const TextStyle(color: Color(0xFFD6E9E1))),
                         const SizedBox(height: 20),
                         if (current.isSubmitted &&
+                            target > 0 &&
+                            remaining == 0 &&
+                            !calc.paymentsLoading &&
+                            calc.paymentsError == null) ...[
+                          Text(
+                              l(
+                                  context,
+                                  current.hawlComplete
+                                      ? 'This Zakat amount is fully paid. May Allah accept your giving.'
+                                      : 'This estimate is fully covered by advance payments. Your Hawl is still in progress.'),
+                              style: const TextStyle(color: Color(0xFFD6E9E1))),
+                          const SizedBox(height: 12),
+                          FilledButton.tonalIcon(
+                              onPressed: onCreate,
+                              icon: const Icon(Icons.calculate_outlined),
+                              label: Text(l(context, 'Calculate new Zakat'))),
+                          const SizedBox(height: 8),
+                        ],
+                        if (current.isSubmitted &&
                             (!current.hawlComplete || remaining == 0))
                           FilledButton.tonalIcon(
                               onPressed: () => onRecord(current),

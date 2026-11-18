@@ -9,6 +9,11 @@ import '../platform/push_platform.dart' as platform;
 import '../platform/device_timezone_stub.dart'
     if (dart.library.html) '../platform/device_timezone_web.dart' as clock;
 
+class PushSetupException implements Exception {
+  final String message;
+  const PushSetupException(this.message);
+}
+
 class PushService {
   FirebaseFirestore get db => FirebaseFirestore.instance;
   String get support => platform.pushSupport;
@@ -53,9 +58,19 @@ class PushService {
       {required bool monthly,
       required bool zakat,
       required bool showNames}) async {
-    final subscription = await platform.subscribePush(publicKey);
+    late final Map<String, dynamic> subscription;
+    try {
+      subscription = await platform.subscribePush(publicKey);
+    } catch (_) {
+      throw const PushSetupException(
+          'This device could not register for automatic reminders. Test notifications only check permission. Please retry.');
+    }
     final ref = db.doc('users/$uid/pushSubscriptions/${_id(subscription)}');
     try {
+      // Refresh verification claims before writing private device settings.
+      await FirebaseAuth.instance.currentUser
+          ?.getIdToken(true)
+          .timeout(const Duration(seconds: 10));
       final old = await ref.get().timeout(const Duration(seconds: 10));
       final now = DateTime.now().millisecondsSinceEpoch;
       await ref.set({
@@ -79,13 +94,16 @@ class PushService {
         'showNames': showNames
       });
       if (!confirmed) {
-        throw StateError('The notification session was not confirmed.');
+        throw const PushSetupException(
+            'Preferences were saved, but this device could not confirm reminders. Please retry.');
       }
-    } catch (_) {
+    } catch (error) {
       if (FirebaseAuth.instance.currentUser?.uid == uid) {
         await platform.syncPushSession(uid, preferences: {'enabled': false});
       }
-      rethrow;
+      if (error is PushSetupException) rethrow;
+      throw const PushSetupException(
+          'Could not save reminder preferences to your account. Check your connection and retry.');
     }
   }
 

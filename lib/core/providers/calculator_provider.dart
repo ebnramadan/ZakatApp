@@ -65,7 +65,34 @@ class CalculatorProvider extends ChangeNotifier {
     if (!_disposed) notifyListeners();
   }
 
-  void loadRecords(String uid) => _listenRecords(uid, retries: 1);
+  void loadRecords(String uid) {
+    // Returning Home reuses live listeners instead of blanking cached totals.
+    if (_recordsUid == uid &&
+        _sub != null &&
+        _recordsError == null &&
+        paymentsError == null) return;
+    _listenRecords(uid, retries: 1);
+  }
+
+  void setMakeDefault(bool value) {
+    if (_draft == null) return;
+    _draft!.makeDefault = value;
+    _notify();
+  }
+
+  String defaultIdForDraft(String? selectedId) {
+    final draft = _draft!;
+    if (draft.makeDefault) return draft.id;
+    final candidates = records.where((r) => r.id != draft.id).toList();
+    for (final id in [selectedId, draft.previousDefaultRecordId]) {
+      if (candidates.any((r) => r.id == id)) return id!;
+    }
+    return candidates.isEmpty
+        ? draft.id
+        : candidates
+            .firstWhere((r) => r.isSubmitted, orElse: () => candidates.first)
+            .id;
+  }
 
   Future<void> retryRecords(String uid) async {
     if (_disposed) return;
@@ -200,7 +227,7 @@ class CalculatorProvider extends ChangeNotifier {
       _prices.exchangeRate(foreign, local);
 
   void startNewRecord(String userId, String currency,
-      {String language = 'en'}) {
+      {String language = 'en', String? previousDefaultRecordId}) {
     _priceRequest++;
     _goldPricePerGram = 0;
     _error = null;
@@ -208,6 +235,7 @@ class CalculatorProvider extends ChangeNotifier {
     _draft = ZakatRecord(
         id: const Uuid().v4(),
         userId: userId,
+        previousDefaultRecordId: previousDefaultRecordId,
         currency: currency,
         name: language == 'ar' ? 'زكاة ${now.year}' : 'Zakat ${now.year}',
         hawlStartDate: DateTime(now.year, now.month, now.day),

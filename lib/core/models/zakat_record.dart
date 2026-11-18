@@ -109,6 +109,8 @@ class ZakatRecord {
   double zakatDue;
   bool nisabMet;
 
+  bool makeDefault;
+  String? previousDefaultRecordId;
   bool isSubmitted;
   DateTime? submittedAt;
   DateTime createdAt;
@@ -135,6 +137,8 @@ class ZakatRecord {
     this.nisabThreshold = 0,
     this.zakatDue = 0,
     this.nisabMet = false,
+    this.makeDefault = true,
+    this.previousDefaultRecordId,
     this.isSubmitted = false,
     this.submittedAt,
     required this.createdAt,
@@ -174,6 +178,8 @@ class ZakatRecord {
       nisabThreshold: (m['nisabThreshold'] as num?)?.toDouble() ?? 0,
       zakatDue: (m['zakatDue'] as num?)?.toDouble() ?? 0,
       nisabMet: m['nisabMet'] as bool? ?? false,
+      previousDefaultRecordId: m['previousDefaultRecordId'] as String?,
+      makeDefault: m['makeDefault'] as bool? ?? true,
       isSubmitted: m['isSubmitted'] as bool? ?? false,
       submittedAt: m['submittedAt'] != null
           ? DateTime.fromMillisecondsSinceEpoch(m['submittedAt'] as int)
@@ -198,6 +204,9 @@ class ZakatRecord {
         'nisabThreshold': nisabThreshold,
         'zakatDue': zakatDue,
         'nisabMet': nisabMet,
+        'makeDefault': makeDefault,
+        if (previousDefaultRecordId != null)
+          'previousDefaultRecordId': previousDefaultRecordId,
         'isSubmitted': isSubmitted,
         'submittedAt': submittedAt?.millisecondsSinceEpoch,
         'createdAt': createdAt.millisecondsSinceEpoch,

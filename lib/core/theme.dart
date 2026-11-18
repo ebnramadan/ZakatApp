@@ -5,8 +5,11 @@ import 'constants.dart';
 class AppTheme {
   static ThemeData get light => forLanguage('en');
 
-  static ThemeData forLanguage(String language) {
-    final arabic = language == 'ar';
+  static final Map<String, ThemeData> _themes = {};
+  static ThemeData forLanguage(String language) => _themes.putIfAbsent(
+      language == 'ar' ? 'ar' : 'en', () => _build(language == 'ar'));
+
+  static ThemeData _build(bool arabic) {
     final family = arabic ? 'Tajawal' : 'Inter';
     final fallback = [arabic ? 'Inter' : 'Tajawal'];
     final base = ColorScheme.fromSeed(
