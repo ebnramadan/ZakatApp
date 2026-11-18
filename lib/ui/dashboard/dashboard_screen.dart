@@ -167,7 +167,11 @@ class DashboardScreen extends StatelessWidget {
                             !current.isSubmitted
                                 ? l(context, "Draft · Ready to finish")
                                 : current.hawlComplete
-                                    ? l(context, "Hawl complete")
+                                    ? l(
+                                        context,
+                                        current.nisabMet
+                                            ? "Zakat is due"
+                                            : "Below Nisab")
                                     : l(context, "Hawl ends {0}", [
                                         DateFormat.yMMMd()
                                             .format(current.hawlEndDate)
@@ -195,14 +199,20 @@ class DashboardScreen extends StatelessWidget {
                                       : 'This estimate is fully covered by advance payments. Your Hawl is still in progress.'),
                               style: const TextStyle(color: Color(0xFFD6E9E1))),
                           const SizedBox(height: 12),
-                          FilledButton.tonalIcon(
+                          FilledButton.icon(
+                              style: FilledButton.styleFrom(
+                                  side:
+                                      const BorderSide(color: Colors.white54)),
                               onPressed: onCreate,
                               icon: const Icon(Icons.calculate_outlined),
                               label: Text(l(context, 'Calculate new Zakat'))),
                           const SizedBox(height: 8),
                         ],
                         if (current.isSubmitted)
-                          FilledButton.tonalIcon(
+                          FilledButton.icon(
+                              style: FilledButton.styleFrom(
+                                  side:
+                                      const BorderSide(color: Colors.white54)),
                               onPressed: () => onRecord(current),
                               icon: Icon(current.isSubmitted
                                   ? Icons.arrow_forward

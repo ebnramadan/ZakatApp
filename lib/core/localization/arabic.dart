@@ -916,5 +916,6 @@ const Map<String, String> arabic = {
   "Calculate your Zakat on one page. You can save and continue a draft later.":
       "احسب زكاتك في صفحة واحدة. وتقدر تحفظ مسودة وتكمّلها بعدين.",
   "Add your cash and gold, then review your results.":
-      "ضيف فلوسك ودهبك، وبعدين راجع النتيجة."
+      "ضيف فلوسك ودهبك، وبعدين راجع النتيجة.",
+  "Zakat is due": "ميعاد الزكاة جه"
 };

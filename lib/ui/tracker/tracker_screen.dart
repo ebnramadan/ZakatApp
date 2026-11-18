@@ -223,7 +223,7 @@ class _Header extends StatelessWidget {
                 ),
                 child: Text(
                   r.hawlComplete
-                      ? l(context, "Hawl complete")
+                      ? l(context, r.nisabMet ? "Zakat is due" : "Below Nisab")
                       : l(context, "{0} days left", [r.daysLeftInHawl]),
                   style: const TextStyle(color: Colors.white, fontSize: 12),
                 ),
@@ -335,7 +335,7 @@ class _PaymentList extends StatelessWidget {
         ? NumberFormat('#,##0.00')
         : NumberFormat.currency(
             name: currency,
-            symbol: currencySymbol(currency!),
+            symbol: '${currencySymbol(currency!)} ',
             decimalDigits: currencyDecimals(currency!));
     final dateFmt = DateFormat('d MMM yyyy');
 
