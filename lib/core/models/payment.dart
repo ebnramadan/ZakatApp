@@ -11,6 +11,12 @@ class Payment {
   String recipient;
   DateTime createdAt;
 
+  // Read legacy names together without rewriting financial history. Editing
+  // writes this combined value into name and clears the old recipient field.
+  String get displayName => isMonthly
+      ? (recipient.trim().isEmpty ? name.trim() : recipient.trim())
+      : [name.trim(), recipient.trim()].where((s) => s.isNotEmpty).join(' ');
+
   Payment({
     required this.id,
     required this.zakatRecordId,

@@ -11,6 +11,7 @@ import '../../core/providers/auth_provider.dart';
 import '../../core/providers/calculator_provider.dart';
 import '../../core/providers/monthly_provider.dart';
 import '../shared/app_components.dart';
+import '../shared/zakat_balance_summary.dart';
 
 class DashboardScreen extends StatelessWidget {
   final VoidCallback onRecords, onMonthly, onCreate;
@@ -56,7 +57,7 @@ class DashboardScreen extends StatelessWidget {
       DateTime date
     })>[
       ...payments.map((p) => (
-            title: p.recipient.isEmpty ? p.name : p.recipient,
+            title: p.displayName,
             detail: l(context, 'Zakat · {0}', [current?.name ?? '']),
             amount: p.amount,
             currency: current?.currency,
@@ -118,7 +119,7 @@ class DashboardScreen extends StatelessWidget {
                           style: Theme.of(context).textTheme.titleLarge),
                       const SizedBox(height: 8),
                       Text(l(context,
-                          "A guided calculation helps you set up your first record. You can add monthly Sadaqah at any time.")),
+                          "Add your cash and gold to calculate Zakat. You can add monthly Sadaqah at any time.")),
                       const SizedBox(height: 20),
                       FilledButton.icon(
                           onPressed: onCreate,
@@ -166,7 +167,11 @@ class DashboardScreen extends StatelessWidget {
                             !current.isSubmitted
                                 ? l(context, "Draft · Ready to finish")
                                 : current.hawlComplete
-                                    ? l(context, "Hawl complete")
+                                    ? l(
+                                        context,
+                                        current.nisabMet
+                                            ? "Zakat is due"
+                                            : "Below Nisab")
                                     : l(context, "Hawl ends {0}", [
                                         DateFormat.yMMMd()
                                             .format(current.hawlEndDate)
@@ -174,54 +179,7 @@ class DashboardScreen extends StatelessWidget {
                             style: const TextStyle(color: Color(0xFFD6E9E1))),
                         const SizedBox(height: 24),
                         if (current.isSubmitted) ...[
-                          Text(
-                              current.hawlComplete
-                                  ? l(context, "Remaining Zakat")
-                                  : l(context, "Remaining estimate"),
-                              style: const TextStyle(color: Color(0xFFD6E9E1))),
-                          FittedBox(
-                              fit: BoxFit.scaleDown,
-                              child: Text(
-                                  l(context,
-                                      money(remaining, current.currency)),
-                                  style: const TextStyle(
-                                      fontSize: 34,
-                                      fontWeight: FontWeight.w700,
-                                      color: Colors.white))),
-                          const SizedBox(height: 20),
-                          Wrap(spacing: 32, runSpacing: 12, children: [
-                            _Metric(l(context, "Calculated Zakat"),
-                                money(target, current.currency)),
-                            _Metric(l(context, "Given"),
-                                money(paid, current.currency))
-                          ]),
-                          const SizedBox(height: 20),
-                          Semantics(
-                              label: l(context,
-                                  "{0}% of calculated Zakat recorded", [
-                                target > 0
-                                    ? l(
-                                        context,
-                                        ((paid / target).clamp(0, 1) * 100)
-                                            .round())
-                                    : l(context, 0)
-                              ]),
-                              child: _GivingProgress(
-                                  value: target > 0
-                                      ? (paid / target).clamp(0, 1)
-                                      : 0,
-                                  backgroundColor: const Color(0xFF52766A),
-                                  color: const Color(0xFFE9C77B),
-                                  minHeight: 8)),
-                          const SizedBox(height: 12),
-                          Text(
-                              current.hawlComplete
-                                  ? l(context,
-                                      "Payments reduce this record’s remaining balance.")
-                                  : l(context,
-                                      "This is an estimate until your Hawl is complete."),
-                              style: const TextStyle(
-                                  color: Color(0xFFD6E9E1), fontSize: 13))
+                          ZakatBalanceSummary(record: current, paid: paid),
                         ] else
                           Text(
                               l(context,
@@ -241,15 +199,20 @@ class DashboardScreen extends StatelessWidget {
                                       : 'This estimate is fully covered by advance payments. Your Hawl is still in progress.'),
                               style: const TextStyle(color: Color(0xFFD6E9E1))),
                           const SizedBox(height: 12),
-                          FilledButton.tonalIcon(
+                          FilledButton.icon(
+                              style: FilledButton.styleFrom(
+                                  side:
+                                      const BorderSide(color: Colors.white54)),
                               onPressed: onCreate,
                               icon: const Icon(Icons.calculate_outlined),
                               label: Text(l(context, 'Calculate new Zakat'))),
                           const SizedBox(height: 8),
                         ],
-                        if (current.isSubmitted &&
-                            (!current.hawlComplete || remaining == 0))
-                          FilledButton.tonalIcon(
+                        if (current.isSubmitted)
+                          FilledButton.icon(
+                              style: FilledButton.styleFrom(
+                                  side:
+                                      const BorderSide(color: Colors.white54)),
                               onPressed: () => onRecord(current),
                               icon: Icon(current.isSubmitted
                                   ? Icons.arrow_forward
@@ -384,57 +347,4 @@ class DashboardScreen extends StatelessWidget {
                     r.id == id && r.isSubmitted && r.currency == currency))),
     ]));
   }
-}
-
-class _Metric extends StatelessWidget {
-  final String label, value;
-  const _Metric(this.label, this.value);
-  @override
-  Widget build(BuildContext context) =>
-      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(l(context, label),
-            style: const TextStyle(fontSize: 13, color: Color(0xFFD6E9E1))),
-        const SizedBox(height: 4),
-        Text(l(context, value),
-            style: const TextStyle(
-                fontSize: 18, fontWeight: FontWeight.w600, color: Colors.white))
-      ]);
-}
-
-class _GivingProgress extends StatelessWidget {
-  final double value, minHeight;
-  final Color backgroundColor, color;
-  const _GivingProgress(
-      {required this.value,
-      required this.backgroundColor,
-      required this.color,
-      required this.minHeight});
-  @override
-  Widget build(BuildContext context) => Row(children: [
-        SizedBox(
-            width: 72,
-            height: 72,
-            child: Stack(alignment: Alignment.center, children: [
-              SizedBox(
-                  width: 64,
-                  height: 64,
-                  child: CircularProgressIndicator(
-                      value: value,
-                      strokeWidth: 6,
-                      color: color,
-                      backgroundColor: backgroundColor)),
-              Text(l(context, '{0}% paid', [(value * 100).round()]),
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700)),
-            ])),
-        const SizedBox(width: 16),
-        Expanded(
-            child: Text(
-                l(context, '{0}% of calculated Zakat recorded',
-                    [(value * 100).round()]),
-                style:
-                    const TextStyle(color: Color(0xFFD6E9E1), fontSize: 14))),
-      ]);
 }

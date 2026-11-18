@@ -197,7 +197,7 @@ const Map<String, String> arabic = {
   "Email verified": "البريد مؤكّد",
   "Enable monthly sharing": "تفعيل المشاركة الشهرية",
   "English": "English",
-  "Enter a name": "اكتب اسمًا",
+  "Enter a name": "اكتب الاسم",
   "Enter a name (up to 120 characters)": "اكتب اسمًا لا يتجاوز ١٢٠ حرفًا",
   "Enter a name of up to 80 characters.": "اكتب اسمًا لا يتجاوز ٨٠ حرفًا.",
   "Enter a positive amount": "اكتب مبلغًا أكبر من صفر",
@@ -891,5 +891,31 @@ const Map<String, String> arabic = {
   "Could not save reminder preferences to your account. Check your connection and retry.":
       "ما قدرناش نحفظ إعدادات التذكيرات في حسابك. اتأكد من الإنترنت وجرّب تاني.",
   "Automatic reminders may be delayed. Check Home for anything due.":
-      "التذكيرات التلقائية ممكن تتأخر. راجع الرئيسية عشان تشوف اللي ميعاده جه."
+      "التذكيرات التلقائية ممكن تتأخر. راجع الرئيسية عشان تشوف اللي ميعاده جه.",
+  "Name": "الاسم",
+  "Who or what is this payment for?": "الدفعة دي لمين أو لإيه؟",
+  "Total Zakat": "إجمالي الزكاة",
+  "Estimated total Zakat": "إجمالي الزكاة المتوقع",
+  "Already paid": "دفعت منهم",
+  "Still to pay": "باقي عليك",
+  "Still to cover (estimate)": "باقي لتغطية المبلغ المتوقع",
+  "Total Zakat − Already paid = Still to pay":
+      "إجمالي الزكاة ناقص اللي دفعته يساوي الباقي",
+  "Not due yet. This estimate is for {0}. Payments made now count as advance payments.":
+      "لسه ميعاد الزكاة ما جاش. ده تقدير ليوم {0}. أي مبلغ تدفعه دلوقتي بيتحسب دفعة مقدّمة.",
+  "Below Nisab: no Zakat is due on this calculation.":
+      "المبلغ أقل من النصاب: مفيش زكاة مستحقة على الحساب ده.",
+  "Try a different name.": "جرّب اسم تاني.",
+  "Tap Add Payment after you give the money":
+      "اضغط إضافة دفعة بعد ما تدي الفلوس",
+  "Add your cash and gold on one page, then review your Zakat.":
+      "ضيف فلوسك ودهبك في صفحة واحدة، وبعدين راجع حساب زكاتك.",
+  "Start calculation": "ابدأ الحساب",
+  "Add your cash and gold to calculate Zakat. You can add monthly Sadaqah at any time.":
+      "ضيف فلوسك ودهبك عشان تحسب زكاتك. وتقدر تضيف صدقة شهرية في أي وقت.",
+  "Calculate your Zakat on one page. You can save and continue a draft later.":
+      "احسب زكاتك في صفحة واحدة. وتقدر تحفظ مسودة وتكمّلها بعدين.",
+  "Add your cash and gold, then review your results.":
+      "ضيف فلوسك ودهبك، وبعدين راجع النتيجة.",
+  "Zakat is due": "ميعاد الزكاة جه"
 };

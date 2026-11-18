@@ -459,7 +459,7 @@ class _RecordsTabState extends State<_RecordsTab> {
                   const SizedBox(height: 8),
                   Text(
                       l(context,
-                          "Use a guided calculation to work out your Zakat. Saved drafts are easy to continue."),
+                          "Calculate your Zakat on one page. You can save and continue a draft later."),
                       textAlign: TextAlign.center),
                   const SizedBox(height: 20),
                   TextButton(

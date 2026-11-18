@@ -65,18 +65,16 @@ void main() {
       final sheetContext = tester.element(find.byType(AddPaymentSheet));
       final amountField = find.byType(TextFormField).first;
       final nameField = find.byWidgetPredicate((w) =>
-          w is TextField &&
-          w.decoration?.labelText ==
-              l(sheetContext, 'Payment name (optional)'));
+          w is TextField && w.decoration?.labelText == l(sheetContext, 'Name'));
       final nameInput = tester.widget<TextField>(nameField);
       expect(nameInput.controller!.text, isEmpty);
-      expect(
-          nameInput.decoration!.hintText, l(sheetContext, 'Payment {0}', [1]));
+      expect(nameInput.decoration!.hintText,
+          l(sheetContext, 'Who or what is this payment for?'));
+      expect(find.byType(ActionChip), findsNothing);
       await tester.enterText(
           nameField, language == 'ar' ? 'مساعدة أسرة' : 'Family support');
       expect(nameInput.controller!.text,
           language == 'ar' ? 'مساعدة أسرة' : 'Family support');
-      if (language == 'ar') await tester.enterText(nameField, '');
       await tester.enterText(
           amountField, language == 'ar' ? '١٢٣٤٥٫٦٧' : '12345.67');
       final amountInput = tester.widget<TextField>(
@@ -85,7 +83,7 @@ void main() {
       tester.view.viewInsets = const FakeViewPadding(bottom: 336);
       await tester.pumpAndSettle();
       final pay =
-          find.widgetWithText(ElevatedButton, l(sheetContext, 'Add Payment'));
+          find.widgetWithText(FilledButton, l(sheetContext, 'Add Payment'));
       await tester.scrollUntilVisible(pay, 200,
           scrollable: find.byType(Scrollable).first);
       await tester.pumpAndSettle();
@@ -111,7 +109,7 @@ void main() {
           .docs
           .single
           .data()['name'];
-      expect(savedName, language == 'ar' ? 'دفعة 1' : 'Family support');
+      expect(savedName, language == 'ar' ? 'مساعدة أسرة' : 'Family support');
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());
       auth.dispose();

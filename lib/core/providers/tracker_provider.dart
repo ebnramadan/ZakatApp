@@ -15,14 +15,12 @@ class TrackerProvider extends ChangeNotifier {
 
   ZakatRecord? _selectedRecord;
   List<Payment> _payments = [];
-  List<String> _payeeNames = [];
   StreamSubscription<List<Payment>>? _sub;
   bool _loading = false;
   String? _error;
 
   ZakatRecord? get selectedRecord => _selectedRecord;
   List<Payment> get payments => _payments;
-  List<String> get payeeNames => _payeeNames;
   bool get loading => _loading;
   String? get error => _error;
 
@@ -35,7 +33,6 @@ class TrackerProvider extends ChangeNotifier {
     _selection++;
     _pendingPaymentId = null;
     _payments = [];
-    _payeeNames = [];
     _error = null;
     _selectedRecord = record;
     _sub?.cancel();
@@ -48,7 +45,6 @@ class TrackerProvider extends ChangeNotifier {
       _error = 'Could not load payments. Check your connection.';
       _notify();
     });
-    _loadPayeeNames(uid);
     _notify();
   }
 
@@ -57,7 +53,6 @@ class TrackerProvider extends ChangeNotifier {
     _sub?.cancel();
     _selectedRecord = null;
     _payments = [];
-    _payeeNames = [];
     _error = null;
     _notify();
   }
@@ -67,19 +62,6 @@ class TrackerProvider extends ChangeNotifier {
     if (record == null) return;
     _selectedRecord = null;
     selectRecord(record.userId, record);
-  }
-
-  Future<void> _loadPayeeNames(String uid) async {
-    if (_selectedRecord?.userId != uid) return;
-    final selection = _selection;
-    try {
-      final names = await _fs.previousPayeeNames(uid);
-      if (_disposed || selection != _selection) return;
-      _payeeNames = names;
-      _notify();
-    } catch (_) {
-      /* Suggestions are optional; payment success is independent. */
-    }
   }
 
   Future<void> addPayment({
@@ -113,8 +95,6 @@ class TrackerProvider extends ChangeNotifier {
       );
       await _fs.addPayment(payment);
       _pendingPaymentId = null;
-      // Refresh optional autocomplete without delaying the payment confirmation.
-      unawaited(_loadPayeeNames(uid));
     } catch (e) {
       _error = 'Failed to save payment.';
     }
@@ -152,9 +132,7 @@ class TrackerProvider extends ChangeNotifier {
     if (query.isEmpty) return _payments;
     final q = query.toLowerCase();
     return _payments
-        .where((p) =>
-            p.name.toLowerCase().contains(q) ||
-            p.recipient.toLowerCase().contains(q))
+        .where((p) => p.displayName.toLowerCase().contains(q))
         .toList();
   }
 
