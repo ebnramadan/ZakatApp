@@ -1,3 +1,4 @@
+import '../notifications/notification_bell.dart';
 import '../../core/localization/amount_formatter.dart';
 import '../../core/localization/strings.dart';
 import '../shared/giving_celebration.dart';
@@ -13,8 +14,9 @@ import '../../core/providers/calculator_provider.dart';
 import '../../core/providers/monthly_provider.dart';
 
 class MonthlyScreen extends StatefulWidget {
-  final String? focusRecipient;
-  const MonthlyScreen({super.key, this.focusRecipient});
+  final String? focusRecipient, focusPlanId, focusMonth;
+  const MonthlyScreen(
+      {super.key, this.focusRecipient, this.focusPlanId, this.focusMonth});
   @override
   State<MonthlyScreen> createState() => _MonthlyScreenState();
 }
@@ -28,6 +30,10 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.focusMonth != null) {
+      _month = monthFromKey(widget.focusMonth!);
+      _followingCurrent = false;
+    }
     _query = widget.focusRecipient ?? '';
     _search = TextEditingController(text: _query);
   }
@@ -98,10 +104,13 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
     final all = monthly.plans
         .where((p) =>
             ((p.active || _showPaused) && p.startMonth.compareTo(key) <= 0) ||
-            monthly.paid(p.id, key) != null)
+            monthly.paid(p.id, key) != null ||
+            (p.id == widget.focusPlanId && p.startMonth.compareTo(key) <= 0))
         .toList();
     final shown = all
-        .where((p) => p.recipient.toLowerCase().contains(_query.toLowerCase()))
+        .where((p) =>
+            (widget.focusPlanId == null || p.id == widget.focusPlanId) &&
+            p.recipient.toLowerCase().contains(_query.toLowerCase()))
         .toList();
     final calc = context.watch<CalculatorProvider>();
     bool available(String kind, String id) =>
@@ -125,7 +134,8 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
                     context: context,
                     isScrollControlled: true,
                     builder: (_) => const MonthlySettings()),
-                icon: const Icon(Icons.tune))
+                icon: const Icon(Icons.tune)),
+            const NotificationBell(),
           ]),
       body: monthly.loading
           ? const Center(child: CircularProgressIndicator())
@@ -135,18 +145,20 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
                   key: const Key('monthly-list'),
                   padding: const EdgeInsets.fromLTRB(20, 20, 20, 110),
                   children: [
-                    Text(l(context, "A little, every month."),
-                        style: Theme.of(context)
-                            .textTheme
-                            .headlineSmall
-                            ?.copyWith(fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 8),
-                    Text(
-                        l(context,
-                            "Keep your monthly commitments in one place. Mark a payment only after you have given the money."),
-                        style: const TextStyle(
-                            height: 1.6, color: Colors.black54)),
-                    const SizedBox(height: 18),
+                    if (widget.focusPlanId == null) ...[
+                      Text(l(context, "A little, every month."),
+                          style: Theme.of(context)
+                              .textTheme
+                              .headlineSmall
+                              ?.copyWith(fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 8),
+                      Text(
+                          l(context,
+                              "Keep your monthly commitments in one place. Mark a payment only after you have given the money."),
+                          style: const TextStyle(
+                              height: 1.6, color: Colors.black54)),
+                      const SizedBox(height: 18),
+                    ],
                     Row(children: [
                       IconButton(
                           tooltip: l(context, "Previous month"),
@@ -187,49 +199,58 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
                                   onPressed: () =>
                                       monthly.load(auth.user!.uid, force: true),
                                   child: Text(l(context, "Retry"))))),
-                    ...currencies.map((currency) {
-                      final paidTotal = paid
-                          .where((p) => p.currency == currency)
-                          .fold(0.0, (s, p) => s + p.amount);
-                      final outstanding = all
-                          .where((p) =>
-                              p.active &&
-                              p.currency == currency &&
-                              available(p.kind, p.zakatRecordId) &&
-                              monthly.paid(p.id, key) == null)
-                          .fold(0.0, (s, p) => s + p.amount);
-                      final fmt = NumberFormat.currency(
-                          name: currency, symbol: '$currency ');
-                      return Card(
-                          color: Theme.of(context).colorScheme.primaryContainer,
-                          child: Padding(
-                              padding: const EdgeInsets.all(18),
-                              child:
-                                  Wrap(spacing: 28, runSpacing: 12, children: [
-                                _MonthlyStat(
-                                    l(context, "Planned this month"),
-                                    fmt.format(all
-                                        .where((p) =>
-                                            p.active &&
-                                            p.currency == currency &&
-                                            available(p.kind, p.zakatRecordId))
-                                        .fold(0.0, (s, p) => s + p.amount))),
-                                _MonthlyStat(l(context, "Given this month"),
-                                    fmt.format(paidTotal)),
-                                _MonthlyStat(l(context, "Still to give"),
-                                    fmt.format(outstanding)),
-                              ])));
-                    }),
+                    if (widget.focusPlanId == null)
+                      ...currencies.map((currency) {
+                        final paidTotal = paid
+                            .where((p) => p.currency == currency)
+                            .fold(0.0, (s, p) => s + p.amount);
+                        final outstanding = all
+                            .where((p) =>
+                                p.active &&
+                                p.currency == currency &&
+                                available(p.kind, p.zakatRecordId) &&
+                                monthly.paid(p.id, key) == null)
+                            .fold(0.0, (s, p) => s + p.amount);
+                        final fmt = NumberFormat.currency(
+                            name: currency, symbol: '$currency ');
+                        return Card(
+                            color:
+                                Theme.of(context).colorScheme.primaryContainer,
+                            child: Padding(
+                                padding: const EdgeInsets.all(18),
+                                child: Wrap(
+                                    spacing: 28,
+                                    runSpacing: 12,
+                                    children: [
+                                      _MonthlyStat(
+                                          l(context, "Planned this month"),
+                                          fmt.format(all
+                                              .where((p) =>
+                                                  p.active &&
+                                                  p.currency == currency &&
+                                                  available(
+                                                      p.kind, p.zakatRecordId))
+                                              .fold(0.0,
+                                                  (s, p) => s + p.amount))),
+                                      _MonthlyStat(
+                                          l(context, "Given this month"),
+                                          fmt.format(paidTotal)),
+                                      _MonthlyStat(l(context, "Still to give"),
+                                          fmt.format(outstanding)),
+                                    ])));
+                      }),
                     const SizedBox(height: 14),
-                    Wrap(spacing: 8, children: [
-                      FilterChip(
-                          label: Text(l(context, "Include paused recipients")),
-                          selected: _showPaused,
-                          onSelected: (value) =>
-                              setState(() => _showPaused = value)),
-                    ]),
+                    if (widget.focusPlanId == null)
+                      Wrap(spacing: 8, children: [
+                        FilterChip(
+                            label:
+                                Text(l(context, "Include paused recipients")),
+                            selected: _showPaused,
+                            onSelected: (value) =>
+                                setState(() => _showPaused = value)),
+                      ]),
                     const SizedBox(height: 12),
-                    if (_query.isNotEmpty)
+                    if (widget.focusPlanId == null && _query.isNotEmpty)
                       Align(
                           alignment: AlignmentDirectional.centerStart,
                           child: InputChip(
@@ -238,7 +259,7 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
                                 _search.clear();
                                 setState(() => _query = '');
                               })),
-                    if (all.isNotEmpty)
+                    if (widget.focusPlanId == null && all.isNotEmpty)
                       TextField(
                           controller: _search,
                           decoration: InputDecoration(
@@ -246,7 +267,12 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
                               prefixIcon: const Icon(Icons.search)),
                           onChanged: (v) => setState(() => _query = v)),
                     const SizedBox(height: 12),
-                    if (all.isEmpty)
+                    if (all.isEmpty && widget.focusPlanId != null)
+                      Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Text(l(context,
+                              "This recipient is no longer available for this month."))),
+                    if (all.isEmpty && widget.focusPlanId == null)
                       Padding(
                           padding: const EdgeInsets.symmetric(vertical: 36),
                           child: Column(children: [
@@ -273,13 +299,19 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
                     if (all.isNotEmpty && shown.isEmpty)
                       Padding(
                           padding: const EdgeInsets.all(24),
-                          child: Text(
-                              l(context, "No recipients match your search."))),
+                          child: Text(l(
+                              context,
+                              widget.focusPlanId != null
+                                  ? "This recipient is no longer available for this month."
+                                  : "No recipients match your search."))),
                     ...shown.map((plan) {
                       final receipt = monthly.paid(plan.id, key);
                       final isPaid = receipt != null;
-                      final blocked = !available(receipt?.kind ?? plan.kind,
-                          receipt?.zakatRecordId ?? plan.zakatRecordId);
+                      final reminderPaused =
+                          widget.focusPlanId != null && !plan.active && !isPaid;
+                      final blocked = reminderPaused ||
+                          !available(receipt?.kind ?? plan.kind,
+                              receipt?.zakatRecordId ?? plan.zakatRecordId);
                       final kind = receipt?.kind ?? plan.kind;
                       final amount = receipt?.amount ?? plan.amount;
                       final due = plan.dueDate(key);
@@ -417,7 +449,7 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
                                                 DateFormat.yMMMd()
                                                     .format(receipt.paidAt)
                                               ])
-                                            : '${overdue ? 'Ready to give' : 'Reminder'} · ${DateFormat.MMMd().format(due)}',
+                                            : '${l(context, overdue ? 'Ready to give' : 'Reminder')} · ${DateFormat.MMMd().format(due)}',
                                         style: TextStyle(
                                             color: isPaid
                                                 ? Colors.green.shade800
@@ -429,8 +461,11 @@ class _MonthlyScreenState extends State<MonthlyScreen> {
                                       Padding(
                                           padding:
                                               const EdgeInsets.only(bottom: 12),
-                                          child: Text(l(context,
-                                              "Linked Zakat record is unavailable. Restore it from the recycle bin or edit this commitment to select another record."))),
+                                          child: Text(l(
+                                              context,
+                                              reminderPaused
+                                                  ? "This recipient is paused. Review your monthly giving before recording a payment."
+                                                  : "Linked Zakat record is unavailable. Restore it from the recycle bin or edit this commitment to select another record."))),
                                     if (isPaid)
                                       TextButton.icon(
                                           onPressed: monthly.busy || blocked

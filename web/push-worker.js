@@ -39,20 +39,26 @@ self.addEventListener('push', event => event.waitUntil((async () => {
   let message;
   try { message = event.data?.json(); } catch (_) { return; }
   if (!state?.enabled || !message || message.uid !== state.uid ||
-      (message.kind === 'monthly' && !state.monthly) || (message.kind === 'zakat' && !state.zakat)) return;
+      (message.kind === 'monthly' && !state.monthly) || (message.kind === 'zakat' && !state.zakat) || (message.kind === 'duaa' && state.dailyDuaa === false)) return;
   await self.registration.showNotification(message.title, {
     body: state.showNames ? message.body : message.genericBody,
     icon: '/icons/zakat-v4-192.png', badge: '/icons/zakat-v4-192.png',
     lang: message.language === 'ar' ? 'ar' : 'en', dir: message.language === 'ar' ? 'rtl' : 'ltr',
     tag: 'ztracker-giving-reminder', renotify: false,
-    data: {target: message.kind === 'monthly' ? 'monthly' : 'tracker'},
+    data: {target: message.kind === 'monthly' ? 'monthly' : message.kind === 'zakat' ? 'tracker' : 'home', planId:message.planId,recordId:message.recordId,month:message.month,notificationId:message.notificationId},
   });
 })()));
 self.addEventListener('notificationclick', event => {
   event.notification.close();
   event.waitUntil((async () => {
-    const target = event.notification.data?.target === 'monthly' ? 'monthly' : 'tracker';
-    const url = new URL('/?open=' + target, self.location.origin).href;
+    const data=event.notification.data||{};
+    const target = ['monthly','tracker','home'].includes(data.target) ? data.target : 'home';
+    const link = new URL('/', self.location.origin);
+    link.searchParams.set('open',target);
+    const safeId=value=>typeof value==='string'&&value.length>0&&value.length<=200&&!value.includes('/')&&!value.includes('\\')&&value!=='.'&&value!=='..';
+    for(const [param,key] of [['plan','planId'],['record','recordId'],['notification','notificationId']])if(safeId(data[key]))link.searchParams.set(param,data[key]);
+    if(/^20\d\d-(0[1-9]|1[0-2])$/.test(data.month))link.searchParams.set('month',data.month);
+    const url=link.href;
     const clients = await self.clients.matchAll({type: 'window', includeUncontrolled: true});
     const client = clients.find(c => new URL(c.url).origin === self.location.origin);
     if (client) { await client.navigate(url); await client.focus(); }

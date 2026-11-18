@@ -193,16 +193,27 @@ service cloud.firestore {
       match /pushSubscriptions/{id} {
         allow read, delete: if owner(uid);
         allow create, update: if owner(uid) && !profileResetting(uid)
-          && request.resource.data.keys().hasOnly(['userId','endpoint','keys','monthly','zakat','showNames','timeZone','createdAt','updatedAt'])
+          && request.resource.data.keys().hasOnly(['userId','endpoint','keys','monthly','zakat','dailyDuaa','showNames','timeZone','createdAt','updatedAt'])
           && request.resource.data.userId == uid && id.matches('^[a-f0-9]{64}$')
           && request.resource.data.endpoint is string && request.resource.data.endpoint.size() <= 4096
           && request.resource.data.endpoint.matches('^https://(fcm[.]googleapis[.]com|updates[.]push[.]services[.]mozilla[.]com|web[.]push[.]apple[.]com|[a-z0-9-]+[.]notify[.]windows[.]com)/[^ ].+$')
           && request.resource.data.keys is map && request.resource.data.keys.keys().hasOnly(['p256dh','auth'])
           && request.resource.data.keys.p256dh is string && request.resource.data.keys.p256dh.matches('^[A-Za-z0-9_-]{87}$')
           && request.resource.data.keys.auth is string && request.resource.data.keys.auth.matches('^[A-Za-z0-9_-]{22}$')
+          && request.resource.data.get('dailyDuaa',true) is bool
           && request.resource.data.monthly is bool && request.resource.data.zakat is bool && request.resource.data.showNames is bool
           && request.resource.data.timeZone is string && request.resource.data.timeZone.size() <= 80
           && request.resource.data.createdAt is int && request.resource.data.updatedAt is int;
+      }
+      match /notifications/{id} {
+        allow read: if owner(uid);
+        allow create: if false;
+        allow update: if owner(uid) && !profileResetting(uid)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readAt'])
+          && request.resource.data.readAt is int
+          && request.resource.data.readAt >= request.time.toMillis()-300000
+          && request.resource.data.readAt <= request.time.toMillis()+300000;
+        allow delete: if resetting(uid);
       }
       match /pushDeliveries/{id} {
         allow read: if owner(uid);

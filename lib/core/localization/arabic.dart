@@ -408,7 +408,7 @@ const Map<String, String> arabic = {
       "تُعالج طلبات الإرسال كل بضع دقائق. تقدر إبقاء التطبيق مفتوحًا أو إغلاقه.",
   "Rate unavailable. Enter a verified manual rate or retry.":
       "سعر الصرف غير متاح. اكتب سعرًا موثوقًا يدويًا أو جرّب تاني.",
-  "Ready to give": "جاهز للعطاء",
+  "Ready to give": "ميعاد العطاء جه",
   "Recent giving": "آخر دفعاتك",
   "Recipient (optional)": "المستفيد (اختياري)",
   "Recipient email addresses": "عناوين بريد المستلمين",
@@ -766,7 +766,7 @@ const Map<String, String> arabic = {
       "«{0}» هو سجلك الأساسي. لو عندك سجل تاني هيبقى هو الأساسي. تقدر ترجع السجل ودفعاته من سلة المحذوفات خلال ٦٠ يوم. دفعات الزكاة الشهرية المرتبطة بيه هتتوقف لحد ما ترجّعه.",
   "“{0}” and its payments will move to the recycle bin. You can restore them for 60 days. Linked monthly Zakat payments are paused while it is deleted.":
       "«{0}» ودفعاته هيتنقلوا لسلة المحذوفات. تقدر ترجعهم خلال ٦٠ يوم. دفعات الزكاة الشهرية المرتبطة بيه هتتوقف لحد ما ترجّعه.",
-  "Loading…": "بنحمّل البيانات…",
+  "Loading…": "جاري التحميل…",
   "Record payment": "سجّل دفعة",
   "Search payments…": "دوّر في الدفعات…",
   "No matching records": "مفيش سجلات مطابقة",
@@ -929,5 +929,29 @@ const Map<String, String> arabic = {
       "ميعاد الزكاة لسه ما جاش. الدفعات اللي بتسجّلها دلوقتي بتتحسب دفعات مقدّمة.",
   "Your Zakat date has not arrived yet": "ميعاد الزكاة لسه ما جاش",
   "Uses 85g pure gold Nisab and a 2.5% lunar-year rate. Includes cash and gold only, with no debt deductions. Confirm that wealth remained eligible throughout the Hawl. Amounts before your Zakat date are not currently due.":
-      "الحساب على نصاب ٨٥ جرام دهب خالص ونسبة ٢٫٥٪ للسنة الهجرية. بيشمل الفلوس والدهب بس، من غير خصم ديون. اتأكد إن المال فضل مستوفي شروط الزكاة طول الحول. المبالغ قبل ميعاد الزكاة مش مستحقة دلوقتي."
+      "الحساب على نصاب ٨٥ جرام دهب خالص ونسبة ٢٫٥٪ للسنة الهجرية. بيشمل الفلوس والدهب بس، من غير خصم ديون. اتأكد إن المال فضل مستوفي شروط الزكاة طول الحول. المبالغ قبل ميعاد الزكاة مش مستحقة دلوقتي.",
+  "Notifications": "الإشعارات",
+  "Notification settings": "إعدادات الإشعارات",
+  "Your duaa and giving reminders": "أدعيتك وتذكيرات العطاء",
+  "Tap a reminder to open its next action. Payments are only recorded after you confirm.":
+      "اضغط على التذكير عشان تفتح الخطوة المطلوبة. الدفعة مش بتتسجّل غير لما تأكّد بنفسك.",
+  "No notifications yet": "لسه مفيش إشعارات",
+  "New daily duaa and giving reminders sent to your devices will appear here.":
+      "أدعية اليوم وتذكيرات العطاء الجديدة اللي اتبعتت لأجهزتك هتظهر هنا.",
+  "View monthly payment": "افتح الدفعة الشهرية",
+  "View Zakat": "افتح الزكاة",
+  "Go to Home": "افتح الرئيسية",
+  "Older notifications": "إشعارات أقدم",
+  "Notifications could not load. Please retry.":
+      "ما قدرناش نحمّل الإشعارات. جرّب تاني.",
+  "Daily duaa": "دعاء كل يوم",
+  "Giving reminder preferences": "تفضيلات تذكيرات العطاء",
+  "One daily duaa, with a giving reminder when something is due. Sent during daytime.":
+      "دعاء كل يوم، ومعاه تذكير بالعطاء لو فيه حاجة ميعادها جه. الإشعار بييجي في النهار.",
+  "This Zakat record is no longer available. Check your records or recycle bin.":
+      "سجل الزكاة ده مش متاح دلوقتي. راجع سجلاتك أو سلة المحذوفات.",
+  "This recipient is no longer available for this month.":
+      "المستفيد ده مش متاح للشهر ده دلوقتي.",
+  "This recipient is paused. Review your monthly giving before recording a payment.":
+      "المستفيد ده متوقف مؤقتًا. راجع شهرياتك قبل ما تسجّل دفعة."
 };

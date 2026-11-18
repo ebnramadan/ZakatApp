@@ -8,3 +8,7 @@ Future<Map<String, dynamic>> subscribePush(String key) async =>
     throw UnsupportedError('Push is available in supported web browsers.');
 Future<void> unsubscribePush() async {}
 Future<void> showPushTest(String title, String body, {String? uid}) async {}
+
+Future<void> refreshPushWorker() async {}
+
+void clearNotificationLink() {}

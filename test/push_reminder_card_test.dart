@@ -15,7 +15,7 @@ class TestPushService extends PushService {
   String? registrationError;
   int testsShown = 0, registrations = 0;
   bool schedulingConfirmed = true;
-  bool? lastShowNames;
+  bool? lastShowNames, lastDailyDuaa;
   Map<String, dynamic>? savedSettings;
   @override
   String get support => 'supported';
@@ -46,10 +46,12 @@ class TestPushService extends PushService {
   Future<void> enable(String uid, String publicKey,
       {required bool monthly,
       required bool zakat,
-      required bool showNames}) async {
+      required bool showNames,
+      bool dailyDuaa = true}) async {
     registrations++;
     if (registrationError != null) throw PushSetupException(registrationError!);
     lastShowNames = showNames;
+    lastDailyDuaa = dailyDuaa;
   }
 }
 
@@ -77,6 +79,31 @@ void main() {
     addTearDown(auth.dispose);
     return auth;
   }
+
+  testWidgets(
+      'daily duaa opt-out is preserved and can be enabled without monthly or Zakat reminders',
+      (tester) async {
+    final service = TestPushService()
+      ..savedSettings = {
+        'monthly': false,
+        'zakat': false,
+        'showNames': true,
+        'dailyDuaa': false
+      };
+    await mount(tester, service);
+    final duaa = find.widgetWithText(SwitchListTile, 'Daily duaa');
+    expect(tester.widget<SwitchListTile>(duaa).value, false);
+    await tester.ensureVisible(duaa);
+    await tester.pumpAndSettle();
+    await tester.tap(duaa);
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Save notification preferences'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save notification preferences'));
+    await tester.pumpAndSettle();
+    expect(service.lastDailyDuaa, true);
+    expect(service.registrations, 1);
+  });
 
   testWidgets('registration failures explain the failing step and allow retry',
       (tester) async {

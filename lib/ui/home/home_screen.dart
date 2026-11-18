@@ -17,10 +17,15 @@ import '../monthly/monthly_screen.dart';
 import '../dashboard/dashboard_screen.dart';
 import '../shared/app_components.dart';
 import 'recycle_bin_screen.dart';
+import '../../core/notifications/notification_provider.dart';
+import '../../core/notifications/notification_target.dart';
+import '../notifications/notification_navigation.dart';
+import '../../core/platform/push_platform.dart' as push_platform;
 
 class HomeScreen extends StatefulWidget {
   final int initialTab;
-  const HomeScreen({super.key, this.initialTab = 0});
+  final NotificationTarget? notificationTarget;
+  const HomeScreen({super.key, this.initialTab = 0, this.notificationTarget});
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
@@ -84,7 +89,21 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     _tab = widget.initialTab;
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _loadAccountData();
+      if (mounted) {
+        _loadAccountData();
+        final target = widget.notificationTarget;
+        if (target != null) {
+          push_platform.clearNotificationLink();
+          if (target.notificationId != null) {
+            context
+                .read<NotificationProvider?>()
+                ?.markIdRead(target.notificationId!);
+          }
+          if (target.kind != 'home') {
+            openNotificationAction(context, target);
+          }
+        }
+      }
     });
   }
 
@@ -92,6 +111,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final auth = context.read<AuthProvider>();
     final uid = auth.user?.uid;
     if (uid == null || !auth.isVerified) return;
+    context.read<NotificationProvider?>()?.load(uid);
     final calc = context.read<CalculatorProvider>();
     final monthly = context.read<MonthlyProvider>();
     if (!onlyIfPending ||

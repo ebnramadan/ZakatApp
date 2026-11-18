@@ -20,7 +20,8 @@ class _PushReminderCardState extends State<PushReminderCard> {
       _enabled = false,
       _monthly = true,
       _zakat = true,
-      _names = true;
+      _names = true,
+      _dailyDuaa = true;
   String? _error, _loadError;
   bool _settingsFailed = false;
   @override
@@ -48,6 +49,7 @@ class _PushReminderCardState extends State<PushReminderCard> {
           _monthly = settings['monthly'] == true;
           _zakat = settings['zakat'] == true;
           _names = settings['showNames'] == true;
+          _dailyDuaa = settings['dailyDuaa'] != false;
         }
       } catch (_) {
         _settingsFailed = true;
@@ -88,7 +90,10 @@ class _PushReminderCardState extends State<PushReminderCard> {
   Future<void> _save() => _perform(() async {
         await _service.enable(context.read<AuthProvider>().user!.uid,
             _config['publicKey'] as String,
-            monthly: _monthly, zakat: _zakat, showNames: _names);
+            monthly: _monthly,
+            zakat: _zakat,
+            showNames: _names,
+            dailyDuaa: _dailyDuaa);
         _enabled = true;
       });
   @override
@@ -123,7 +128,7 @@ class _PushReminderCardState extends State<PushReminderCard> {
           if (!widget.compact)
             Text(
                 l(context,
-                    'Gentle reminders for monthly giving and Zakat, up to twice a week during daytime.'),
+                    'One daily duaa, with a giving reminder when something is due. Sent during daytime.'),
                 style: Theme.of(context).textTheme.bodySmall),
           if (support == 'supported' && !widget.compact) ...[
             const SizedBox(height: 14),
@@ -187,29 +192,75 @@ class _PushReminderCardState extends State<PushReminderCard> {
               SwitchListTile(
                   dense: widget.compact,
                   contentPadding: EdgeInsets.zero,
-                  title: Text(l(context, 'Monthly giving reminders')),
-                  value: _monthly,
+                  title: Text(l(context, 'Daily duaa')),
+                  value: _dailyDuaa,
                   onChanged:
-                      _busy ? null : (v) => setState(() => _monthly = v)),
-              SwitchListTile(
-                  dense: widget.compact,
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(l(context, 'Zakat reminders')),
-                  value: _zakat,
-                  onChanged: _busy ? null : (v) => setState(() => _zakat = v)),
-              SwitchListTile(
-                  dense: widget.compact,
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(l(context, 'Show recipient names')),
-                  subtitle: Text(l(
-                      context,
-                      widget.compact
-                          ? 'Names can appear on your lock screen.'
-                          : 'Names may appear on your lock screen. Amounts are not included.')),
-                  value: _names,
-                  onChanged: _busy ? null : (v) => setState(() => _names = v)),
+                      _busy ? null : (v) => setState(() => _dailyDuaa = v)),
+              if (widget.compact)
+                ExpansionTile(
+                    tilePadding: EdgeInsets.zero,
+                    title: Text(l(context, 'Giving reminder preferences')),
+                    children: [
+                      SwitchListTile(
+                          dense: widget.compact,
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(l(context, 'Monthly giving reminders')),
+                          value: _monthly,
+                          onChanged: _busy
+                              ? null
+                              : (v) => setState(() => _monthly = v)),
+                      SwitchListTile(
+                          dense: widget.compact,
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(l(context, 'Zakat reminders')),
+                          value: _zakat,
+                          onChanged:
+                              _busy ? null : (v) => setState(() => _zakat = v)),
+                      SwitchListTile(
+                          dense: widget.compact,
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(l(context, 'Show recipient names')),
+                          subtitle: Text(l(
+                              context,
+                              widget.compact
+                                  ? 'Names can appear on your lock screen.'
+                                  : 'Names may appear on your lock screen. Amounts are not included.')),
+                          value: _names,
+                          onChanged:
+                              _busy ? null : (v) => setState(() => _names = v)),
+                    ])
+              else ...[
+                SwitchListTile(
+                    dense: widget.compact,
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(l(context, 'Monthly giving reminders')),
+                    value: _monthly,
+                    onChanged:
+                        _busy ? null : (v) => setState(() => _monthly = v)),
+                SwitchListTile(
+                    dense: widget.compact,
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(l(context, 'Zakat reminders')),
+                    value: _zakat,
+                    onChanged:
+                        _busy ? null : (v) => setState(() => _zakat = v)),
+                SwitchListTile(
+                    dense: widget.compact,
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(l(context, 'Show recipient names')),
+                    subtitle: Text(l(
+                        context,
+                        widget.compact
+                            ? 'Names can appear on your lock screen.'
+                            : 'Names may appear on your lock screen. Amounts are not included.')),
+                    value: _names,
+                    onChanged:
+                        _busy ? null : (v) => setState(() => _names = v)),
+              ],
               FilledButton.icon(
-                  onPressed: _busy || _settingsFailed || (!_monthly && !_zakat)
+                  onPressed: _busy ||
+                          _settingsFailed ||
+                          (!_monthly && !_zakat && !_dailyDuaa)
                       ? null
                       : _save,
                   icon: const Icon(Icons.notifications_active_outlined),

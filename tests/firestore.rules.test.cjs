@@ -208,3 +208,21 @@ test('public push configuration cannot be edited and VAPID private keys and deli
  await assertFails(getDoc(doc(alice(),'_system/webPushKeys')));
  await assertFails(setDoc(doc(alice(),'users/alice/pushDeliveries/device'),{sentAt:1}));
 });
+test('notification inbox is server-written and private; owners can only mark a message read',async()=>{
+ const path='users/alice/notifications/message';
+ await env.withSecurityRulesDisabled(async context=>setDoc(doc(context.firestore(),path),{title:'Daily duaa',body:'O Allah, accept our giving.',kind:'duaa',sentAt:1,readAt:null,status:'accepted'}));
+ await assertSucceeds(getDoc(doc(alice(),path)));
+ const bob=env.authenticatedContext('bob',{email:'bob@example.com',email_verified:true}).firestore();
+ await assertFails(getDoc(doc(bob,path)));
+ await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(),path)));
+ await assertSucceeds(updateDoc(doc(alice(),path),{readAt:Date.now()}));
+ await assertFails(updateDoc(doc(alice(),path),{body:'Fake notification'}));
+ await assertFails(updateDoc(doc(alice(),path),{planId:'other-person'}));
+ await assertFails(setDoc(doc(alice(),'users/alice/notifications/forged'),{title:'Forged',sentAt:Date.now()}));
+});
+test('daily duaa preference supports existing subscriptions and rejects invalid types',async()=>{
+ const id='b'.repeat(64),path='users/alice/pushSubscriptions/'+id;
+ await assertSucceeds(setDoc(doc(alice(),path),{...pushSubscription(),dailyDuaa:true}));
+ await assertSucceeds(updateDoc(doc(alice(),path),{dailyDuaa:false}));
+ await assertFails(updateDoc(doc(alice(),path),{dailyDuaa:'yes'}));
+});

@@ -105,6 +105,8 @@ void main() {
     await tester.tap(find.text('Next'));
     await tester.pumpAndSettle();
     expect(notifications.registrations, 0);
+    await tester.tap(find.text('Giving reminder preferences'));
+    await tester.pumpAndSettle();
     expect(
         tester
             .widget<SwitchListTile>(
