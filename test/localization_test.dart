@@ -14,6 +14,8 @@ import 'package:zakat_app/core/services/auth_service.dart';
 import 'package:zakat_app/core/services/firestore_service.dart';
 import 'package:zakat_app/ui/onboarding/onboarding_screen.dart';
 import 'push_reminder_card_test.dart' show TestPushService;
+import 'package:zakat_app/core/providers/calculator_provider.dart';
+import 'package:zakat_app/ui/calculator/one_pager_screen.dart';
 
 void main() {
   test('Arabic and Persian numeric inputs preserve financial amounts', () {
@@ -66,8 +68,13 @@ void main() {
                     uid: 'u', email: 'u@example.com', isEmailVerified: true),
                 signedIn: true)),
         store: FirestoreService(database: FakeFirebaseFirestore()));
-    await tester.pumpWidget(ChangeNotifierProvider.value(
-        value: auth,
+    final calc = CalculatorProvider(
+        store: FirestoreService(database: FakeFirebaseFirestore()));
+    await tester.pumpWidget(MultiProvider(
+        providers: [
+          ChangeNotifierProvider.value(value: auth),
+          ChangeNotifierProvider.value(value: calc)
+        ],
         child: Consumer<AuthProvider>(
             builder: (context, value, _) => MaterialApp(
                 locale: Locale(value.language),
@@ -101,9 +108,6 @@ void main() {
         TextDirection.ltr);
     await tester.tap(find.text('Next'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Zakat'));
-    await tester.tap(find.text('Next'));
-    await tester.pumpAndSettle();
     expect(notifications.registrations, 0);
     await tester.tap(find.text('Giving reminder preferences'));
     await tester.pumpAndSettle();
@@ -113,22 +117,21 @@ void main() {
                 find.widgetWithText(SwitchListTile, 'Show recipient names'))
             .value,
         isTrue);
-    await tester
-        .ensureVisible(find.text('Enable notifications on this device'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Enable notifications on this device'));
+    expect(find.text('Enable notifications on this device'), findsNothing);
+    await tester.tap(find.byKey(const Key('onboarding-next')));
     await tester.pumpAndSettle();
     expect(notifications.registrations, 1);
     expect(notifications.lastShowNames, isTrue);
-    await tester.scrollUntilVisible(find.text('Start tracking'), 250,
-        scrollable: find.byType(Scrollable).first);
+    expect(notifications.permissionRequests, 1);
+    await tester.tap(find.byKey(const Key('onboarding-next')));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Start tracking'));
-    await tester.pumpAndSettle();
-    expect(auth.profile!.monthlyDefaultKind, 'zakat');
+    expect(auth.profile!.monthlyDefaultKind, 'sadaqah');
+    expect(find.byType(OnePagerScreen), findsOneWidget);
+    expect(calc.draft!.currency, auth.profile!.currency);
     expect(auth.profile!.onboardingCompleted, isTrue);
     await tester.pumpWidget(const SizedBox());
     auth.dispose();
+    calc.dispose();
   });
   testWidgets(
       'translated template keeps person names and currency codes unchanged',

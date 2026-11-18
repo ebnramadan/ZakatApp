@@ -104,7 +104,8 @@ class AuthProvider extends ChangeNotifier {
   Future<void> retryProfile() => _onAuthStateChanged(_auth.currentUser);
 
   Future<UserProfile> _loadOrCreateProfile(User user) async {
-    var profile = await _fs.getProfile(user.uid);
+    var profile =
+        await _fs.getProfile(user.uid).timeout(const Duration(seconds: 10));
     if (profile == null) {
       profile = UserProfile(
         uid: user.uid,
@@ -114,11 +115,11 @@ class AuthProvider extends ChangeNotifier {
         currency: 'EGP',
         photoUrl: user.photoURL,
       );
-      await _fs.saveProfile(profile);
+      await _fs.saveProfile(profile).timeout(const Duration(seconds: 10));
     }
     if (profile.email != (user.email ?? '')) {
       profile = profile.copyWith(email: user.email ?? '');
-      await _fs.saveProfile(profile);
+      await _fs.saveProfile(profile).timeout(const Duration(seconds: 10));
     }
     return profile;
   }
@@ -272,6 +273,45 @@ class AuthProvider extends ChangeNotifier {
       return true;
     } catch (_) {
       _error = 'The request changed. Refresh its status and try again.';
+      _notify();
+      return false;
+    }
+  }
+
+  /// Commit setup before leaving onboarding; a failed write keeps the final
+  /// page and its selected preferences available for retry.
+  Future<bool> completeOnboarding(
+      {required String currency,
+      required String language,
+      required String monthlyDefaultKind}) async {
+    final current = _profile;
+    if (current == null) return false;
+    final fields = <String, dynamic>{
+      'currency': currency,
+      'language': language,
+      'monthlyDefaultKind': monthlyDefaultKind,
+      'onboardingCompleted': true
+    };
+    final revision = ++_preferenceRevision;
+    for (final field in fields.keys) {
+      _fieldRevision[field] = revision;
+    }
+    try {
+      await _fs.updateProfileFields(current.uid, fields);
+      if (_disposed || _user?.uid != current.uid) return false;
+      final latest = (_profile ?? current).toMap();
+      for (final field in fields.keys) {
+        if (_fieldRevision[field] == revision) latest[field] = fields[field];
+      }
+      _profile = UserProfile.fromMap(current.uid, latest);
+      _deviceLanguage = _profile!.language;
+      _saveDeviceLanguage(_deviceLanguage);
+      _error = null;
+      _notify();
+      return true;
+    } catch (_) {
+      if (_disposed || _user?.uid != current.uid) return false;
+      _error = 'This setting could not be saved. Please retry.';
       _notify();
       return false;
     }

@@ -6,15 +6,20 @@ import '../../core/services/push_service.dart';
 
 class PushReminderCard extends StatefulWidget {
   final PushService? service;
-  final bool compact;
-  const PushReminderCard({super.key, this.service, this.compact = false});
+  final bool compact, showEnableButton;
+  const PushReminderCard(
+      {super.key,
+      this.service,
+      this.compact = false,
+      this.showEnableButton = true});
   @override
-  State<PushReminderCard> createState() => _PushReminderCardState();
+  PushReminderCardState createState() => PushReminderCardState();
 }
 
-class _PushReminderCardState extends State<PushReminderCard> {
+class PushReminderCardState extends State<PushReminderCard> {
   late final _service = widget.service ?? PushService();
   Map<String, dynamic> _config = {};
+  late Future<void> _initialLoad;
   bool _loading = true,
       _busy = false,
       _enabled = false,
@@ -27,7 +32,7 @@ class _PushReminderCardState extends State<PushReminderCard> {
   @override
   void initState() {
     super.initState();
-    _load();
+    _initialLoad = _load();
   }
 
   Future<void> _load() async {
@@ -57,6 +62,38 @@ class _PushReminderCardState extends State<PushReminderCard> {
       }
     }
     if (mounted) setState(() => _loading = false);
+  }
+
+  /// Invoked from the onboarding footer tap. Ask OS permission before any
+  /// configuration/network await so iOS retains the user activation.
+  Future<bool> enableFromOnboarding() async {
+    if (_busy) return false;
+    if (_service.support != 'supported' ||
+        (!_monthly && !_zakat && !_dailyDuaa)) return true;
+    var continueSetup = false;
+    await _perform(() async {
+      final permission = await _service.requestPermission();
+      if (!mounted) return;
+      if (permission != 'granted') {
+        continueSetup = true;
+        return;
+      }
+      await _initialLoad;
+      if (!mounted) return;
+      if (_settingsFailed || _config['publicKey'] == null) {
+        throw const PushSetupException(
+            'Notification settings could not load. Please retry.');
+      }
+      await _service.enable(context.read<AuthProvider>().user!.uid,
+          _config['publicKey'] as String,
+          monthly: _monthly,
+          zakat: _zakat,
+          showNames: _names,
+          dailyDuaa: _dailyDuaa);
+      _enabled = true;
+      continueSetup = true;
+    });
+    return continueSetup;
   }
 
   Future<void> _test() => _perform(() async {
@@ -120,7 +157,7 @@ class _PushReminderCardState extends State<PushReminderCard> {
                       ? null
                       : () {
                           setState(() => _loading = true);
-                          _load();
+                          _initialLoad = _load();
                         },
                   icon: const Icon(Icons.refresh)),
             ]),
@@ -167,7 +204,7 @@ class _PushReminderCardState extends State<PushReminderCard> {
                         ? null
                         : () {
                             setState(() => _loading = true);
-                            _load();
+                            _initialLoad = _load();
                           },
                     child: Text(l(context, 'Retry'))),
             ],
@@ -257,18 +294,20 @@ class _PushReminderCardState extends State<PushReminderCard> {
                     onChanged:
                         _busy ? null : (v) => setState(() => _names = v)),
               ],
-              FilledButton.icon(
-                  onPressed: _busy ||
-                          _settingsFailed ||
-                          (!_monthly && !_zakat && !_dailyDuaa)
-                      ? null
-                      : _save,
-                  icon: const Icon(Icons.notifications_active_outlined),
-                  label: Text(_busy
-                      ? l(context, 'Saving…')
-                      : _enabled
-                          ? l(context, 'Save notification preferences')
-                          : l(context, 'Enable notifications on this device'))),
+              if (widget.showEnableButton)
+                FilledButton.icon(
+                    onPressed: _busy ||
+                            _settingsFailed ||
+                            (!_monthly && !_zakat && !_dailyDuaa)
+                        ? null
+                        : _save,
+                    icon: const Icon(Icons.notifications_active_outlined),
+                    label: Text(_busy
+                        ? l(context, 'Saving…')
+                        : _enabled
+                            ? l(context, 'Save notification preferences')
+                            : l(context,
+                                'Enable notifications on this device'))),
               if (_enabled && widget.compact)
                 Padding(
                     padding: const EdgeInsets.only(top: 8),

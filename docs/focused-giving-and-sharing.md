@@ -71,7 +71,7 @@ Recipients can start in a previous month. Browse to it to record actual giving a
 
 ## Onboarding navigation and Arabic typography
 
-Onboarding has a fixed safe-area footer with Back and Next/Start tracking; the compact body fits all three steps on normal phone sizes, with scrolling reserved for enlarged text or unusually small windows. The final step focuses on the monthly classification rather than repeating a long feature tour. Existing currency choices stay intact; new accounts always start at EGP. An explicit Use my location button requests permission and performs a one-time country lookup; manual currency selection stays available. Existing saved choices and record amounts are preserved.
+Onboarding has four compact steps with a fixed safe-area Back/Next footer: welcome, language/currency, notifications, then Zakat calculation. The final action opens the one-page calculator above Home. Monthly giving starts as Sadaqah for new setup; a note points to Profile for changing that default. Reviewing the guide preserves an existing monthly preference and does not create another draft. Existing currency choices stay intact; new accounts always start at EGP. An explicit Use my location button requests permission and performs a one-time country lookup; manual currency selection stays available. Existing saved choices and record amounts are preserved.
 
 Arabic selects Tajawal as its primary font, rather than relying on Inter fallback metrics. Button, chip, heading, date, and list label line boxes allow the Arabic ascenders/descenders to fit. Empty monthly screens have one add-recipient action, and month arrows follow the interface direction.
 
@@ -88,4 +88,13 @@ Startup artwork uses the app’s green on cream. The HTML loader fetches a fresh
 
 Primary navigation has four destinations: Home, Tracker, Monthly and Profile. Home groups the default record under My Zakat records with one View all records action. The library opens as a child page with Back to Home; selecting a record closes the library and opens its tracker or draft. Tracker’s records shortcut returns to Home. Hidden tabs are excluded from Hero transitions so record restoration cannot animate hidden payment controls.
 
-Onboarding has four short steps with pinned navigation: introduction, language/currency, monthly giving default, and optional notifications. The notification step reuses the same device preferences as Profile, in a compact layout. Permission is requested only by Enable notifications; Start tracking can finish without opting in. Recipient names default on for a new subscription, with a lock-screen disclosure. Existing saved choices to hide names remain respected. Notification deep links and calculation completion use the updated tab positions.
+Onboarding requests notification permission directly from the notification page’s Next tap, before waiting for configuration, so iOS retains user activation. There is no separate Enable button in onboarding. Declining permission, unsupported browsers and Not now can continue to calculation; setup errors allow retry or skipping. Completion is persisted before leaving the final page so a failed save stays on that page. Recipient names default on for a new subscription, with a lock-screen disclosure. Existing saved choices to hide names remain respected. Notification deep links and calculation completion use the updated tab positions.
+
+
+## Startup loading and speed
+
+The custom Flutter bootstrap starts the entrypoint and local CanvasKit assets without waiting for offline-cache worker registration. Cache registration runs after the first frame. A release-specific main-script URL bypasses stale asset-worker responses; an unversioned cached entrypoint remains a fallback if the network script fails. The fresh-bootstrap cache escape remains in place.
+
+HTML and Flutter loading screens use the same cream/green artwork with rotating duaas. Progress represents four completed startup stages, not downloaded bytes or elapsed time: app entrypoint ready, display engine ready, Firebase ready, and sign-in/profile ready. It does not advance on a timer. Arabic startup text and duaas follow the saved language; reduced-motion and screen-reader preferences remain supported. A stalled HTML load offers retry, and profile reads/writes have bounded waits rather than leaving the logo indefinitely.
+
+Validation covers blocked cache-worker registration, stale bootstrap recovery, cached entrypoint fallback, honest stage progress, permission timing, denied/skipped setup, failed completion retry, direct calculator entry and Arabic/English safe-area layouts.

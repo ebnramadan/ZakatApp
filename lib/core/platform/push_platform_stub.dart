@@ -12,3 +12,5 @@ Future<void> showPushTest(String title, String body, {String? uid}) async {}
 Future<void> refreshPushWorker() async {}
 
 void clearNotificationLink() {}
+
+Future<String> requestPushPermission() async => "unsupported";

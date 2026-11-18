@@ -105,7 +105,9 @@ void main() {
         }
         await tester.tap(back);
         await tester.pumpAndSettle();
-        expect(find.byType(SegmentedButton<String>), findsOneWidget);
+        expect(find.text(language == 'ar' ? 'دعاء كل يوم' : 'Daily duaa'),
+            findsOneWidget);
+        expect(find.text('Enable notifications on this device'), findsNothing);
         expect(tester.takeException(), isNull);
         await tester.pumpWidget(const SizedBox());
         auth.dispose();

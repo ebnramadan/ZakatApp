@@ -18,6 +18,7 @@ class PushService {
   FirebaseFirestore get db => FirebaseFirestore.instance;
   String get support => platform.pushSupport;
   String get permission => platform.pushPermission;
+  Future<String> requestPermission() => platform.requestPushPermission();
   String _id(Map<String, dynamic> subscription) => sha256
       .convert(utf8.encode(subscription['endpoint'] as String))
       .toString();
@@ -61,7 +62,9 @@ class PushService {
       bool dailyDuaa = true}) async {
     late final Map<String, dynamic> subscription;
     try {
-      subscription = await platform.subscribePush(publicKey);
+      subscription = await platform
+          .subscribePush(publicKey)
+          .timeout(const Duration(seconds: 15));
     } catch (_) {
       throw const PushSetupException(
           'This device could not register for automatic reminders. Test notifications only check permission. Please retry.');
