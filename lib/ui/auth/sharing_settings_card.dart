@@ -259,14 +259,6 @@ class _SharingDialogState extends State<_SharingDialog> {
                                 l(context,
                                     "The sheet includes recipient names and amounts. It is an emailed copy, not live account access; copies already sent cannot be revoked."),
                                 style: const TextStyle(fontSize: 13)),
-                            SwitchListTile(
-                                contentPadding: EdgeInsets.zero,
-                                title:
-                                    Text(l(context, "Enable monthly sharing")),
-                                value: enabled,
-                                onChanged: busy
-                                    ? null
-                                    : (v) => setState(() => enabled = v)),
                             TextFormField(
                                 controller: recipients,
                                 enabled: !busy,
@@ -296,15 +288,22 @@ class _SharingDialogState extends State<_SharingDialog> {
                                 }),
                             const SizedBox(height: 16),
                             SearchablePicker<int>(
-                                label: l(context, "Day of the month"),
-                                value: day,
-                                options: List.generate(
-                                    31,
-                                    (i) => PickerOption(
-                                        i + 1, l(context, "Day {0}", [i + 1]))),
+                                label: l(context, "Monthly sharing"),
+                                value: enabled ? day : 0,
+                                options: [
+                                  PickerOption(
+                                      0, l(context, "Disable monthly sharing")),
+                                  ...List.generate(
+                                      31,
+                                      (i) => PickerOption(i + 1,
+                                          l(context, "Day {0}", [i + 1]))),
+                                ],
                                 onChanged: busy
                                     ? null
-                                    : (v) => setState(() => day = v)),
+                                    : (v) => setState(() {
+                                          enabled = v != 0;
+                                          if (enabled) day = v;
+                                        })),
                             const SizedBox(height: 12),
                             Text(
                                 l(context,

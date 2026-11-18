@@ -195,6 +195,8 @@ const Map<String, String> arabic = {
   "Email reminders are checked daily around 08:00 UTC. One reminder per unpaid recipient per month; completed payments are skipped. Email includes the recipient and amount. You can turn it off at any time.":
       "تُراجع التذكيرات يوميًا نحو ٠٨:٠٠ بالتوقيت العالمي. يُرسل تذكير واحد شهريًا لكل مستفيد لم يُدفع له. تتضمن الرسالة اسم المستفيد والمبلغ. تقدر إيقافها في أي وقت يناسبك.",
   "Email verified": "البريد مؤكّد",
+  "Monthly sharing": "المشاركة الشهرية",
+  "Disable monthly sharing": "إيقاف المشاركة الشهرية",
   "Enable monthly sharing": "تفعيل المشاركة الشهرية",
   "English": "English",
   "Enter a name": "اكتب الاسم",
