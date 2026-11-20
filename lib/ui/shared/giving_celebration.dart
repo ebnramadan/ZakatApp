@@ -56,17 +56,19 @@ class _CelebrationState extends State<_Celebration>
                     builder: (context, _) =>
                         GivingArtwork(progress: _animation.value))),
             const SizedBox(height: 12),
-            Text(
-                widget.planReady
-                    ? l(context, "Your Zakat plan is ready")
-                    : widget.sadaqah
-                        ? l(context, "A beautiful act of Sadaqah")
-                        : l(context, "Your Zakat giving is recorded"),
-                textAlign: TextAlign.center,
-                style: Theme.of(context)
-                    .textTheme
-                    .titleLarge
-                    ?.copyWith(fontWeight: FontWeight.w700)),
+            if (widget.planReady ||
+                Localizations.localeOf(context).languageCode != 'ar')
+              Text(
+                  widget.planReady
+                      ? l(context, "Your Zakat plan is ready")
+                      : widget.sadaqah
+                          ? l(context, "A beautiful act of Sadaqah")
+                          : l(context, "Your Zakat giving is recorded"),
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context)
+                      .textTheme
+                      .titleLarge
+                      ?.copyWith(fontWeight: FontWeight.w700)),
             const SizedBox(height: 8),
             Text(
                 l(
@@ -83,13 +85,15 @@ class _CelebrationState extends State<_Celebration>
                 style: TextStyle(
                     fontSize: 23, height: 1.7, color: givingBurgundy)),
             const SizedBox(height: 12),
-            Text(
-                widget.planReady
-                    ? l(context,
-                        "May Allah bless your intention and help you fulfil your Zakat. Record payments after you give.")
-                    : l(context,
-                        "O Allah, accept from us and bless what You have provided us."),
-                textAlign: TextAlign.center),
+            if (widget.planReady ||
+                Localizations.localeOf(context).languageCode != 'ar')
+              Text(
+                  widget.planReady
+                      ? l(context,
+                          "May Allah bless your intention and help you fulfil your Zakat. Record payments after you give.")
+                      : l(context,
+                          "O Allah, accept from us and bless what You have provided us."),
+                  textAlign: TextAlign.center),
           ])),
           actions: [
             FilledButton(

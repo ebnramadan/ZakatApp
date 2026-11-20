@@ -41,7 +41,7 @@ const DUAAS = [
 ];
 function dailyDuaa(local, ar) {
   const index=Math.floor(Date.parse(local.key)/DAY)%DUAAS.length;
-  return DUAAS[index][ar?0:1];
+  return ar ? DUAAS[index][0] : `${DUAAS[index][1]}\n\n${DUAAS[index][0]}`;
 }
 function sentToday(receipt, local, now, timeZone) {
   return receipt?.sentDay===local.key || (Number.isFinite(receipt?.sentAt) && localDay(new Date(receipt.sentAt),timeZone).key===local.key) || receipt?.leaseUntil>now.getTime();
@@ -131,7 +131,7 @@ async function run({db,auth,webPush,now=new Date(),dryRun=false,scheduled=false,
       if(!claimed)continue;
       try {
         // Browser push tokens and private recipient data never appear in workflow logs.
-        const response=await webPush.sendNotification({endpoint:s.endpoint,keys:s.keys},JSON.stringify({...message,body:s.showNames?message.body:message.genericBody,uid:base.id,notificationId}),{TTL:3600,urgency:'normal',timeout:15000});
+        const response=await webPush.sendNotification({endpoint:s.endpoint,keys:s.keys},JSON.stringify({...message,body:s.showNames?message.body:message.genericBody,uid:base.id,notificationId}),{TTL:21600,urgency:'high',timeout:15000});
         if(response.statusCode<200 || response.statusCode>=300)throw Object.assign(new Error('Push provider rejected the request'),{statusCode:response.statusCode});
         // Provider acceptance is not proof of display. Store one inbox item per
         // user/day/action even when several opted-in devices accept the push.

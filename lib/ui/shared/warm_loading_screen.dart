@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../core/localization/strings.dart';
+import '../../core/localization/duaa.dart';
 import 'giving_artwork.dart';
 import '../../core/constants.dart';
 
@@ -95,7 +96,11 @@ class _WarmLoadingScreenState extends State<WarmLoadingScreen>
                                 style: const TextStyle(
                                     fontSize: 12, color: givingBrown)),
                             const SizedBox(height: 18),
-                            Text(l(context, _duaas[_duaa]),
+                            Text(
+                                duaaText(
+                                    _duaas[_duaa],
+                                    Localizations.localeOf(context)
+                                        .languageCode),
                                 textAlign: TextAlign.center,
                                 style: const TextStyle(
                                     fontSize: 15,

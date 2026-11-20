@@ -163,3 +163,47 @@ test('English reminders keep recipient names, duaa and exact action while generi
  assert.match(message.title,/Monthly giving/);assert.match(message.body,/Family p is waiting/);assert.match(message.body,/O Allah/);assert.equal(message.planId,'p');
  assert.equal(message.genericBody.includes('Family p'),false);
 });
+
+test('each daily reminder has a distinct alert tag while retries retain their tag',async()=>{
+ const vm=require('node:vm'),{readFileSync}=require('node:fs'),handlers={},shown=[];
+ const context=vm.createContext({self:{addEventListener:(kind,fn)=>handlers[kind]=fn,registration:{showNotification:async(title,options)=>shown.push(options)}},URL});
+ vm.runInContext(readFileSync('web/push-worker.js','utf8'),context);
+ vm.runInContext("stateStore=async()=>({uid:'u',enabled:true,dailyDuaa:true,showNames:true})",context);
+ const deliver=async id=>{let work;handlers.push({data:{json:()=>({uid:'u',kind:'duaa',title:'Duaa',body:'Prayer',notificationId:id})},waitUntil:p=>work=p});await work;};
+ await deliver('a'.repeat(64));await deliver('b'.repeat(64));await deliver('b'.repeat(64));
+ assert.notEqual(shown[0].tag,shown[1].tag);
+ assert.equal(shown[1].tag,shown[2].tag);
+ assert.equal(shown[2].renotify,false);
+});
+test('duaa language is bilingual for English and Arabic-only for Arabic across the daily rotation',()=>{
+ for(let day=0;day<7;day++){
+  const date=new Date(now.getTime()+day*86400000);
+  for(const language of ['en','ar']){
+   const message=selectReminder(options({profile:{language},now:date,subscription:{...subscription,dailyDuaa:true}}));
+   assert.match(message.body,/اللهم/);
+   assert.equal(message.body.includes('O Allah'),language==='en');
+  }
+ }
+});
+test('scheduled pushes request timely delivery and allow six hours for an offline device',async()=>{
+ const f=fixture();let deliveryOptions;
+ f.webPush.sendNotification=async(s,payload,opts)=>{deliveryOptions=opts;return{statusCode:201};};
+ await run(f);assert.equal(deliveryOptions.urgency,'high');assert.equal(deliveryOptions.TTL,21600);
+});
+
+test('a fresh worker restores saved opt-in and waits for pending session changes before showing a push',async()=>{
+ const vm=require('node:vm'),{readFileSync}=require('node:fs'),handlers={},shown=[];
+ let state,release;
+ const context=vm.createContext({self:{addEventListener:(kind,fn)=>handlers[kind]=fn,registration:{getNotifications:async()=>[],showNotification:async(title,options)=>shown.push(options)}},URL});
+ vm.runInContext(readFileSync('web/push-worker.js','utf8'),context);
+ context.readState=()=>state;context.writeState=next=>{state=next;};
+ vm.runInContext("stateStore=async(mode,action)=>mode==='readonly'?readState():action({put:next=>writeState(next)})",context);
+ const sync=data=>{let work;handlers.message({data:{type:'push-session',...data},ports:[],waitUntil:p=>work=p});return work;};
+ const deliver=()=>{let work;handlers.push({data:{json:()=>({uid:'u',kind:'duaa',title:'Duaa',body:'Prayer',notificationId:'a'.repeat(64)})},waitUntil:p=>work=p});return work;};
+ await sync({uid:'u'});await deliver();assert.equal(shown.length,0);
+ await sync({uid:'u',enabled:true,dailyDuaa:true,showNames:true});await deliver();assert.equal(shown.length,1);
+ context.pending=new Promise(resolve=>{release=resolve;});
+ vm.runInContext('sessionQueue=pending.then(()=>writeState({uid:null,enabled:false}))',context);
+ const incoming=deliver();await Promise.resolve();assert.equal(shown.length,1);
+ release();await incoming;assert.equal(shown.length,1,'sign-out must finish before a queued push is inspected');
+});

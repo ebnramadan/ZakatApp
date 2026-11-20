@@ -142,6 +142,28 @@ class PushService {
         await platform.unsubscribePush();
       } catch (_) {}
     } else {
+      // iOS may discard worker storage independently of the push subscription.
+      // Rebuild local opt-in from this account's saved device preferences; merely
+      // setting the UID leaves a fresh worker disabled and drops real pushes.
+      if (kIsWeb && uid != null) {
+        try {
+          final saved = await PushService().settings(uid);
+          final account = FirebaseAuth.instance.currentUser;
+          if (saved != null &&
+              account?.uid == uid &&
+              account?.emailVerified == true) {
+            await platform.syncPushSession(uid, preferences: {
+              'enabled': true,
+              'monthly': saved['monthly'] == true,
+              'zakat': saved['zakat'] == true,
+              'dailyDuaa': saved['dailyDuaa'] != false,
+              'showNames': saved['showNames'] == true,
+            });
+          }
+        } catch (_) {
+          // Offline reads must not erase an existing same-account session.
+        }
+      }
       await platform.refreshPushWorker();
     }
   }
