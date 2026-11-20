@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../core/localization/strings.dart';
+import '../../core/localization/duaa.dart';
 import '../../core/notifications/notification_provider.dart';
 import '../../core/providers/auth_provider.dart';
 import 'notification_navigation.dart';
@@ -111,7 +112,11 @@ class NotificationHistoryScreen extends StatelessWidget {
                                       if (n.readAt == null) const Badge(),
                                     ]),
                                     const SizedBox(height: 10),
-                                    Text(n.body,
+                                    Text(
+                                        notificationDuaaText(
+                                            n.body,
+                                            Localizations.localeOf(context)
+                                                .languageCode),
                                         style: const TextStyle(height: 1.6)),
                                     const SizedBox(height: 12),
                                     Text(

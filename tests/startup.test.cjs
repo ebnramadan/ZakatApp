@@ -30,7 +30,10 @@ for(const ar of [false,true]){
   const context=vm.createContext({window:{addEventListener:(kind,fn)=>events[kind]=fn},document:{getElementById:node},localStorage:{getItem:()=>JSON.stringify(ar?'ar':'en')},setInterval:fn=>{rotate=fn;return 1},clearInterval:()=>stopped=true,setTimeout:()=>2,clearTimeout(){}});
   vm.runInContext(script,context);
   assert.equal(node('startup-progress').value,0);
-  const initial=node('startup-duaa').textContent;rotate();assert.notEqual(node('startup-duaa').textContent,initial);
+  const initial=node('startup-duaa').textContent;
+  assert.match(initial,/اللهم/);
+  assert.equal(initial.includes('O Allah'),!ar);
+  rotate();assert.notEqual(node('startup-duaa').textContent,initial);
   assert.equal(node('startup-progress').value,0);
   context.window.zakatStartup.complete(2);assert.equal(node('startup-progress').value,2);
   assert.match(node('startup-percent').textContent,ar?/٥٠٪/:/50%/);

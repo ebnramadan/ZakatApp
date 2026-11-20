@@ -974,5 +974,19 @@ const Map<String, String> arabic = {
   "O Allah, grant us a compassionate heart and open the doors of goodness.":
       "اللهم ارزقنا قلبًا رحيمًا ويسّر لنا أبواب الخير.",
   "O Allah, make our giving sincerely for You, and bless those we give to.":
-      "اللهم اجعل عطاءنا خالصًا لوجهك، وبارك لمن نعطيهم."
+      "اللهم اجعل عطاءنا خالصًا لوجهك، وبارك لمن نعطيهم.",
+  "O Allah, accept from us, bless our provision, and make our giving sincerely for You.":
+      "اللهم تقبّل منا، وبارك لنا في رزقنا، واجعل عطاءنا خالصًا لوجهك.",
+  "O Allah, grant us a compassionate heart and open the doors of goodness for us.":
+      "اللهم ارزقنا قلبًا رحيمًا، ويسّر لنا أبواب الخير.",
+  "O Allah, provide for those in need, and let us be a means of easing their hardship.":
+      "اللهم اغنِ المحتاجين بفضلك، واجعلنا سببًا في تفريج كربهم.",
+  "O Allah, bless even our small acts of giving, and help us continue doing good.":
+      "اللهم بارك في القليل، وأعنّا على دوام الخير.",
+  "O Allah, grant us a share of mercy and kindness each day.":
+      "اللهم اجعل لنا نصيبًا من الرحمة والإحسان كل يوم.",
+  "O Allah, purify our intentions, accept our charity, and bless those we give to.":
+      "اللهم أصلح نياتنا، وتقبّل صدقاتنا، وبارك لمن نعطيهم.",
+  "O Allah, make our giving a source of light, protection, and mercy for us and for others.":
+      "اللهم اجعل عطاءنا نورًا وسترًا ورحمةً لنا ولغيرنا."
 };

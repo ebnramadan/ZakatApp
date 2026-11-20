@@ -61,7 +61,7 @@
     .giving-intro strong { display:block; margin-bottom:8px; font-size:16px; font-weight:600; color:#146356; }
     .startup-progress { margin:18px 0 8px; width:100%; height:6px; accent-color:#146356; }
     #startup-percent { display:block; font-size:12px; margin-bottom:8px; }
-    #startup-duaa { display:block; min-height:64px; margin-top:18px; font-size:15px; line-height:1.6; color:#594333; }
+    #startup-duaa { display:block; min-height:64px; white-space:pre-line; margin-top:18px; font-size:15px; line-height:1.6; color:#594333; }
     #startup-retry { margin-top:12px; min-height:44px; padding:8px 20px; border:1px solid #146356; border-radius:12px; color:#146356; background:#FFFCF7; font:inherit; cursor:pointer; }
     @keyframes give-float { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-3px); } }
     @keyframes give-heart { 0%,100% { transform:translateY(3px) scale(.96); opacity:.8; } 50% { transform:translateY(-3px) scale(1); opacity:1; } }
@@ -87,7 +87,9 @@
       <span id="giving-caption">Downloading the app…</span>
       <progress id="startup-progress" class="startup-progress" max="4" value="0" aria-label="Startup steps completed"></progress>
       <span id="startup-percent">0% · 0 of 4 startup steps</span>
-      <span id="startup-duaa">O Allah, accept our giving and bless what You have provided.</span>
+      <span id="startup-duaa">O Allah, accept our giving and bless what You have provided.
+
+اللهم تقبّل منا وبارك لنا فيما رزقتنا.</span>
       <button id="startup-retry" hidden type="button" onclick="location.reload()">Try again</button>
     </div>
   </div>
@@ -99,15 +101,17 @@
       const captions = ar
         ? ['بنحمّل التطبيق…', 'بنجهّز العرض…', 'بنوصل حسابك بأمان…', 'بنفتح حسابك…', 'جاهز']
         : ['Downloading the app…', 'Preparing the display…', 'Connecting securely…', 'Opening your account…', 'Ready'];
-      const duaas = ar ? [
+      const arabicDuaas = [
         'اللهم تقبّل منا وبارك لنا فيما رزقتنا.',
         'اللهم ارزقنا قلبًا رحيمًا ويسّر لنا أبواب الخير.',
         'اللهم اجعل عطاءنا خالصًا لوجهك، وبارك لمن نعطيهم.'
-      ] : [
+      ];
+      const englishDuaas = [
         'O Allah, accept our giving and bless what You have provided.',
         'O Allah, grant us a compassionate heart and open the doors of goodness.',
         'O Allah, make our giving sincerely for You, and bless those we give to.'
       ];
+      const duaas = ar ? arabicDuaas : englishDuaas.map((text, index) => `${text}\n\n${arabicDuaas[index]}`);
       if (ar) { box.dir = 'rtl'; box.setAttribute('aria-label', 'بنجهّزلك مساحة للخير'); document.getElementById('giving-title').textContent = 'خير بسيط، وأثره كبير.'; }
       let completed = 0, duaa = 0;
       function render() {

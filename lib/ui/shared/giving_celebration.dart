@@ -83,13 +83,15 @@ class _CelebrationState extends State<_Celebration>
                 style: TextStyle(
                     fontSize: 23, height: 1.7, color: givingBurgundy)),
             const SizedBox(height: 12),
-            Text(
-                widget.planReady
-                    ? l(context,
-                        "May Allah bless your intention and help you fulfil your Zakat. Record payments after you give.")
-                    : l(context,
-                        "O Allah, accept from us and bless what You have provided us."),
-                textAlign: TextAlign.center),
+            if (widget.planReady ||
+                Localizations.localeOf(context).languageCode != 'ar')
+              Text(
+                  widget.planReady
+                      ? l(context,
+                          "May Allah bless your intention and help you fulfil your Zakat. Record payments after you give.")
+                      : l(context,
+                          "O Allah, accept from us and bless what You have provided us."),
+                  textAlign: TextAlign.center),
           ])),
           actions: [
             FilledButton(

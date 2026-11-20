@@ -35,6 +35,8 @@ self.addEventListener('message', event => {
   event.waitUntil(sessionQueue);
 });
 self.addEventListener('push', event => event.waitUntil((async () => {
+  // Apply any in-flight account/preference changes before checking privacy.
+  await sessionQueue.catch(() => {});
   const state = await stateStore('readonly', s => s.get('session'));
   let message;
   try { message = event.data?.json(); } catch (_) { return; }
@@ -44,7 +46,12 @@ self.addEventListener('push', event => event.waitUntil((async () => {
     body: state.showNames ? message.body : message.genericBody,
     icon: '/icons/zakat-v4-192.png', badge: '/icons/zakat-v4-192.png',
     lang: message.language === 'ar' ? 'ar' : 'en', dir: message.language === 'ar' ? 'rtl' : 'ltr',
-    tag: 'ztracker-giving-reminder', renotify: false,
+    // Each daily/action item alerts independently. A retry of the same item
+    // still replaces itself silently rather than alerting twice.
+    tag: typeof message.notificationId === 'string' && /^[a-f0-9]{64}$/.test(message.notificationId)
+      ? `ztracker-${message.notificationId}`
+      : `ztracker-${message.kind}-${message.planId || message.recordId || 'daily'}-${new Date().toISOString().slice(0,10)}`,
+    renotify: false,
     data: {target: message.kind === 'monthly' ? 'monthly' : message.kind === 'zakat' ? 'tracker' : 'home', planId:message.planId,recordId:message.recordId,month:message.month,notificationId:message.notificationId},
   });
 })()));
