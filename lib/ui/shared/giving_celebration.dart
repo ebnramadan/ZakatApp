@@ -56,19 +56,17 @@ class _CelebrationState extends State<_Celebration>
                     builder: (context, _) =>
                         GivingArtwork(progress: _animation.value))),
             const SizedBox(height: 12),
-            if (widget.planReady ||
-                Localizations.localeOf(context).languageCode != 'ar')
-              Text(
-                  widget.planReady
-                      ? l(context, "Your Zakat plan is ready")
-                      : widget.sadaqah
-                          ? l(context, "A beautiful act of Sadaqah")
-                          : l(context, "Your Zakat giving is recorded"),
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleLarge
-                      ?.copyWith(fontWeight: FontWeight.w700)),
+            Text(
+                widget.planReady
+                    ? l(context, "Your Zakat plan is ready")
+                    : widget.sadaqah
+                        ? l(context, "A beautiful act of Sadaqah")
+                        : l(context, "Your Zakat giving is recorded"),
+                textAlign: TextAlign.center,
+                style: Theme.of(context)
+                    .textTheme
+                    .titleLarge
+                    ?.copyWith(fontWeight: FontWeight.w700)),
             const SizedBox(height: 8),
             Text(
                 l(
